@@ -75,10 +75,18 @@ jobs:
             --cap-drop ALL --security-opt no-new-privileges:true \
             ev-dashboard:ci
           for i in $(seq 1 30); do
-            if curl -fsS http://localhost:8080/api/health; then echo; exit 0; fi
+            if curl -fsS http://localhost:8080/api/health; then echo; break; fi
+            [ "$i" = 30 ] && { docker logs smoke; exit 1; }
             sleep 2
           done
-          docker logs smoke
+          # The image's own HEALTHCHECK must turn healthy as well.
+          for i in $(seq 1 45); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' smoke)
+            [ "$status" = healthy ] && exit 0
+            sleep 2
+          done
+          echo "health status: $status"
+          docker inspect --format '{{json .State.Health.Log}}' smoke
           exit 1
 
   dependencies:
