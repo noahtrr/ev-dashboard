@@ -1,0 +1,4 @@
+#!/command/with-contenv sh
+cd /app || exit 1
+export HOST=127.0.0.1 PORT=3000
+exec node build/index.js

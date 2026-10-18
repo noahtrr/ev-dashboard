@@ -1,0 +1,67 @@
+/* Design tokens, see docs/wiki/Design-Philosophie.md */
+:root {
+	color-scheme: dark light;
+	--font-sans: 'Geist Variable', system-ui, sans-serif;
+	--font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+
+	--bg: #0a0e13;
+	--surface: #11171f;
+	--border: #1d2631;
+	--text: #e6edf3;
+	--muted: #93a1af;
+	--accent: #38bdf8;
+	--ok: #4ade80;
+	--warn: #fbbf24;
+	--danger: #f87171;
+
+	--radius: 20px;
+	--space: 16px;
+}
+
+@media (prefers-color-scheme: light) {
+	:root:not([data-theme='dark']) {
+		--bg: #f3f6f9;
+		--surface: #ffffff;
+		--border: #dce3ea;
+		--text: #0f1720;
+		--muted: #55626f;
+		--accent: #0369a1;
+		--ok: #15803d;
+		--warn: #a16207;
+		--danger: #b91c1c;
+	}
+}
+
+:root[data-theme='light'] {
+	--bg: #f3f6f9;
+	--surface: #ffffff;
+	--border: #dce3ea;
+	--text: #0f1720;
+	--muted: #55626f;
+	--accent: #0369a1;
+	--ok: #15803d;
+	--warn: #a16207;
+	--danger: #b91c1c;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--text);
+	font-family: var(--font-sans);
+	font-feature-settings: 'tnum' 1;
+	-webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		animation: none !important;
+		transition: none !important;
+	}
+}

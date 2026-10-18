@@ -1,0 +1,17 @@
+# Minimal deployment. Copy .env.example to .env and adjust it first.
+services:
+  ev-dashboard:
+    image: ghcr.io/noahtrr/ev-dashboard:latest
+    container_name: ev-dashboard
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "80:8080"
+      - "443:8443"
+      - "443:8443/udp"
+    volumes:
+      - ./data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

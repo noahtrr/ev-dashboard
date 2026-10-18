@@ -1,0 +1,49 @@
+#!/command/with-contenv sh
+# Validates the .env configuration and derives the Caddy and app settings.
+set -eu
+
+env_dir=/run/s6/container_environment
+
+fail() {
+	echo "[init-config] $*" >&2
+	exit 1
+}
+
+[ -n "${APP_URL:-}" ] || fail "APP_URL must be set, e.g. https://ev.example.com"
+case "$APP_URL" in
+	http://* | https://*) ;;
+	*) fail "APP_URL must start with http:// or https://" ;;
+esac
+
+host=${APP_URL#*://}
+host=${host%%/*}
+host=${host%%:*}
+
+mode=${TLS_MODE:-auto}
+case "$mode" in
+	auto)
+		[ -n "${ACME_EMAIL:-}" ] || fail "ACME_EMAIL must be set when TLS_MODE=auto"
+		site=$host
+		tls=""
+		email="email $ACME_EMAIL"
+		;;
+	internal)
+		site=$host
+		tls="tls internal"
+		email=""
+		;;
+	off)
+		site="http://:8080"
+		tls=""
+		email=""
+		;;
+	*) fail "TLS_MODE must be auto, internal or off (got '$mode')" ;;
+esac
+
+printf '%s' "$site" >"$env_dir/CADDY_SITE"
+printf '%s' "$tls" >"$env_dir/CADDY_TLS"
+printf '%s' "$email" >"$env_dir/CADDY_EMAIL"
+printf '%s' "${APP_URL%/}" >"$env_dir/ORIGIN"
+
+mkdir -p /data/caddy
+echo "[init-config] serving $APP_URL (TLS_MODE=$mode)"

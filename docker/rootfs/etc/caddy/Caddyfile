@@ -1,0 +1,27 @@
+{
+	admin off
+	http_port 8080
+	https_port 8443
+	{$CADDY_EMAIL}
+	storage file_system /data/caddy
+	servers {
+		trusted_proxies static {$TRUSTED_PROXIES:private_ranges}
+	}
+}
+
+{$CADDY_SITE} {
+	{$CADDY_TLS}
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		Cross-Origin-Opener-Policy same-origin
+		Permissions-Policy "camera=(), microphone=(), payment=(), usb=()"
+		-Server
+	}
+
+	reverse_proxy 127.0.0.1:3000
+}
