@@ -6,7 +6,9 @@ ARG RUNTIME_IMAGE=cgr.dev/chainguard/wolfi-base:latest
 
 # ---- build: install dependencies and build the SvelteKit app ----
 FROM ${NODE_BUILD_IMAGE} AS build
-USER root
+# Build stage only: needs root to install pnpm globally; the runtime image drops to UID 10001.
+# hadolint ignore=DL3002
+USER 0:0
 WORKDIR /src
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
 RUN npm install --global pnpm@10.28.0
@@ -25,7 +27,7 @@ ARG S6_X86_64_SHA256=e6befcc96a437a3831386ecfc51808c5d3e939dc5fe3c02ae9284599e8a
 ARG S6_AARCH64_SHA256=b17f17a82e7a515c682a91edaf2ffdabb73f891981b6c1fd712115693a2f8b4c
 # hadolint ignore=DL3018
 RUN apk add --no-cache curl xz
-SHELL ["/bin/sh", "-eo", "pipefail", "-c"]
+SHELL ["/bin/ash", "-e", "-o", "pipefail", "-c"]
 RUN case "$TARGETARCH" in \
 		amd64) arch=x86_64; sum=$S6_X86_64_SHA256 ;; \
 		arm64) arch=aarch64; sum=$S6_AARCH64_SHA256 ;; \
@@ -70,11 +72,11 @@ ENV APP_VERSION=${APP_VERSION} \
 	S6_CMD_WAIT_FOR_SERVICES_MAXTIME=30000 \
 	S6_VERBOSITY=1
 
-USER app
+USER 10001:10001
 VOLUME ["/data"]
 EXPOSE 8080/tcp 8443/tcp 8443/udp
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-	CMD wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1
+	CMD ["wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health"]
 
 ENTRYPOINT ["/init"]
