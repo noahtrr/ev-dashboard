@@ -31,6 +31,21 @@ curl https://<deine-domain>/api/health
 
 `TLS_MODE=off` setzen. Dann spricht der Container nur HTTP auf Port 8080; leite deinen Proxy dorthin und passe `TRUSTED_PROXIES` an.
 
+## Automatische Updates
+
+Optional aktualisiert sich der Server selbst: Ein systemd-Timer prüft alle 5 Minuten, ob es ein neues Release (`latest`) gibt, verifiziert dessen Cosign-Signatur gegen die Release-Pipeline dieses Repositorys und startet den Container nur dann neu. Der geprüfte Digest wird in `compose.override.yaml` festgeschrieben, damit nie ein ungeprüftes Image startet.
+
+Voraussetzung: Der Benutzer, der den Timer ausführt (Standard `deploy`), ist in der Gruppe `docker` und darf in `/opt/ev-dashboard` schreiben.
+
+```sh
+curl -fsSLO https://raw.githubusercontent.com/noahtrr/ev-dashboard/main/deploy/install.sh
+sudo sh install.sh deploy
+systemctl list-timers ev-dashboard-update.timer
+journalctl -u ev-dashboard-update.service -n 20
+```
+
+Vor dem ersten Release gibt es noch kein `latest`; bis dahin meldet der Dienst einen Fehler beim Abruf.
+
 ## Aktualisieren
 
 ```sh

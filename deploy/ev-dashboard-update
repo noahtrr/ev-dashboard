@@ -1,0 +1,34 @@
+#!/bin/sh
+# Pulls the latest release image, verifies its Cosign signature and restarts
+# the stack when the digest changed. Run by ev-dashboard-update.timer.
+set -eu
+
+DIR=${EV_DIR:-/opt/ev-dashboard}
+IMAGE=${EV_IMAGE:-ghcr.io/noahtrr/ev-dashboard:latest}
+IDENTITY=${EV_IDENTITY:-'^https://github\.com/noahtrr/ev-dashboard/\.github/workflows/release\.yml@refs/tags/v'}
+ISSUER=https://token.actions.githubusercontent.com
+COSIGN=ghcr.io/sigstore/cosign/cosign:v3.1.3@sha256:9e5c2f2edc34351160407ca3416c61855bdf9403c3c5936e0f0be7fc261611b8
+
+repo=${IMAGE%:*}
+override="$DIR/compose.override.yaml"
+
+docker pull --quiet "$IMAGE" >/dev/null
+digest=$(docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$IMAGE" | grep "^$repo@" | head -n 1)
+[ -n "$digest" ] || { echo "no digest for $IMAGE" >&2; exit 1; }
+
+if [ -f "$override" ] && grep -q "$digest" "$override"; then
+	exit 0
+fi
+
+docker run --rm "$COSIGN" verify \
+	--certificate-identity-regexp "$IDENTITY" \
+	--certificate-oidc-issuer "$ISSUER" \
+	"$digest" >/dev/null
+
+# Pin the verified digest so compose never starts an unverified :latest.
+printf 'services:\n  ev-dashboard:\n    image: %s\n' "$digest" >"$override.tmp"
+mv "$override.tmp" "$override"
+
+cd "$DIR"
+docker compose up -d --remove-orphans
+echo "deployed $digest"

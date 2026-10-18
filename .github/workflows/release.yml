@@ -108,23 +108,3 @@ jobs:
         with:
           generate_release_notes: true
           files: sbom.spdx.json
-
-  deploy:
-    name: Deploy to production
-    if: startsWith(github.ref, 'refs/tags/v') && vars.DEPLOY_ENABLED == 'true'
-    needs: image
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Pull and restart on the server
-        env:
-          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-          HOST: ${{ vars.DEPLOY_HOST }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
-          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/id_ed25519
-          ssh -o StrictHostKeyChecking=yes "deploy@${HOST}" \
-            "cd /opt/ev-dashboard && docker compose pull && docker compose up -d --remove-orphans"

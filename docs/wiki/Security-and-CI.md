@@ -19,14 +19,14 @@ Every pull request runs these checks; `main` only accepts changes with green che
 - Multi-arch build for amd64 and arm64, pushed to `ghcr.io/noahtrr/ev-dashboard`.
 - Trivy scan of the published image.
 - Keyless Cosign signature, build provenance attestation, SBOM (SPDX).
-- On tags: GitHub release with the SBOM and, when enabled, automatic deployment over SSH.
+- On tags: GitHub release with the SBOM.
 
 ## Pipeline hardening
 
 - All actions pinned by commit SHA, updated through Renovate.
 - Minimal `permissions` per job, `persist-credentials: false` on checkout.
 - No `pull_request_target`, no secrets in pull request runs.
-- Deployment only through the `production` environment with a dedicated SSH key and pinned `known_hosts`.
+- No deployment credentials in GitHub: servers pull new releases themselves and verify the signature first (see [Installation](Installation-EN#automatic-updates)).
 
 ## Verifying an image
 

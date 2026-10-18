@@ -19,14 +19,14 @@ Jeder Pull Request durchläuft diese Prüfungen; `main` nimmt nur Änderungen mi
 - Multi-Arch-Build für amd64 und arm64, Push nach `ghcr.io/noahtrr/ev-dashboard`.
 - Trivy-Scan des veröffentlichten Images.
 - Keyless-Signatur mit Cosign, Build-Provenance-Attestierung, SBOM (SPDX).
-- Bei Tags: GitHub Release mit SBOM und, wenn aktiviert, automatisches Deployment per SSH.
+- Bei Tags: GitHub Release mit SBOM.
 
 ## Härtung der Pipeline
 
 - Alle Actions per Commit-SHA gepinnt, Aktualisierung über Renovate.
 - Minimale `permissions` pro Job, `persist-credentials: false` beim Checkout.
 - Kein `pull_request_target`, keine Secrets in PR-Läufen.
-- Deployment nur über die Umgebung `production` mit eigenem SSH-Schlüssel und festem `known_hosts`.
+- Keine Zugangsdaten für Server in GitHub: Server holen neue Releases selbst und prüfen vorher die Signatur (siehe [Installation](Installation#automatische-updates)).
 
 ## Image prüfen
 

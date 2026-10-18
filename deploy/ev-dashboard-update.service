@@ -1,0 +1,13 @@
+[Unit]
+Description=Update EV Dashboard to the latest signed release
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=deploy
+SupplementaryGroups=docker
+ExecStart=/usr/local/bin/ev-dashboard-update
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
