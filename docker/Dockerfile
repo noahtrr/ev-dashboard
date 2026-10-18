@@ -13,8 +13,10 @@ FROM ${NODE_BUILD_IMAGE} AS build
 USER 0:0
 WORKDIR /src
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
-RUN npm install --global pnpm@10.28.0
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+# Install the pnpm version pinned in package.json#packageManager (kept current by Renovate).
+# hadolint ignore=DL3016
+RUN npm install --global "$(node -p "require('./package.json').packageManager")"
 COPY apps/web/package.json apps/web/
 RUN pnpm install --frozen-lockfile
 COPY apps/web apps/web
