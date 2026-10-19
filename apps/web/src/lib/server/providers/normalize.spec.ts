@@ -4,8 +4,12 @@ import {
 	normalizeTelemetry,
 	normalizeVehicles,
 	toChargingState,
+	toClosed,
+	toIgnitionOn,
+	toLocked,
 	toPlugged,
 	toTimestamp,
+	toWindowClosed,
 	vehicleLabel
 } from './normalize.ts';
 import {
@@ -15,15 +19,48 @@ import {
 	garageSingle,
 	garbage,
 	telemetryFlatImperial,
-	telemetryMetrics
+	telemetryMetrics,
+	telemetryObserved
 } from './connect-query/fixtures.ts';
 
-// Fixtures are assumed shapes, not real responses (see fixtures.ts).
+// Most fixtures are assumed shapes; `telemetryObserved` follows a real response (see fixtures.ts).
 describe('normalizeTelemetry', () => {
+	it('reads the observed telemetry response', () => {
+		expect(normalizeTelemetry(telemetryObserved)).toEqual({
+			latitude: 52.520008,
+			longitude: 13.404954,
+			positionAt: '2026-10-13T08:19:13.000Z',
+			stateOfChargePct: 56,
+			rangeKm: 234,
+			odometerKm: 11599,
+			pluggedIn: false,
+			chargingState: 'notCharging',
+			chargingStatusRaw: 'NOT_PLUGGED_IN',
+			timeToFullChargeMin: 25,
+			ignitionOn: false,
+			doorsLocked: true,
+			doorsClosed: true,
+			windowsClosed: true,
+			reportedAt: '2026-10-18T16:41:14.779Z'
+		});
+	});
+
+	it('reports an open part as soon as one door or window is open', () => {
+		const body = structuredClone(telemetryObserved);
+		body.metrics.doorLockStatus[2].value = 'UNLOCKED';
+		body.metrics.doorStatus[1].value = 'AJAR';
+		body.metrics.windowStatus[0].value.doubleRange.upperBound = 12;
+		const data = normalizeTelemetry(body);
+		expect(data.doorsLocked).toBe(false);
+		expect(data.doorsClosed).toBe(false);
+		expect(data.windowsClosed).toBe(false);
+	});
+
 	it('reads a metrics map with value wrappers', () => {
 		expect(normalizeTelemetry(telemetryMetrics)).toEqual({
 			latitude: 52.520008,
 			longitude: 13.404954,
+			positionAt: '2026-10-18T19:41:58.000Z',
 			stateOfChargePct: 76.5,
 			rangeKm: 312.4,
 			odometerKm: 18234.7,
@@ -31,6 +68,7 @@ describe('normalizeTelemetry', () => {
 			pluggedIn: true,
 			chargingState: 'charging',
 			chargingStatusRaw: 'IN_PROGRESS',
+			ignitionOn: false,
 			battery12vVoltage: 12.6,
 			battery12vPct: 88,
 			reportedAt: '2026-10-18T19:42:11.000Z'
@@ -104,6 +142,23 @@ describe('value helpers', () => {
 		expect(toChargingState(true)).toBe('charging');
 		expect(toChargingState('CONNECTED')).toBeUndefined();
 		expect(toChargingState(42)).toBeUndefined();
+	});
+
+	it('maps lock, door, window and ignition states', () => {
+		expect(toLocked('LOCKED')).toBe(true);
+		expect(toLocked('DOUBLE_LOCKED')).toBe(true);
+		expect(toLocked('UNLOCKED')).toBe(false);
+		expect(toLocked('UNKNOWN')).toBeUndefined();
+		expect(toClosed('CLOSED')).toBe(true);
+		expect(toClosed('AJAR')).toBe(false);
+		expect(toClosed('OPEN')).toBe(false);
+		expect(toWindowClosed({ doubleRange: { lowerBound: 0, upperBound: 0 } })).toBe(true);
+		expect(toWindowClosed({ doubleRange: { lowerBound: 0, upperBound: 30 } })).toBe(false);
+		expect(toWindowClosed('FULLY_CLOSED')).toBe(true);
+		expect(toWindowClosed({})).toBeUndefined();
+		expect(toIgnitionOn('OFF')).toBe(false);
+		expect(toIgnitionOn('RUN')).toBe(true);
+		expect(toIgnitionOn('ACCESSORY')).toBeUndefined();
 	});
 
 	it('parses timestamps in several forms', () => {

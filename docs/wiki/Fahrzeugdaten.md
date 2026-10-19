@@ -31,10 +31,13 @@ Bei jedem Abruf fragt das Dashboard drei Endpunkte ab: Garage (Fahrzeugstammdate
 
 | Wert | Einheit |
 |---|---|
-| Position | Breiten-/Längengrad |
+| Position und Zeitpunkt der Ortung | Breiten-/Längengrad |
 | Ladestand | % |
 | Reichweite | km |
 | Ladekabel eingesteckt, Ladestatus | |
+| Restladezeit bis voll (nur beim Laden angezeigt) | min |
+| Zündung an/aus | |
+| Türschlösser verriegelt, Türen und Fenster geschlossen | |
 | Kilometerstand | km |
 | Außentemperatur | °C |
 | 12-V-Batterie | V, % |
@@ -54,8 +57,9 @@ Nicht jedes Modell liefert jeden Wert; fehlende Werte zeigt das Dashboard als �
 
 ## Bekannte Unsicherheiten
 
-- **Authorize-URL nicht bestätigt:** Die vorliegende API-Beschreibung nennt nur den Token-Endpunkt. Die verwendete Anmelde-URL stammt aus einem quelloffenen Client und ist im Code an einer Stelle hinterlegt. Schlägt die erste echte Anmeldung dort fehl, ist das die erste Stelle zum Prüfen.
-- **Antwortformate unbekannt:** Es gibt keine Beispielantworten. Die Übersetzung in einheitliche Werte ist deshalb tolerant und rät anhand typischer Feldnamen. Die Rohdaten auf der Detailseite zeigen, was dein Fahrzeug tatsächlich liefert; damit lässt sich die Übersetzung später verbessern.
+- **Antwortformate nur teilweise bekannt:** Die Zuordnung der Telemetrie ist an einer echten Antwort eines Elektrofahrzeugs geprüft. Andere Modelle können andere Felder liefern; die Übersetzung bleibt deshalb tolerant und rät bei unbekannten Feldern anhand typischer Namen. Die Rohdaten auf der Detailseite zeigen, was dein Fahrzeug tatsächlich liefert.
+- **Position oft älter:** Das Fahrzeug meldet die Position seltener als den Ladestand. Die Detailseite zeigt deshalb den Zeitpunkt der Ortung separat an.
+- **Ladeleistung nicht übernommen:** Die Telemetrie enthält einen Wert zur Ladeleistung, dessen Einheit nicht eindeutig ist. Er bleibt in den Rohdaten, wird aber nicht übersetzt.
 - **Mehrere Fahrzeuge in einer Freigabe:** Liefert die Garage mehrere Fahrzeuge, verwendet das Dashboard den Namen des ersten.
 
 ## Eigenschaften der Schnittstelle

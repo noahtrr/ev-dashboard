@@ -205,6 +205,86 @@ function position(index: Map<string, Node[]>): { latitude: number; longitude: nu
 	return undefined;
 }
 
+/** Timestamp of a position object such as `{ updateTime, value: { location } }`. */
+function positionTime(index: Map<string, Node[]>): string | undefined {
+	return first(index, ['position', 'location', 'vehicleposition', 'gps'], (node) =>
+		isRecord(node.value)
+			? toTimestamp(field(node.value, ['updatetime', 'timestamp', 'time']))
+			: undefined
+	);
+}
+
+/** Status values of a single wrapper or a list of wrappers (one per door, window, ...). */
+function statusValues(node: Node): unknown[] {
+	const items = Array.isArray(node.value) ? node.value.slice(0, 20) : [node.value];
+	return items.map((item) => unwrap(item).value).filter((v) => v !== undefined && v !== null);
+}
+
+/**
+ * Combines per-part states: false as soon as one part is in the "bad" state, true only when
+ * every part is in the "good" state, otherwise unknown.
+ */
+function allParts(
+	index: Map<string, Node[]>,
+	keys: string[],
+	classify: (value: unknown) => boolean | undefined
+): boolean | undefined {
+	return first(index, keys, (node) => {
+		const states = statusValues(node).map(classify);
+		if (states.length === 0) return undefined;
+		if (states.includes(false)) return false;
+		return states.every((s) => s === true) ? true : undefined;
+	});
+}
+
+const words = (value: unknown) =>
+	typeof value === 'string'
+		? value
+				.trim()
+				.toLowerCase()
+				.replace(/[\s_-]+/g, ' ')
+		: undefined;
+
+export function toLocked(value: unknown): boolean | undefined {
+	if (typeof value === 'boolean') return value;
+	const s = words(value);
+	if (!s) return undefined;
+	if (/unlock/.test(s)) return false;
+	if (/lock|secured/.test(s)) return true;
+	return undefined;
+}
+
+export function toClosed(value: unknown): boolean | undefined {
+	if (typeof value === 'boolean') return value;
+	const s = words(value);
+	if (!s) return undefined;
+	if (/open|ajar|vent/.test(s)) return false;
+	if (/closed|shut/.test(s)) return true;
+	return undefined;
+}
+
+/** Window state: a status string or an opening range such as `{ doubleRange: { upperBound } }`. */
+export function toWindowClosed(value: unknown): boolean | undefined {
+	if (isRecord(value)) {
+		const range = field(value, ['doublerange', 'range', 'position']);
+		const holder = isRecord(range) ? range : value;
+		const upper = toNumber(field(holder, ['upperbound', 'max', 'percent', 'value']));
+		if (upper === undefined) return undefined;
+		return upper <= 0;
+	}
+	return toClosed(value);
+}
+
+export function toIgnitionOn(value: unknown): boolean | undefined {
+	const { value: v } = unwrap(value);
+	if (typeof v === 'boolean') return v;
+	const s = words(v);
+	if (!s) return undefined;
+	if (s === 'off' || s === 'stop' || s === 'stopped') return false;
+	if (s === 'on' || s === 'run' || s === 'running' || s === 'start') return true;
+	return undefined;
+}
+
 // Candidate keys, most specific first. All lower case.
 const KEYS = {
 	soc: [
@@ -265,6 +345,16 @@ const KEYS = {
 		'auxbatterystateofcharge',
 		'batterystateofcharge'
 	],
+	timeToFullCharge: [
+		'xevbatterytimetofullcharge',
+		'timetofullcharge',
+		'chargetimeremaining',
+		'remainingchargetime'
+	],
+	ignition: ['ignitionstatus', 'ignitionstate', 'ignition'],
+	doorLocks: ['doorlockstatus', 'doorlocks', 'lockstatus', 'locked'],
+	doors: ['doorstatus', 'doorsstatus', 'doors'],
+	windows: ['windowstatus', 'windowsstatus', 'windows'],
 	reportedAt: ['updatetime', 'updatedtime', 'lastupdated', 'lastupdatetime', 'timestamp', 'time']
 };
 
@@ -275,7 +365,11 @@ export function normalizeTelemetry(body: unknown): VehicleData {
 	try {
 		const index = indexKeys(body);
 		const pos = position(index);
-		if (pos) Object.assign(data, pos);
+		if (pos) {
+			Object.assign(data, pos);
+			const positionAt = positionTime(index);
+			if (positionAt) data.positionAt = positionAt;
+		}
 
 		const soc = first(index, KEYS.soc, numberIn(0, 100));
 		if (soc !== undefined) data.stateOfChargePct = round(soc, 1);
@@ -301,6 +395,18 @@ export function normalizeTelemetry(body: unknown): VehicleData {
 			const bool = first(index, KEYS.charging, (node) => toChargingState(node.value));
 			if (bool) data.chargingState = bool;
 		}
+
+		const toFull = first(index, KEYS.timeToFullCharge, numberIn(0, 7 * 24 * 60));
+		if (toFull !== undefined) data.timeToFullChargeMin = Math.round(toFull);
+
+		const ignition = first(index, KEYS.ignition, (node) => toIgnitionOn(node.value));
+		if (ignition !== undefined) data.ignitionOn = ignition;
+		const locked = allParts(index, KEYS.doorLocks, toLocked);
+		if (locked !== undefined) data.doorsLocked = locked;
+		const doorsClosed = allParts(index, KEYS.doors, toClosed);
+		if (doorsClosed !== undefined) data.doorsClosed = doorsClosed;
+		const windowsClosed = allParts(index, KEYS.windows, toWindowClosed);
+		if (windowsClosed !== undefined) data.windowsClosed = windowsClosed;
 
 		const reportedAt = first(index, KEYS.reportedAt, (node) => toTimestamp(node.value));
 		if (reportedAt) data.reportedAt = reportedAt;

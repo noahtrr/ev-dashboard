@@ -30,6 +30,11 @@
 		const charging = v.chargingState
 			? d.chargingStates[v.chargingState]
 			: (v.chargingStatusRaw ?? DASH);
+		const yesNo = (value: boolean | undefined, yes: string, no: string) =>
+			value === undefined ? DASH : value ? yes : no;
+		// The estimate is only meaningful while charging; vehicles keep reporting the last one.
+		const timeToFull =
+			v.chargingState === 'charging' ? num(v.timeToFullChargeMin, 0, d.minutes) : DASH;
 		const battery12v = [
 			v.battery12vVoltage !== undefined ? num(v.battery12vVoltage, 2, 'V') : '',
 			v.battery12vPct !== undefined ? num(v.battery12vPct, 0, '%') : ''
@@ -41,11 +46,17 @@
 			{ label: d.range, value: num(v.rangeKm, 0, 'km'), big: true },
 			{ label: d.plug, value: plug },
 			{ label: d.charging, value: charging },
+			{ label: d.timeToFull, value: timeToFull },
+			{ label: d.ignition, value: yesNo(v.ignitionOn, d.on, d.off) },
+			{ label: d.locks, value: yesNo(v.doorsLocked, d.locked, d.unlocked) },
+			{ label: d.doors, value: yesNo(v.doorsClosed, d.closed, d.open) },
+			{ label: d.windows, value: yesNo(v.windowsClosed, d.closed, d.open) },
 			{ label: d.odometer, value: num(v.odometerKm, 0, 'km') },
 			{ label: d.outsideTemp, value: num(v.outsideTempC, 1, '°C') },
 			{ label: d.battery12v, value: battery12v || DASH },
 			{ label: d.alerts, value: v.alertCount === undefined ? DASH : String(v.alertCount) },
 			{ label: d.position, value: position, mono: true },
+			{ label: d.positionAt, value: dateTime(v.positionAt) },
 			{ label: d.reportedAt, value: dateTime(v.reportedAt) }
 		];
 	});

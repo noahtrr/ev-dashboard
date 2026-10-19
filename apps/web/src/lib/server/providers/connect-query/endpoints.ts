@@ -1,12 +1,10 @@
-// Endpoints of the "Connect Query" vehicle data API, kept in one place so they are easy to
-// correct once confirmed against the real service.
+// Endpoints of the "Connect Query" vehicle data API, kept in one place.
 
 export const API_ORIGIN = 'https://api.vehicle.ford.com';
 
 /**
- * Authorization endpoint. NOT confirmed by the provider's documentation: the API collection
- * the project works from only lists the token endpoint. This URL is the one an established
- * open-source client uses. If the first real sign-in fails here, try `AUTHORIZE_URL_B2C`.
+ * Authorization endpoint. Not in the provider's API collection (which only lists the token
+ * endpoint), but confirmed by a real sign-in on 2026-10-19.
  */
 export const AUTHORIZE_URL = `${API_ORIGIN}/fcon-public/v1/auth/init`;
 

@@ -25,6 +25,8 @@ export type VehicleInfo = {
 export type VehicleData = {
 	latitude?: number;
 	longitude?: number;
+	/** When the position was determined (ISO 8601); often older than the other values. */
+	positionAt?: string;
 	/** High-voltage battery state of charge, 0–100 %. */
 	stateOfChargePct?: number;
 	rangeKm?: number;
@@ -32,11 +34,20 @@ export type VehicleData = {
 	chargingState?: ChargingState;
 	/** The provider's own charging status string, for display when unmapped. */
 	chargingStatusRaw?: string;
+	/** Minutes until the battery is full, as estimated by the vehicle. */
+	timeToFullChargeMin?: number;
 	odometerKm?: number;
 	outsideTempC?: number;
 	battery12vVoltage?: number;
 	battery12vPct?: number;
 	alertCount?: number;
+	ignitionOn?: boolean;
+	/** True when every reported door lock is locked, false when any is unlocked. */
+	doorsLocked?: boolean;
+	/** True when every reported door is closed, false when any is open. */
+	doorsClosed?: boolean;
+	/** True when every reported window is closed, false when any is open. */
+	windowsClosed?: boolean;
 	/** When the vehicle reported the values (ISO 8601), if the response says so. */
 	reportedAt?: string;
 };

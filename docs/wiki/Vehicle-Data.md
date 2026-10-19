@@ -31,10 +31,13 @@ Each fetch requests three endpoints: garage (vehicle details), telemetry and ale
 
 | Value | Unit |
 |---|---|
-| Position | latitude/longitude |
+| Position and when it was determined | latitude/longitude |
 | State of charge | % |
 | Range | km |
 | Charging cable plugged in, charging status | |
+| Time until full (shown only while charging) | min |
+| Ignition on/off | |
+| Door locks locked, doors and windows closed | |
 | Odometer | km |
 | Outside temperature | °C |
 | 12 V battery | V, % |
@@ -54,8 +57,9 @@ Not every model reports every value; missing values are shown as "–". Further 
 
 ## Known uncertainties
 
-- **Authorize URL not confirmed:** the API description at hand only names the token endpoint. The sign-in URL in use comes from an open-source client and is defined in one place in the code. If the first real sign-in fails there, that is the first thing to check.
-- **Response formats unknown:** there are no example responses. The translation into uniform values is therefore tolerant and guesses from typical field names. The raw data on the details page shows what your vehicle actually reports; it can be used to improve the translation later.
+- **Response formats only partly known:** the telemetry mapping is checked against a real response from an electric vehicle. Other models can report other fields, so the translation stays tolerant and guesses unknown fields from typical names. The raw data on the details page shows what your vehicle actually reports.
+- **Position often older:** the vehicle reports its position less often than the state of charge, so the details page shows when the position was determined separately.
+- **Charging power not translated:** the telemetry contains a charging power value whose unit is ambiguous. It stays in the raw data but is not translated.
 - **Several vehicles in one consent:** if the garage lists several vehicles, the dashboard uses the name of the first.
 
 ## API characteristics
