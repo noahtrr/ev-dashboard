@@ -33,45 +33,7 @@ curl https://<deine-domain>/api/health
 
 ## Automatische Updates
 
-Optional aktualisiert sich der Server selbst: Ein systemd-Timer prüft alle 5 Minuten, ob es ein neues Release (`latest`) gibt, verifiziert dessen Cosign-Signatur gegen die Release-Pipeline dieses Repositorys und startet den Container nur dann neu. Der geprüfte Digest wird in `compose.override.yaml` festgeschrieben, damit nie ein ungeprüftes Image startet.
-
-Voraussetzung: Der Benutzer, der den Timer ausführt (Standard `deploy`), ist in der Gruppe `docker` und darf in `/opt/ev-dashboard` schreiben.
-
-```sh
-curl -fsSLO https://raw.githubusercontent.com/noahtrr/ev-dashboard/main/deploy/install.sh
-sudo sh install.sh deploy
-systemctl list-timers ev-dashboard-update.timer
-journalctl -u ev-dashboard-update.service -n 20
-```
-
-Vor dem ersten Release gibt es noch kein `latest`; bis dahin meldet der Dienst einen Fehler beim Abruf.
-
-## Deploy per SSH aus GitHub Actions
-
-Alternativ zum Timer kann GitHub Actions nach jedem erfolgreichen Push auf `main` deployen. Der Job `Deploy to production` läuft erst, wenn das Image gebaut, mit Trivy geprüft und signiert ist, und übergibt dem Server per SSH nur den Image-Digest. Der Server prüft die Signatur trotzdem selbst, startet das Image und meldet einen Fehler, wenn der Container nicht `healthy` wird. Der Job schlägt dann fehl.
-
-Der SSH-Schlüssel kann auf dem Server nichts anderes ausführen: Der Eintrag in `authorized_keys` erzwingt `ev-dashboard-deploy`, das nur einen Digest (`sha256:` und 64 Hex-Zeichen) annimmt.
-
-Auf dem Server (nach `install.sh`):
-
-```sh
-sudo systemctl disable --now ev-dashboard-update.timer   # sonst setzt der Timer auf latest zurück
-ssh-keygen -t ed25519 -N '' -C github-actions-deploy -f ~/gh-deploy
-printf 'restrict,command="/usr/local/bin/ev-dashboard-deploy" %s\n' "$(cat ~/gh-deploy.pub)" >> ~/.ssh/authorized_keys
-printf '%s %s\n' ev.example.org "$(cut -d' ' -f1,2 /etc/ssh/ssh_host_ed25519_key.pub)"   # Wert für DEPLOY_KNOWN_HOSTS (eigenen Hostnamen einsetzen)
-cat ~/gh-deploy   # Wert für DEPLOY_SSH_KEY, danach: rm ~/gh-deploy ~/gh-deploy.pub
-```
-
-In GitHub (Settings des Repositorys):
-
-| Wo | Name | Wert |
-| --- | --- | --- |
-| Environments → `production` → Secrets | `DEPLOY_SSH_KEY` | privater Schlüssel (`~/gh-deploy`) |
-| Environments → `production` → Secrets | `DEPLOY_KNOWN_HOSTS` | Host-Key-Zeile, z. B. `ev.example.org ssh-ed25519 AAAA…` |
-| Secrets and variables → Actions → Variables | `DEPLOY_HOST` | Hostname des Servers |
-| Secrets and variables → Actions → Variables | `DEPLOY_USER` | optional, Standard `deploy` |
-
-Ohne `DEPLOY_HOST` wird der Job übersprungen. Unter Environments → `production` → Deployment branches sollte nur `main` erlaubt sein.
+Die Instanz kann sich selbst aktuell halten, entweder per Timer auf dem Server (neue Releases) oder per SSH aus GitHub Actions (jeder Push auf `main`). Beide Wege prüfen die Cosign-Signatur, bevor ein Image startet. Anleitung: [Deployment](Deployment).
 
 ## Aktualisieren
 

@@ -20,7 +20,7 @@ docker compose up -d
 
 ## Documentation
 
-Everything else lives in the [wiki](https://github.com/noahtrr/ev-dashboard/wiki) (German and English): installation, configuration, architecture, design philosophy, security and development.
+Everything else lives in the [wiki](https://github.com/noahtrr/ev-dashboard/wiki) (German and English): installation, configuration, deployment, architecture, design philosophy, security and development.
 
 ## Contributing
 

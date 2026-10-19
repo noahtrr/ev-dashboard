@@ -10,6 +10,7 @@
 |---|---|
 | [Installation](Installation) | [Installation](Installation-EN) |
 | [Konfiguration](Konfiguration) | [Configuration](Configuration) |
+| [Deployment](Deployment) | [Deployment](Deployment-EN) |
 | [Architektur](Architektur) | [Architecture](Architecture) |
 | [Design-Philosophie](Design-Philosophie) | [Design philosophy](Design-Philosophy) |
 | [Fahrzeugdaten](Fahrzeugdaten) | [Vehicle data](Vehicle-Data) |

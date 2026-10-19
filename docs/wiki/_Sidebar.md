@@ -3,6 +3,7 @@
 **Deutsch**
 - [Installation](Installation)
 - [Konfiguration](Konfiguration)
+- [Deployment](Deployment)
 - [Architektur](Architektur)
 - [Design-Philosophie](Design-Philosophie)
 - [Fahrzeugdaten](Fahrzeugdaten)
@@ -12,6 +13,7 @@
 **English**
 - [Installation](Installation-EN)
 - [Configuration](Configuration)
+- [Deployment](Deployment-EN)
 - [Architecture](Architecture)
 - [Design philosophy](Design-Philosophy)
 - [Vehicle data](Vehicle-Data)
