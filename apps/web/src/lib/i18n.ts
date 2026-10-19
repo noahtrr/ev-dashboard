@@ -150,6 +150,30 @@ const de = {
 			busy: 'Ein Abruf läuft bereits.'
 		}
 	},
+	charging: {
+		title: 'Laden',
+		history: 'Ladehistorie',
+		since: 'lädt seit {time}',
+		last: 'Zuletzt geladen {time}',
+		none: 'In den letzten 30 Tagen wurde keine Ladung erfasst.',
+		back: 'Zurück zum Dashboard',
+		period: 'Zeitraum',
+		days: '{n} Tage',
+		sessions: 'Ladungen',
+		totalAdded: 'Geladen',
+		totalDuration: 'Ladezeit',
+		chart: 'Ladestand',
+		chartLabel: 'Verlauf des Ladestands im gewählten Zeitraum, Ladezeiten hervorgehoben',
+		chartLegend: 'Ladezeit',
+		noData: 'Für diesen Zeitraum gibt es noch keine Daten.',
+		noSessions: 'Keine Ladungen in diesem Zeitraum.',
+		ongoing: 'läuft',
+		start: 'Beginn',
+		duration: 'Dauer',
+		level: 'Ladestand',
+		added: 'Geladen',
+		percentNote: 'Geladene Menge in Prozentpunkten des Akkus.'
+	},
 	vehicleDetail: {
 		back: 'Zurück zum Konto',
 		latest: 'Neueste Werte',
@@ -345,6 +369,30 @@ const en: Messages = {
 			too_soon: 'Please wait a minute between two fetches.',
 			busy: 'A fetch is already running.'
 		}
+	},
+	charging: {
+		title: 'Charging',
+		history: 'Charging history',
+		since: 'charging since {time}',
+		last: 'Last charged {time}',
+		none: 'No charging recorded in the last 30 days.',
+		back: 'Back to dashboard',
+		period: 'Period',
+		days: '{n} days',
+		sessions: 'Sessions',
+		totalAdded: 'Charged',
+		totalDuration: 'Charging time',
+		chart: 'State of charge',
+		chartLabel: 'State of charge over the selected period, charging times highlighted',
+		chartLegend: 'Charging',
+		noData: 'There is no data for this period yet.',
+		noSessions: 'No charging sessions in this period.',
+		ongoing: 'ongoing',
+		start: 'Start',
+		duration: 'Duration',
+		level: 'State of charge',
+		added: 'Charged',
+		percentNote: 'Charged amount in percentage points of the battery.'
 	},
 	vehicleDetail: {
 		back: 'Back to account',

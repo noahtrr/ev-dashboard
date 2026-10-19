@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import TopBar from '#lib/components/TopBar.svelte';
 	import VehicleMap from '#lib/components/VehicleMap.svelte';
+	import { clockTime, DASH, duration, minutesBetween, wholeNumber } from '#lib/format.ts';
 	import { format, messages, relativeTime } from '#lib/i18n.ts';
 	import type { PageProps } from './$types';
 
@@ -9,9 +10,10 @@
 	const t = $derived(messages[data.locale]);
 	const h = $derived(t.home);
 	const d = $derived(t.vehicleDetail);
+	const c = $derived(t.charging);
 	const vehicle = $derived(data.selected);
 	const values = $derived(vehicle?.data ?? null);
-	const DASH = '–';
+	const session = $derived(data.lastSession);
 
 	// Ticks so relative times ("5 minutes ago") stay correct while the page is open.
 	let now = $state(Date.now());
@@ -39,12 +41,7 @@
 		if (values.chargingState) parts.push(d.chargingStates[values.chargingState]);
 		else if (values.pluggedIn !== undefined) parts.push(values.pluggedIn ? d.plugged : d.unplugged);
 		if (values.chargingState === 'charging' && values.timeToFullChargeMin !== undefined) {
-			const minutes = values.timeToFullChargeMin;
-			const time =
-				minutes >= 60
-					? `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')} min`
-					: `${minutes} min`;
-			parts.push(format(h.timeToFull, { time }));
+			parts.push(format(h.timeToFull, { time: duration(values.timeToFullChargeMin) }));
 		}
 		return parts.join(' · ');
 	});
@@ -66,8 +63,13 @@
 		return () => controller.abort();
 	});
 
-	const number = (value: number) =>
-		value.toLocaleString(data.locale === 'de' ? 'de-DE' : 'en-GB', { maximumFractionDigits: 0 });
+	const number = (value: number) => wholeNumber(value, data.locale);
+
+	const sessionLevels = $derived(
+		session?.startSocPct !== undefined && session.endSocPct !== undefined
+			? `${number(session.startSocPct)} → ${number(session.endSocPct)} %`
+			: ''
+	);
 </script>
 
 <svelte:head>
@@ -185,6 +187,39 @@
 						{#if isStale(reportedAt)}<span class="badge">{h.stale}</span>{/if}
 					</p>
 				{/if}
+			</section>
+
+			<section class="module charging-module" aria-labelledby="charging-title">
+				<div class="module-body">
+					<h2 id="charging-title" class="title">{c.title}</h2>
+					{#if session}
+						<p class="big small-big" class:live={session.ongoing}>
+							{session.addedPct === undefined ? DASH : `+${number(session.addedPct)}`}<span
+								class="unit">%</span
+							>
+						</p>
+						<p class="context" class:charging={session.ongoing}>
+							{[
+								session.ongoing
+									? format(c.since, { time: clockTime(session.start, data.locale) })
+									: sessionLevels,
+								duration(minutesBetween(session.start, session.end))
+							]
+								.filter(Boolean)
+								.join(' · ')}
+						</p>
+					{:else}
+						<p class="muted">{c.none}</p>
+					{/if}
+				</div>
+				<p class="stamp module-foot foot-row">
+					{#if session && !session.ongoing}
+						<span>{format(c.last, { time: ago(session.end) })}</span>
+					{/if}
+					<a class="details" href={resolve('/vehicles/[id]/charging', { id: vehicle.id })}
+						>{c.history} →</a
+					>
+				</p>
 			</section>
 		{/if}
 	{/if}
@@ -377,6 +412,18 @@
 		color: var(--accent);
 	}
 
+	.small-big {
+		font-size: 40px;
+	}
+
+	.small-big.live {
+		color: var(--accent);
+	}
+
+	.foot-row .details {
+		margin-left: auto;
+	}
+
 	.ring {
 		position: relative;
 		margin: 0;
@@ -448,7 +495,12 @@
 			height: 360px;
 		}
 
-		.range {
+		.location {
+			grid-row: span 2;
+		}
+
+		.range,
+		.charging-module {
 			align-self: start;
 		}
 	}

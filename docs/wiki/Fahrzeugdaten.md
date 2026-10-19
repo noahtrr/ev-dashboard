@@ -48,10 +48,13 @@ Nicht jedes Modell liefert jeden Wert; fehlende Werte zeigt das Dashboard als �
 
 ## Startseite
 
-Die Startseite zeigt für das gewählte Fahrzeug zwei Module:
+Die Startseite zeigt für das gewählte Fahrzeug drei Module:
 
 - **Standort:** Karte mit der Fahrzeugposition, die Straßenadresse und wann die Position ermittelt wurde. Die Adresse lässt sich abschalten, Kachel- und Adressdienst sind austauschbar (siehe [Konfiguration](Konfiguration)).
 - **Reichweite:** Reichweite in km, Ladestand als Ring und der Ladestatus, beim Laden mit der Restzeit bis voll.
+- **Laden:** die laufende oder letzte Ladung mit geladenen Prozentpunkten und Dauer. Von dort führt **Ladehistorie** zu einer Seite mit dem Ladestand-Verlauf (7, 30 oder 90 Tage, Ladezeiten hervorgehoben) und allen Ladungen des Zeitraums.
+
+Ladungen werden aus den gespeicherten Abrufen abgeleitet: Aufeinanderfolgende Abrufe mit dem Status „lädt“ bilden eine Ladung. Meldet das Fahrzeug keinen Ladestatus, zählt ein steigender Ladestand bei eingestecktem Kabel. Liegen zwischen zwei Abrufen mehr als das Dreifache von `POLL_INTERVAL_SECONDS` (mindestens 30 Minuten), beginnt eine neue Ladung. Die geladene Menge wird in Prozentpunkten angegeben, weil die Akkukapazität nicht bekannt ist.
 
 Sind Werte älter als das Dreifache von `POLL_INTERVAL_SECONDS` (mindestens 30 Minuten), werden sie als „veraltet“ markiert. Bei mehreren Fahrzeugen wählst du oben das Fahrzeug, „Alle Werte“ führt zur Detailseite.
 

@@ -48,10 +48,13 @@ Not every model reports every value; missing values are shown as "–". Further 
 
 ## Home page
 
-The home page shows two modules for the selected vehicle:
+The home page shows three modules for the selected vehicle:
 
 - **Location:** a map with the vehicle position, the street address and when the position was determined. The address can be switched off; tile and address services are replaceable (see [Configuration](Configuration)).
 - **Range:** range in km, state of charge as a ring and the charging status, with the time until full while charging.
+- **Charging:** the ongoing or last charging session with the percentage points added and its duration. **Charging history** leads to a page with the state of charge over time (7, 30 or 90 days, charging times highlighted) and every session in the period.
+
+Sessions are derived from the stored fetches: consecutive fetches with the status "charging" form a session. If the vehicle reports no charging status, a rising state of charge with the cable plugged in counts. More than three times `POLL_INTERVAL_SECONDS` (at least 30 minutes) between two fetches starts a new session. The charged amount is given in percentage points because the battery capacity is not known.
 
 Values older than three times `POLL_INTERVAL_SECONDS` (at least 30 minutes) are marked as "stale". With several vehicles you pick the vehicle at the top; "All values" leads to the details page.
 
