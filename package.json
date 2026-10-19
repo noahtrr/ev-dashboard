@@ -2,7 +2,7 @@
 	"name": "ev-dashboard",
 	"private": true,
 	"license": "MIT",
-	"packageManager": "pnpm@10.28.0",
+	"packageManager": "pnpm@12.14.0",
 	"engines": {
 		"node": ">=24"
 	},

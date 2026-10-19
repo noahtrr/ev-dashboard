@@ -1,3 +1,18 @@
 packages:
   - apps/*
   - packages/*
+# esbuild runs without its install script (its binary comes as a platform package).
+allowBuilds:
+  esbuild: false
+# pnpm holds back releases younger than a day. These exact versions were already in use
+# before the policy applied; drop them once they are older than that.
+minimumReleaseAgeExclude:
+  - '@better-auth/core@1.7.11'
+  - '@better-auth/drizzle-adapter@1.7.11'
+  - '@better-auth/kysely-adapter@1.7.11'
+  - '@better-auth/memory-adapter@1.7.11'
+  - '@better-auth/mongo-adapter@1.7.11'
+  - '@better-auth/passkey@1.7.11'
+  - '@better-auth/prisma-adapter@1.7.11'
+  - '@better-auth/telemetry@1.7.11'
+  - better-auth@1.7.11

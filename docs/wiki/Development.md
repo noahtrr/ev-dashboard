@@ -2,7 +2,7 @@
 
 ## Requirements
 
-Node 24 and pnpm 10 (`corepack enable`), Docker optional.
+Node 24 and pnpm 12 (`corepack enable`), Docker optional.
 
 ## Commands
 
