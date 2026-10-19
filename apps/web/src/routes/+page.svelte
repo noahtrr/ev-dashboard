@@ -12,6 +12,7 @@
 		oneDecimal,
 		wholeNumber
 	} from '#lib/format.ts';
+	import { capitalize, headline, partsText } from '#lib/condition.ts';
 	import { format, messages, relativeTime } from '#lib/i18n.ts';
 	import type { PageProps } from './$types';
 
@@ -83,6 +84,67 @@
 			return `${oneDecimal((trip.usedKwh / trip.distanceKm) * 100, data.locale)} kWh/100 km`;
 		}
 		return trip.usedPct === undefined ? '' : `−${number(trip.usedPct)} %`;
+	});
+
+	// Up to four condition values the vehicle reports, most telling first.
+	const conditionItems = $derived.by(() => {
+		const v = values;
+		const cd = t.condition;
+		if (!v) return [];
+		const open = (list: { part: string; closed?: boolean }[] | undefined) =>
+			(list ?? []).filter((x) => x.closed === false).map((x) => x.part);
+		const items: { label: string; value: string; warn: boolean }[] = [];
+		if (v.doorsClosed === false) {
+			const parts = open(v.doors);
+			items.push({
+				label: cd.doors,
+				value: parts.length
+					? format(cd.partsOpen, { parts: capitalize(partsText(parts, cd)) })
+					: cd.open,
+				warn: true
+			});
+		} else if (v.doorsLocked !== undefined) {
+			const warn = !v.doorsLocked && v.ignitionOn !== true;
+			items.push({ label: cd.doors, value: v.doorsLocked ? cd.locked : cd.unlocked, warn });
+		}
+		if (v.windowsClosed !== undefined) {
+			const parts = open(v.windows);
+			items.push({
+				label: cd.windows,
+				value: v.windowsClosed
+					? cd.allClosed
+					: parts.length
+						? format(cd.partsOpen, { parts: capitalize(partsText(parts, cd)) })
+						: cd.open,
+				warn: !v.windowsClosed
+			});
+		}
+		const pressures = (v.tires ?? []).flatMap((x) => (x.kPa === undefined ? [] : [x.kPa]));
+		if (pressures.length > 0) {
+			const low = (v.tires ?? []).filter((x) => x.low).map((x) => x.part);
+			const lo = oneDecimal(Math.min(...pressures) / 100, data.locale);
+			const hi = oneDecimal(Math.max(...pressures) / 100, data.locale);
+			items.push({
+				label: cd.tires,
+				value: low.length
+					? format(cd.partsLow, { parts: capitalize(partsText(low, cd)) })
+					: `${lo === hi ? lo : `${lo}–${hi}`} bar`,
+				warn: low.length > 0
+			});
+		}
+		if (v.battery12vVoltage !== undefined) {
+			const warn = vehicle?.condition.issues.some((i) => i.kind === 'battery12vLow') ?? false;
+			items.push({
+				label: cd.battery12v,
+				value: `${oneDecimal(v.battery12vVoltage, data.locale)} V`,
+				warn
+			});
+		}
+		if (v.hoodClosed === false) items.push({ label: cd.hood, value: cd.open, warn: true });
+		if (v.odometerKm !== undefined) {
+			items.push({ label: cd.odometer, value: `${number(v.odometerKm)} km`, warn: false });
+		}
+		return items.slice(0, 4);
 	});
 
 	const sessionLevels = $derived(
@@ -280,6 +342,38 @@
 							>{t.consumption.link} →</a
 						>
 					</span>
+				</p>
+			</section>
+			<section class="module condition-module" aria-labelledby="condition-title">
+				<div class="module-body">
+					<div class="condition-head">
+						<h2 id="condition-title" class="title">{t.condition.title}</h2>
+						{#if vehicle.condition.known}
+							<span class="pill" class:warn={vehicle.condition.issues.length > 0}>
+								<span class="pill-dot" aria-hidden="true"></span>{headline(
+									vehicle.condition,
+									t.condition
+								)}
+							</span>
+						{/if}
+					</div>
+					{#if conditionItems.length > 0}
+						<dl class="condition-grid">
+							{#each conditionItems as item (item.label)}
+								<div>
+									<dt>{item.label}</dt>
+									<dd class:warn={item.warn}>{item.value}</dd>
+								</div>
+							{/each}
+						</dl>
+					{:else}
+						<p class="muted">{t.condition.noData}</p>
+					{/if}
+				</div>
+				<p class="stamp module-foot foot-row">
+					<a class="details" href={resolve('/vehicles/[id]/condition', { id: vehicle.id })}
+						>{t.condition.link} →</a
+					>
 				</p>
 			</section>
 		{/if}
@@ -495,6 +589,65 @@
 		gap: 16px;
 	}
 
+	.condition-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.pill {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--ok);
+	}
+
+	.pill.warn {
+		color: var(--warn);
+	}
+
+	.pill-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 3px;
+		background: currentColor;
+	}
+
+	.condition-grid {
+		margin: 8px 0 0;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px 16px;
+	}
+
+	.condition-grid div {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.condition-grid dt {
+		font-size: 12px;
+		color: var(--muted);
+	}
+
+	.condition-grid dd {
+		margin: 0;
+		font-size: 15px;
+		font-weight: 600;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.condition-grid dd.warn {
+		color: var(--warn);
+	}
+
 	.ring {
 		position: relative;
 		margin: 0;
@@ -567,7 +720,7 @@
 		}
 
 		.location {
-			grid-row: span 3;
+			grid-row: span 4;
 		}
 
 		/* The map grows with the modules beside it. */
@@ -578,7 +731,8 @@
 
 		.range,
 		.charging-module,
-		.trips-module {
+		.trips-module,
+		.condition-module {
 			align-self: start;
 		}
 	}

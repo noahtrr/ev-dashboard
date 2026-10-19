@@ -41,6 +41,29 @@ export const telemetryFlatImperial = {
 	}
 };
 
+/** Assumed: tyre pressures in kPa per wheel, with a recommendation and a status list. */
+export const telemetryTires = {
+	metrics: {
+		tirePressure: [
+			['FRONT_LEFT', 262],
+			['FRONT_RIGHT', 258],
+			['REAR_LEFT', 205],
+			['REAR_RIGHT', 199]
+		].map(([vehicleWheel, value]) => ({
+			updateTime: '2026-10-19T16:20:00Z',
+			value,
+			vehicleWheel,
+			wheelPlacardFront: 260,
+			wheelPlacardRear: 260
+		})),
+		tirePressureStatus: [
+			{ value: 'NORMAL', vehicleWheel: 'FRONT_LEFT' },
+			{ value: 'NORMAL', vehicleWheel: 'FRONT_RIGHT' },
+			{ value: 'LOW', vehicleWheel: 'REAR_LEFT' }
+		]
+	}
+};
+
 /** Assumed garage response: one vehicle object. */
 export const garageSingle = {
 	vin: 'TESTVIN0000000001',
@@ -57,6 +80,25 @@ export const garageList = {
 		{ vehicleId: 'veh-0002', modelName: 'Other', modelYear: 2023 },
 		{ vehicleId: 'veh-0003' }
 	]
+};
+
+/**
+ * Observed: shape of a real alerts response without alerts (captured 2026-10-19). The VIN is
+ * replaced. The fields of an active alert are not known yet.
+ */
+export const alertsObservedEmpty = {
+	VehicleAlertList: [
+		{
+			ActiveAlerts: [],
+			EventTimeStamp: '',
+			StatusCode: 4040,
+			StatusDesc: 'No Data',
+			Vin: 'TESTVIN0000000002'
+		}
+	],
+	message: 'Success',
+	status: 2000,
+	version: '1.0'
 };
 
 /** Assumed alerts response. */

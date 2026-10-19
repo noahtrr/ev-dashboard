@@ -37,11 +37,13 @@ Each fetch requests three endpoints: garage (vehicle details), telemetry and ale
 | Charging cable plugged in, charging status | |
 | Time until full (shown only while charging) | min |
 | Ignition on/off | |
-| Door locks locked, doors and windows closed | |
+| Door locks locked, doors and windows closed, per door and window | |
+| Bonnet closed | |
+| Tyre pressure per wheel, with recommendation and status if reported | bar |
 | Odometer | km |
 | Outside temperature | °C |
 | 12 V battery | V, % |
-| Number of alerts | |
+| Active alerts with text, severity and time | |
 | Time reported by the vehicle | |
 
 Not every model reports every value; missing values are shown as "–". Further endpoints (wallbox, departure times, charge schedules, charging history) are not requested yet.
@@ -78,6 +80,18 @@ In the trips module, **Consumption** leads to an analysis over 30 days, 12 month
 - consumption by outside temperature (below 0, 0–10, 10–20, above 20 °C) and by trip length (under 10, 10–50, over 50 km).
 
 Each trip's consumption is estimated from the charge level before and after the trip and the usable capacity; averages are weighted by distance. Trips under 1 km, trips with missing fetches and trips in which the charge level rose do not count. Groups under 20 km are not shown, because the charge level is reported in whole percent only. Without a capacity the page shows percentage points of the battery per 100 km. A trip's outside temperature is the mean of the reported values and is stored with the trip in the trip log; for trips recorded before this feature, the app fills it in as long as the fetches are still there. Weeks and months follow your browser's time zone.
+
+### Condition
+
+The condition module on the home page shows an overall assessment ("All good" or "2 things to check") and up to four reported values. **Condition** leads to a page with:
+
+- the vehicle from above: open doors, windows, bonnet and tailgate, the lock and, if reported, the tyre pressure at each wheel;
+- a list of locks, doors, windows, bonnet and tyre pressure, naming the affected side when something is off;
+- the 12 V battery with the lowest value per hour over the last 14 days;
+- the odometer with the kilometres this month, since 1 January and on average per day (from the trip log);
+- the vehicle's active messages and warnings.
+
+Worth checking are: unlocked while the ignition is off, an open door, an open window, an open bonnet, low tyre pressure (according to the vehicle or more than 20 % below the recommendation), a 12 V battery below 12.2 V at rest, and alerts of level "warning" or "urgent". Whatever your vehicle does not report is hidden. The tested API reports neither tyre pressure, nor the 12 V battery, nor the outside temperature for battery electric vehicles.
 
 Values older than three times `POLL_INTERVAL_SECONDS` (at least 30 minutes) are marked as "stale". With several vehicles you pick the vehicle at the top; "All values" leads to the details page.
 

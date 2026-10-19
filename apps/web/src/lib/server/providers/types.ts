@@ -48,9 +48,32 @@ export type VehicleData = {
 	doorsClosed?: boolean;
 	/** True when every reported window is closed, false when any is open. */
 	windowsClosed?: boolean;
+	/** Per door, including tailgates; parts are camelCase names such as `frontLeft`. */
+	doors?: DoorState[];
+	windows?: WindowState[];
+	hoodClosed?: boolean;
+	/** Per wheel, when the vehicle reports tyre pressures. */
+	tires?: TireState[];
+	/** Active warnings and service messages of the vehicle. */
+	alerts?: VehicleAlert[];
 	/** When the vehicle reported the values (ISO 8601), if the response says so. */
 	reportedAt?: string;
 };
+
+/** `at` is when the vehicle reported the part (ISO 8601), if the response says so. */
+export type DoorState = { part: string; closed?: boolean; locked?: boolean; at?: string };
+export type WindowState = { part: string; closed: boolean; at?: string };
+export type TireState = {
+	part: string;
+	kPa?: number;
+	/** Recommended pressure, if reported. */
+	targetKPa?: number;
+	/** Reported (or derived from the recommendation) as too low. */
+	low?: boolean;
+	at?: string;
+};
+export type AlertSeverity = 'info' | 'warning' | 'critical';
+export type VehicleAlert = { title: string; severity: AlertSeverity; at?: string };
 
 export type ChargingState = 'charging' | 'notCharging' | 'complete' | 'fault';
 

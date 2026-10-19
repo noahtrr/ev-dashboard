@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import * as env from '$app/env/private';
 import { getApp } from '#lib/server/app.ts';
 import { deriveSessions, withEnergy } from '#lib/server/vehicles/charging.ts';
+import { vehicleCondition } from '#lib/server/vehicles/condition.ts';
 import { deriveTrips, withTripEnergy } from '#lib/server/vehicles/trips.ts';
 import type { PageServerLoad } from './$types';
 
@@ -29,7 +30,8 @@ export const load = (async ({ locals, url }) => {
 					label: current.label,
 					status: current.status,
 					fetchedAt: latest?.fetchedAt ?? null,
-					data: latest?.data ?? null
+					data: latest?.data ?? null,
+					condition: vehicleCondition(latest?.data ?? {})
 				}
 			: null,
 		lastSession: lastSession ?? null,

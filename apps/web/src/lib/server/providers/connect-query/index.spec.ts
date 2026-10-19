@@ -173,7 +173,8 @@ describe('data requests', () => {
 		);
 		const result = await provider.fetchSnapshot('at-1');
 		expect(result.raw.telemetry).toEqual({ status: 200, body: null, error: 'too_large' });
-		expect(result.data).toEqual({ alertCount: 2 });
+		expect(result.data.alertCount).toBe(2);
+		expect(result.data.alerts).toHaveLength(2);
 	});
 
 	it('lists vehicles from the garage', async () => {

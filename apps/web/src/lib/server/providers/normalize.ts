@@ -1,6 +1,15 @@
 // Tolerant extraction of vehicle values from JSON of unknown shape. Nothing here throws:
 // unexpected input yields missing fields, never an exception. Implausible values are dropped.
-import type { ChargingState, VehicleData, VehicleInfo } from './types.ts';
+import type {
+	AlertSeverity,
+	ChargingState,
+	DoorState,
+	TireState,
+	VehicleAlert,
+	VehicleData,
+	VehicleInfo,
+	WindowState
+} from './types.ts';
 
 type Rec = Record<string, unknown>;
 
@@ -285,6 +294,146 @@ export function toIgnitionOn(value: unknown): boolean | undefined {
 	return undefined;
 }
 
+/** `FRONT_LEFT`, `front-left` or `frontLeft` → `frontLeft`. */
+export function partName(value: unknown): string | undefined {
+	if (typeof value !== 'string' || !value.trim() || value.length > 40) return undefined;
+	const words = value
+		.trim()
+		.replace(/([a-z])([A-Z])/g, '$1 $2')
+		.toLowerCase()
+		.split(/[^a-z0-9]+/)
+		.filter(Boolean);
+	if (words.length === 0) return undefined;
+	return words.map((w, i) => (i === 0 ? w : w[0].toUpperCase() + w.slice(1))).join('');
+}
+
+const PART_KEYS = [
+	'vehicledoor',
+	'vehiclewindow',
+	'vehiclewheel',
+	'door',
+	'window',
+	'wheel',
+	'tire',
+	'tyre'
+];
+
+type PartItem = { part: string; value: unknown; unit?: string; item: Rec; at?: string };
+
+/** The items of the first per-part list among `keys` (a list of `{ value, vehicleDoor }`). */
+function partItems(index: Map<string, Node[]>, keys: string[]): PartItem[] | undefined {
+	return first(index, keys, (node) => {
+		if (!Array.isArray(node.value)) return undefined;
+		const items = node.value
+			.slice(0, 20)
+			.filter(isRecord)
+			.flatMap((item, i) => {
+				const { value, unit } = unwrap(item);
+				if (value === undefined || value === null) return [];
+				const part = partName(field(item, PART_KEYS)) ?? `part${i + 1}`;
+				const at = toTimestamp(field(item, ['updatetime', 'timestamp', 'time']));
+				return [{ part, value, unit, item, ...(at && { at }) }];
+			});
+		return items.length > 0 ? items : undefined;
+	});
+}
+
+/** Tyre pressure in kPa; without a unit, small values are read as bar and medium ones as psi. */
+export function pressureKPa(value: number, unit?: string): number | undefined {
+	const u = unit?.trim().toLowerCase();
+	let kPa: number;
+	if (u === 'psi') kPa = value * 6.894757;
+	else if (u === 'bar') kPa = value * 100;
+	else if (u === 'kpa' || u) kPa = value;
+	else if (value <= 10) kPa = value * 100;
+	else if (value <= 80) kPa = value * 6.894757;
+	else kPa = value;
+	return kPa >= 50 && kPa <= 600 ? round(kPa, 1) : undefined;
+}
+
+/** True for a "too low" tyre status, false for a normal one. */
+export function toTireLow(value: unknown): boolean | undefined {
+	if (typeof value === 'boolean') return value;
+	const s = words(value);
+	if (!s) return undefined;
+	if (/low|under|flat|deflat|warn|alert|fault/.test(s)) return true;
+	if (/normal|ok|good|fine/.test(s)) return false;
+	return undefined;
+}
+
+function doorStates(index: Map<string, Node[]>): DoorState[] | undefined {
+	const closed = partItems(index, KEYS.doors);
+	const locked = partItems(index, KEYS.doorLocks);
+	if (!closed && !locked) return undefined;
+	const byPart = new Map<string, DoorState>();
+	const entry = (part: string) => {
+		let door = byPart.get(part);
+		if (!door) byPart.set(part, (door = { part }));
+		return door;
+	};
+	for (const { part, value, at } of closed ?? []) {
+		const state = toClosed(value);
+		if (state === undefined) continue;
+		const door = entry(part);
+		door.closed = state;
+		if (at && (!door.at || at > door.at)) door.at = at;
+	}
+	for (const { part, value, at } of locked ?? []) {
+		const state = toLocked(value);
+		if (state === undefined) continue;
+		const door = entry(part);
+		door.locked = state;
+		if (at && (!door.at || at > door.at)) door.at = at;
+	}
+	return byPart.size > 0 ? [...byPart.values()] : undefined;
+}
+
+function windowStates(index: Map<string, Node[]>): WindowState[] | undefined {
+	const list = (partItems(index, KEYS.windows) ?? []).flatMap(({ part, value, at }) => {
+		const closed = toWindowClosed(value);
+		return closed === undefined ? [] : [{ part, closed, ...(at && { at }) }];
+	});
+	return list.length > 0 ? list : undefined;
+}
+
+function tireStates(index: Map<string, Node[]>): TireState[] | undefined {
+	const pressures = partItems(index, KEYS.tirePressure) ?? [];
+	const statuses = new Map(
+		(partItems(index, KEYS.tireStatus) ?? []).map((s) => [s.part, toTireLow(s.value)])
+	);
+	const tires = pressures.flatMap(({ part, value, unit, item, at }): TireState[] => {
+		const n = toNumber(value);
+		const kPa = n === undefined ? undefined : pressureKPa(n, unit);
+		if (kPa === undefined) return [];
+		const placard = toNumber(
+			field(
+				item,
+				part.startsWith('rear') ? ['wheelplacardrear', 'placard'] : ['wheelplacardfront', 'placard']
+			)
+		);
+		const targetKPa = placard === undefined ? undefined : pressureKPa(placard, unit);
+		let low =
+			statuses.get(part) ?? toTireLow(field(item, ['status', 'tirepressurestatus', 'state']));
+		// Without a reported status, 20 % below the recommendation counts as low.
+		if (low === undefined && targetKPa !== undefined) low = kPa < targetKPa * 0.8;
+		return [
+			{
+				part,
+				kPa,
+				...(targetKPa !== undefined && { targetKPa }),
+				...(low !== undefined && { low }),
+				...(at && { at })
+			}
+		];
+	});
+	if (tires.length > 0) return tires;
+	// Some vehicles only report a status per wheel.
+	const onlyStatus = [...statuses].flatMap(([part, low]) =>
+		low === undefined ? [] : [{ part, low }]
+	);
+	return onlyStatus.length > 0 ? onlyStatus : undefined;
+}
+
 // Candidate keys, most specific first. All lower case.
 const KEYS = {
 	soc: [
@@ -355,6 +504,9 @@ const KEYS = {
 	doorLocks: ['doorlockstatus', 'doorlocks', 'lockstatus', 'locked'],
 	doors: ['doorstatus', 'doorsstatus', 'doors'],
 	windows: ['windowstatus', 'windowsstatus', 'windows'],
+	hood: ['hoodstatus', 'hood', 'bonnetstatus'],
+	tirePressure: ['tirepressure', 'tyrepressure', 'tirepressures', 'tyrepressures'],
+	tireStatus: ['tirepressurestatus', 'tyrepressurestatus', 'tirestatus'],
 	reportedAt: ['updatetime', 'updatedtime', 'lastupdated', 'lastupdatetime', 'timestamp', 'time']
 };
 
@@ -407,6 +559,16 @@ export function normalizeTelemetry(body: unknown): VehicleData {
 		if (doorsClosed !== undefined) data.doorsClosed = doorsClosed;
 		const windowsClosed = allParts(index, KEYS.windows, toWindowClosed);
 		if (windowsClosed !== undefined) data.windowsClosed = windowsClosed;
+		const doors = doorStates(index);
+		if (doors) data.doors = doors;
+		const windows = windowStates(index);
+		if (windows) data.windows = windows;
+		const hood = first(index, KEYS.hood, (node) =>
+			Array.isArray(node.value) ? undefined : toClosed(unwrap(node.value).value)
+		);
+		if (hood !== undefined) data.hoodClosed = hood;
+		const tires = tireStates(index);
+		if (tires) data.tires = tires;
 
 		const reportedAt = first(index, KEYS.reportedAt, (node) => toTimestamp(node.value));
 		if (reportedAt) data.reportedAt = reportedAt;
@@ -416,19 +578,95 @@ export function normalizeTelemetry(body: unknown): VehicleData {
 	return data;
 }
 
-/** Number of alerts in an alerts response, if it looks like a list. */
-export function countAlerts(body: unknown): number | undefined {
-	if (Array.isArray(body)) return body.length;
-	if (!isRecord(body)) return undefined;
+/**
+ * The alert list of an alerts response: per-vehicle `ActiveAlerts` lists (observed), a list,
+ * or a wrapper with one.
+ */
+function alertList(body: unknown, depth = 0): unknown[] | undefined {
+	if (depth === 0) {
+		const active = (indexKeys(body).get('activealerts') ?? []).filter((n) =>
+			Array.isArray(n.value)
+		);
+		if (active.length > 0) return active.flatMap((n) => n.value as unknown[]);
+	}
+	if (Array.isArray(body)) return body;
+	if (!isRecord(body) || depth > 2) return undefined;
 	for (const key of ['alerts', 'vehiclealerts', 'items', 'data', 'results']) {
 		const value = field(body, [key]);
-		if (Array.isArray(value)) return value.length;
+		if (Array.isArray(value)) return value;
 		if (isRecord(value)) {
-			const nested = countAlerts(value);
-			if (nested !== undefined) return nested;
+			const nested = alertList(value, depth + 1);
+			if (nested) return nested;
 		}
 	}
 	return undefined;
+}
+
+/** Number of alerts in an alerts response, if it looks like a list. */
+export function countAlerts(body: unknown): number | undefined {
+	return alertList(body)?.length;
+}
+
+/** `TIRE_PRESSURE_LOW` → `Tire pressure low`; readable text stays as it is. */
+function readable(text: string): string {
+	if (/[a-z]/.test(text) && /\s/.test(text)) return text;
+	const spaced = text.replace(/[_-]+/g, ' ').trim().toLowerCase();
+	return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+export function toSeverity(value: unknown): AlertSeverity {
+	const s = words(typeof value === 'number' ? String(value) : value) ?? '';
+	if (/critical|high|red|urgent|severe|danger|stop/.test(s)) return 'critical';
+	if (/medium|warn|amber|yellow|moderate/.test(s)) return 'warning';
+	return 'info';
+}
+
+const ALERT_TEXT_KEYS = [
+	'description',
+	'title',
+	'alertdescription',
+	'message',
+	'text',
+	'name',
+	'alerttype',
+	'type',
+	'code'
+];
+
+/** Active alerts of an alerts response; inactive or cleared ones are left out. Never throws. */
+export function normalizeAlerts(body: unknown): VehicleAlert[] | undefined {
+	try {
+		const list = alertList(body);
+		if (!list) return undefined;
+		return list
+			.slice(0, 50)
+			.filter(isRecord)
+			.flatMap((item): VehicleAlert[] => {
+				const active = field(item, ['active', 'isactive']);
+				if (active === false) return [];
+				const status = words(unwrap(field(item, ['status', 'state'])).value);
+				if (status && /inactive|clear|resolv|clos/.test(status)) return [];
+				let title: string | undefined;
+				for (const key of ALERT_TEXT_KEYS) {
+					const { value } = unwrap(field(item, [key]));
+					if (typeof value === 'string' && value.trim() && value.length <= 200) {
+						title = readable(value.trim());
+						break;
+					}
+				}
+				if (!title) return [];
+				const at = toTimestamp(
+					field(item, ['updatetime', 'timestamp', 'createdat', 'activetime', 'date', 'time'])
+				);
+				const severity = toSeverity(
+					unwrap(field(item, ['severity', 'priority', 'urgency', 'level'])).value
+				);
+				return [{ title, severity, ...(at && { at }) }];
+			})
+			.slice(0, 20);
+	} catch {
+		return undefined;
+	}
 }
 
 function vehicleFrom(obj: Rec): VehicleInfo | undefined {

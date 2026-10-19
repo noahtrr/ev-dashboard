@@ -2,7 +2,7 @@
 // authorization code flow, one token per consented vehicle).
 import { requestJson, retryAfterSeconds, type FetchLike, type HttpResult } from '../http.ts';
 import {
-	countAlerts,
+	normalizeAlerts,
 	isRecord,
 	normalizeTelemetry,
 	normalizeVehicles,
@@ -191,8 +191,11 @@ export function createConnectQueryProvider(options: ConnectQueryOptions = {}): V
 
 			const ok = (r: RawResponse) => r.status >= 200 && r.status < 300;
 			const data = ok(raw.telemetry) ? normalizeTelemetry(raw.telemetry.body) : {};
-			const alertCount = ok(raw.alerts) ? countAlerts(raw.alerts.body) : undefined;
-			if (alertCount !== undefined) data.alertCount = alertCount;
+			const alerts = ok(raw.alerts) ? normalizeAlerts(raw.alerts.body) : undefined;
+			if (alerts) {
+				data.alerts = alerts;
+				data.alertCount = alerts.length;
+			}
 			const vehicles = ok(raw.garage) ? normalizeVehicles(raw.garage.body) : [];
 			return { data, raw, vehicles };
 		}

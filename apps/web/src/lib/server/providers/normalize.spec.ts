@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
 	countAlerts,
+	normalizeAlerts,
 	normalizeTelemetry,
+	partName,
+	pressureKPa,
 	normalizeVehicles,
 	toChargingState,
 	toClosed,
@@ -14,13 +17,15 @@ import {
 } from './normalize.ts';
 import {
 	alerts,
+	alertsObservedEmpty,
 	deepObject,
 	garageList,
 	garageSingle,
 	garbage,
 	telemetryFlatImperial,
 	telemetryMetrics,
-	telemetryObserved
+	telemetryObserved,
+	telemetryTires
 } from './connect-query/fixtures.ts';
 
 // Most fixtures are assumed shapes; `telemetryObserved` follows a real response (see fixtures.ts).
@@ -41,8 +46,61 @@ describe('normalizeTelemetry', () => {
 			doorsLocked: true,
 			doorsClosed: true,
 			windowsClosed: true,
+			doors: ['innerTailgate', 'frontLeft', 'frontRight', 'rearLeft', 'rearRight'].map((part) => ({
+				part,
+				closed: true,
+				locked: true,
+				at: '2026-10-15T16:33:53.024Z'
+			})),
+			windows: ['frontLeft', 'frontRight', 'rearLeft', 'rearRight'].map((part) => ({
+				part,
+				closed: true,
+				at: '2026-10-13T07:36:55.221Z'
+			})),
+			hoodClosed: true,
 			reportedAt: '2026-10-18T16:41:14.779Z'
 		});
+	});
+
+	it('names the open door and window', () => {
+		const body = structuredClone(telemetryObserved);
+		body.metrics.doorStatus[4].value = 'AJAR';
+		body.metrics.doorLockStatus[4].value = 'UNLOCKED';
+		body.metrics.windowStatus[1].value.doubleRange.upperBound = 30;
+		body.metrics.hoodStatus.value = 'OPEN';
+		const data = normalizeTelemetry(body);
+		expect(data.doors?.find((d) => d.part === 'rearRight')).toMatchObject({
+			closed: false,
+			locked: false
+		});
+		expect(data.windows?.filter((w) => !w.closed).map((w) => w.part)).toEqual(['frontRight']);
+		expect(data.hoodClosed).toBe(false);
+	});
+
+	it('reads tyre pressures with status and recommendation', () => {
+		expect(normalizeTelemetry(telemetryTires).tires).toEqual([
+			{ part: 'frontLeft', kPa: 262, targetKPa: 260, low: false, at: '2026-10-19T16:20:00.000Z' },
+			{ part: 'frontRight', kPa: 258, targetKPa: 260, low: false, at: '2026-10-19T16:20:00.000Z' },
+			{ part: 'rearLeft', kPa: 205, targetKPa: 260, low: true, at: '2026-10-19T16:20:00.000Z' },
+			{ part: 'rearRight', kPa: 199, targetKPa: 260, low: true, at: '2026-10-19T16:20:00.000Z' }
+		]);
+	});
+
+	it('converts tyre pressure units', () => {
+		expect(pressureKPa(2.6)).toBe(260);
+		expect(pressureKPa(36)).toBeCloseTo(248.2, 1);
+		expect(pressureKPa(36, 'psi')).toBeCloseTo(248.2, 1);
+		expect(pressureKPa(250, 'kPa')).toBe(250);
+		expect(pressureKPa(0)).toBeUndefined();
+		expect(pressureKPa(5000)).toBeUndefined();
+	});
+
+	it('builds neutral part names', () => {
+		expect(partName('FRONT_LEFT')).toBe('frontLeft');
+		expect(partName('innerTailgate')).toBe('innerTailgate');
+		expect(partName('rear-right')).toBe('rearRight');
+		expect(partName('')).toBeUndefined();
+		expect(partName(3)).toBeUndefined();
 	});
 
 	it('reports an open part as soon as one door or window is open', () => {
@@ -194,5 +252,33 @@ describe('vehicles and alerts', () => {
 		expect(countAlerts({ data: { items: [1, 2, 3] } })).toBe(3);
 		expect(countAlerts('x')).toBeUndefined();
 		expect(countAlerts({ alerts: 'none' })).toBeUndefined();
+	});
+
+	it('reads active alerts with severity and readable titles', () => {
+		expect(normalizeAlerts(alerts)).toEqual([
+			{ title: 'Tyre pressure low', severity: 'info' },
+			{ title: 'Service due', severity: 'warning' }
+		]);
+		expect(
+			normalizeAlerts({
+				alerts: [
+					{ alertType: 'TIRE_PRESSURE_LOW', priority: 'HIGH', updateTime: '2026-10-19T10:00:00Z' },
+					{ description: 'Old', active: false },
+					{ description: 'Cleared', status: 'CLEARED' },
+					{ severity: 'HIGH' }
+				]
+			})
+		).toEqual([
+			{ title: 'Tire pressure low', severity: 'critical', at: '2026-10-19T10:00:00.000Z' }
+		]);
+		expect(normalizeAlerts([])).toEqual([]);
+		expect(normalizeAlerts(alertsObservedEmpty)).toEqual([]);
+		expect(countAlerts(alertsObservedEmpty)).toBe(0);
+		const withAlert = structuredClone(alertsObservedEmpty) as {
+			VehicleAlertList: { ActiveAlerts: unknown[] }[];
+		};
+		withAlert.VehicleAlertList[0].ActiveAlerts.push({ alertDescription: 'Low washer fluid' });
+		expect(normalizeAlerts(withAlert)).toEqual([{ title: 'Low washer fluid', severity: 'info' }]);
+		for (const input of garbage) expect(() => normalizeAlerts(input)).not.toThrow();
 	});
 });

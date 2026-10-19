@@ -37,11 +37,13 @@ Bei jedem Abruf fragt das Dashboard drei Endpunkte ab: Garage (Fahrzeugstammdate
 | Ladekabel eingesteckt, Ladestatus | |
 | Restladezeit bis voll (nur beim Laden angezeigt) | min |
 | Zündung an/aus | |
-| Türschlösser verriegelt, Türen und Fenster geschlossen | |
+| Türschlösser verriegelt, Türen und Fenster geschlossen, je Tür und Fenster | |
+| Motorhaube geschlossen | |
+| Reifendruck je Rad, mit Sollwert und Status, falls gemeldet | bar |
 | Kilometerstand | km |
 | Außentemperatur | °C |
 | 12-V-Batterie | V, % |
-| Anzahl Warnmeldungen | |
+| Aktive Warnmeldungen mit Text, Dringlichkeit und Zeitpunkt | |
 | Zeitpunkt der Fahrzeugmeldung | |
 
 Nicht jedes Modell liefert jeden Wert; fehlende Werte zeigt das Dashboard als „–“ an. Weitere Endpunkte (Wallbox, Abfahrtszeiten, Ladepläne, Ladehistorie) werden noch nicht abgefragt.
@@ -78,6 +80,18 @@ Im Fahrten-Modul führt **Verbrauch** zu einer Auswertung über 30 Tage, 12 Mona
 - der Verbrauch nach Außentemperatur (unter 0, 0–10, 10–20, über 20 °C) und nach Fahrtlänge (unter 10, 10–50, über 50 km).
 
 Der Verbrauch jeder Fahrt ist aus dem Ladestand vor und nach der Fahrt und der nutzbaren Kapazität geschätzt; Durchschnitte sind nach Strecke gewichtet. Fahrten unter 1 km, Fahrten mit fehlenden Abrufen und Fahrten, bei denen der Ladestand gestiegen ist, zählen nicht. Gruppen unter 20 km werden nicht angezeigt, weil der Ladestand nur in ganzen Prozent gemeldet wird. Ohne eingetragene Kapazität zeigt die Seite Prozentpunkte des Akkus je 100 km. Die Außentemperatur einer Fahrt ist der Mittelwert der gemeldeten Werte und wird mit der Fahrt im Fahrtenbuch gespeichert; bei Fahrten, die vor dieser Funktion erfasst wurden, trägt die App sie nach, solange die Abrufe noch vorhanden sind. Wochen und Monate folgen der Zeitzone deines Browsers.
+
+### Zustand
+
+Das Zustands-Modul auf der Startseite zeigt eine Gesamtbewertung („Alles in Ordnung“ oder „2 Punkte prüfen“) und bis zu vier gemeldete Werte. **Zustand** führt zur Seite mit:
+
+- dem Fahrzeug von oben: offene Türen, Fenster, Motorhaube und Heckklappe, das Schloss und, falls gemeldet, der Reifendruck an jedem Rad;
+- einer Liste mit Verriegelung, Türen, Fenstern, Motorhaube und Reifendruck, bei Abweichungen mit der betroffenen Seite;
+- der 12-V-Batterie mit dem tiefsten Wert je Stunde der letzten 14 Tage;
+- dem Kilometerstand mit den Kilometern im laufenden Monat, seit 1. Januar und im Schnitt pro Tag (aus dem Fahrtenbuch);
+- den aktiven Hinweisen und Warnmeldungen des Fahrzeugs.
+
+Als prüfenswert gelten: entriegelt bei ausgeschalteter Zündung, eine offene Tür, ein offenes Fenster, eine offene Motorhaube, ein zu niedriger Reifendruck (laut Fahrzeug oder mehr als 20 % unter dem Sollwert), eine 12-V-Batterie unter 12,2 V im Ruhezustand sowie Warnmeldungen der Stufe „Warnung“ oder „Dringend“. Was dein Fahrzeug nicht meldet, blendet die Seite aus. Die getestete Schnittstelle liefert für Elektrofahrzeuge weder Reifendruck noch 12-V-Batterie oder Außentemperatur.
 
 Sind Werte älter als das Dreifache von `POLL_INTERVAL_SECONDS` (mindestens 30 Minuten), werden sie als „veraltet“ markiert. Bei mehreren Fahrzeugen wählst du oben das Fahrzeug, „Alle Werte“ führt zur Detailseite.
 
