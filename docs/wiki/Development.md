@@ -25,6 +25,10 @@ docker build -f docker/Dockerfile -t ev-dashboard:dev .
 docker run --rm -p 8080:8080 -e APP_URL=http://localhost:8080 -e TLS_MODE=off ev-dashboard:dev
 ```
 
+## Knowledge graph
+
+`graphify-out/` holds a knowledge graph of the code and wiki, built with [graphify](https://github.com/safishamsi/graphify). Open `graphify-out/graph.html` in a browser or read `graphify-out/GRAPH_REPORT.md` for an overview of the main modules and how they connect. The graph is a snapshot; rebuild it after larger changes with `/graphify . --update` (graphify skill) or `graphify update`.
+
 ## Conventions
 
 - Changes only through pull requests, merged after green checks.
