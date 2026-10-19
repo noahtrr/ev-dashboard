@@ -18,6 +18,7 @@ export function entry(start: string, minutes: number, values: Partial<LogEntry> 
 		startLongitude: 13.4,
 		endLatitude: 52.6,
 		endLongitude: 13.5,
+		outsideTempC: null,
 		startAddress: null,
 		endAddress: null,
 		gap: false,

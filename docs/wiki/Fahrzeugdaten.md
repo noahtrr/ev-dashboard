@@ -69,6 +69,16 @@ Sobald das Fahrzeug nach einer Fahrt wieder steht, übernimmt die App die Fahrt 
 
 Das Fahrtenbuch ist eine Übersicht aus den Fahrzeugdaten und kein Fahrtenbuch im steuerlichen Sinn, da Einträge nachträglich geändert werden können.
 
+### Verbrauch
+
+Im Fahrten-Modul führt **Verbrauch** zu einer Auswertung über 30 Tage, 12 Monate oder den ganzen Zeitraum des Fahrtenbuchs:
+
+- der durchschnittliche Verbrauch in kWh/100 km mit dem Vergleich zum gleich langen Zeitraum davor, dazu Strecke, Energie und die rechnerische Reichweite bei vollem Akku;
+- ein Balkendiagramm pro Woche (30 Tage) bzw. pro Monat, mit dem Durchschnitt als gestrichelter Linie;
+- der Verbrauch nach Außentemperatur (unter 0, 0–10, 10–20, über 20 °C) und nach Fahrtlänge (unter 10, 10–50, über 50 km).
+
+Der Verbrauch jeder Fahrt ist aus dem Ladestand vor und nach der Fahrt und der nutzbaren Kapazität geschätzt; Durchschnitte sind nach Strecke gewichtet. Fahrten unter 1 km, Fahrten mit fehlenden Abrufen und Fahrten, bei denen der Ladestand gestiegen ist, zählen nicht. Gruppen unter 20 km werden nicht angezeigt, weil der Ladestand nur in ganzen Prozent gemeldet wird. Ohne eingetragene Kapazität zeigt die Seite Prozentpunkte des Akkus je 100 km. Die Außentemperatur einer Fahrt ist der Mittelwert der gemeldeten Werte und wird mit der Fahrt im Fahrtenbuch gespeichert; bei Fahrten, die vor dieser Funktion erfasst wurden, trägt die App sie nach, solange die Abrufe noch vorhanden sind. Wochen und Monate folgen der Zeitzone deines Browsers.
+
 Sind Werte älter als das Dreifache von `POLL_INTERVAL_SECONDS` (mindestens 30 Minuten), werden sie als „veraltet“ markiert. Bei mehreren Fahrzeugen wählst du oben das Fahrzeug, „Alle Werte“ führt zur Detailseite.
 
 ## Abfrage und Aufbewahrung

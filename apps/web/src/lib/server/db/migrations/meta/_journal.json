@@ -36,6 +36,13 @@
       "when": 1792405846674,
       "tag": "0004_export_template",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792409986874,
+      "tag": "0005_trip_temperature",
+      "breakpoints": true
     }
   ]
 }

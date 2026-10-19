@@ -207,6 +207,8 @@ export const trip = sqliteTable(
 		startLongitude: real('start_longitude'),
 		endLatitude: real('end_latitude'),
 		endLongitude: real('end_longitude'),
+		/** Mean outside temperature during the trip, for consumption by temperature. */
+		outsideTempC: real('outside_temp_c'),
 		startAddress: text('start_address'),
 		endAddress: text('end_address'),
 		/** Snapshots were missing during the trip, so its timing is uncertain. */

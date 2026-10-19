@@ -272,9 +272,14 @@
 					{#if trip && !trip.ongoing}
 						<span>{format(tr.last, { time: ago(trip.end) })}</span>
 					{/if}
-					<a class="details" href={resolve('/vehicles/[id]/trips', { id: vehicle.id })}
-						>{tr.history} →</a
-					>
+					<span class="links">
+						<a class="details" href={resolve('/vehicles/[id]/trips', { id: vehicle.id })}
+							>{tr.history} →</a
+						>
+						<a class="details" href={resolve('/vehicles/[id]/consumption', { id: vehicle.id })}
+							>{t.consumption.link} →</a
+						>
+					</span>
 				</p>
 			</section>
 		{/if}
@@ -476,8 +481,18 @@
 		color: var(--accent);
 	}
 
-	.foot-row .details {
+	.foot-row {
+		flex-wrap: wrap;
+	}
+
+	.foot-row > .details,
+	.links {
 		margin-left: auto;
+	}
+
+	.links {
+		display: flex;
+		gap: 16px;
 	}
 
 	.ring {

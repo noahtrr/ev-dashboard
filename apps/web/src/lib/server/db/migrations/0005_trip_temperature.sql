@@ -1,0 +1,1 @@
+ALTER TABLE `trip` ADD `outside_temp_c` real;

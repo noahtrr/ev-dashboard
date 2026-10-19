@@ -236,6 +236,43 @@ const de = {
 			'Beginn und Ende sind auf das Abrufintervall genau, die Route verbindet die abgerufenen Positionen.',
 		gapNote: 'Während dieser Fahrt fehlen Abrufe, Zeiten und Geschwindigkeit sind deshalb ungenau.'
 	},
+	consumption: {
+		title: 'Verbrauch',
+		link: 'Verbrauch',
+		back: 'Zurück zum Dashboard',
+		range: 'Zeitraum',
+		ranges: { month: '30 Tage', year: '12 Monate', all: 'Gesamt' },
+		average: 'Durchschnitt',
+		less: '{value} weniger als {period}',
+		more: '{value} mehr als {period}',
+		same: 'Gleich viel wie {period}',
+		previous: { month: 'in den 30 Tagen davor', year: 'in den 12 Monaten davor' },
+		since: 'Seit {date}',
+		distance: 'Strecke',
+		energy: 'Energie',
+		used: 'Verbraucht',
+		fullRange: 'Reichweite 100 %',
+		perWeek: 'Pro Woche',
+		perMonth: 'Pro Monat',
+		week: 'KW {n}',
+		chartLabel: 'Durchschnittlicher Verbrauch je Abschnitt im gewählten Zeitraum',
+		averageLine: 'Durchschnitt des Zeitraums',
+		byTemperature: 'Nach Außentemperatur',
+		byLength: 'Nach Fahrtlänge',
+		temperatures: {
+			below0: 'unter 0 °C',
+			'0to10': '0–10 °C',
+			'10to20': '10–20 °C',
+			above20: 'über 20 °C'
+		},
+		lengths: { short: 'unter 10 km', medium: '10–50 km', long: 'über 50 km' },
+		noData:
+			'Für diesen Zeitraum gibt es noch zu wenige Fahrten. Ab 20 km mit bekanntem Ladestand erscheint hier der Verbrauch.',
+		energyNote:
+			'Geschätzt aus dem Ladestand vor und nach jeder Fahrt und der nutzbaren Kapazität von {capacity} kWh. Fahrten unter 1 km, Fahrten mit fehlenden Abrufen und Gruppen unter 20 km zählen nicht.',
+		percentNote:
+			'Ohne nutzbare Kapazität ist der Verbrauch in Prozentpunkten des Akkus je 100 km angegeben.'
+	},
 	logbook: {
 		purposes: { business: 'Geschäftlich', private: 'Privat', open: 'Offen' },
 		filter: 'Fahrtart',
@@ -608,6 +645,43 @@ const en: Messages = {
 		accuracyNote:
 			'Start and end are accurate to one polling interval; the route connects the fetched positions.',
 		gapNote: 'Fetches are missing during this trip, so times and speed are approximate.'
+	},
+	consumption: {
+		title: 'Consumption',
+		link: 'Consumption',
+		back: 'Back to dashboard',
+		range: 'Period',
+		ranges: { month: '30 days', year: '12 months', all: 'All' },
+		average: 'Average',
+		less: '{value} less than {period}',
+		more: '{value} more than {period}',
+		same: 'Same as {period}',
+		previous: { month: 'in the 30 days before', year: 'in the 12 months before' },
+		since: 'Since {date}',
+		distance: 'Distance',
+		energy: 'Energy',
+		used: 'Used',
+		fullRange: 'Range at 100 %',
+		perWeek: 'Per week',
+		perMonth: 'Per month',
+		week: 'W{n}',
+		chartLabel: 'Average consumption per section of the selected period',
+		averageLine: 'Average of the period',
+		byTemperature: 'By outside temperature',
+		byLength: 'By trip length',
+		temperatures: {
+			below0: 'below 0 °C',
+			'0to10': '0–10 °C',
+			'10to20': '10–20 °C',
+			above20: 'above 20 °C'
+		},
+		lengths: { short: 'under 10 km', medium: '10–50 km', long: 'over 50 km' },
+		noData:
+			'There are not enough trips in this period yet. Consumption appears from 20 km with a known charge level.',
+		energyNote:
+			'Estimated from the charge level before and after each trip and the usable capacity of {capacity} kWh. Trips under 1 km, trips with missing fetches and groups under 20 km do not count.',
+		percentNote:
+			'Without the usable capacity, consumption is given in percentage points of the battery per 100 km.'
 	},
 	logbook: {
 		purposes: { business: 'Business', private: 'Private', open: 'Open' },

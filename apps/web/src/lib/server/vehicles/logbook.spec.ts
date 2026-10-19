@@ -102,4 +102,24 @@ describe('logbook', () => {
 		await logbook.record('c1', new Date(0));
 		expect((await logbook.list('alice', 'c1', from, to))[0]).toMatchObject({ purpose: 'business' });
 	});
+
+	it('stores the mean outside temperature and fills it in for trips logged without it', async () => {
+		await fetched(0, { ...parked(100, 52.5), outsideTempC: 8 });
+		await fetched(5, { ...moving(104, 52.53), outsideTempC: 10 });
+		await fetched(10, { ...parked(110, 52.56), outsideTempC: 12 });
+		await fetched(15, parked(110, 52.56));
+		await logbook.record('c1', new Date(0));
+		expect((await db.select().from(trip))[0].outsideTempC).toBe(10);
+
+		// A row from before the column existed is completed, an existing value is kept.
+		await db.update(trip).set({ outsideTempC: null, purpose: 'private' });
+		await logbook.record('c1', new Date(0));
+		expect((await db.select().from(trip))[0]).toMatchObject({
+			outsideTempC: 10,
+			purpose: 'private'
+		});
+		await db.update(trip).set({ outsideTempC: 3 });
+		await logbook.record('c1', new Date(0));
+		expect((await db.select().from(trip))[0].outsideTempC).toBe(3);
+	});
 });

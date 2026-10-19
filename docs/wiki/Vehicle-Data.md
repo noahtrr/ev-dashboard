@@ -69,6 +69,16 @@ Once the vehicle is parked again after a trip, the app copies the trip into the 
 
 The trip log is an overview built from vehicle data and not a tax-compliant logbook, as entries can be changed afterwards.
 
+### Consumption
+
+In the trips module, **Consumption** leads to an analysis over 30 days, 12 months or the whole trip log:
+
+- the average consumption in kWh/100 km compared with the equally long period before, plus distance, energy and the calculated range on a full battery;
+- a bar chart per week (30 days) or per month, with the average as a dashed line;
+- consumption by outside temperature (below 0, 0–10, 10–20, above 20 °C) and by trip length (under 10, 10–50, over 50 km).
+
+Each trip's consumption is estimated from the charge level before and after the trip and the usable capacity; averages are weighted by distance. Trips under 1 km, trips with missing fetches and trips in which the charge level rose do not count. Groups under 20 km are not shown, because the charge level is reported in whole percent only. Without a capacity the page shows percentage points of the battery per 100 km. A trip's outside temperature is the mean of the reported values and is stored with the trip in the trip log; for trips recorded before this feature, the app fills it in as long as the fetches are still there. Weeks and months follow your browser's time zone.
+
 Values older than three times `POLL_INTERVAL_SECONDS` (at least 30 minutes) are marked as "stale". With several vehicles you pick the vehicle at the top; "All values" leads to the details page.
 
 ## Polling and retention

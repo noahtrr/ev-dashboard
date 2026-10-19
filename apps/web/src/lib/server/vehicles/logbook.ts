@@ -2,7 +2,7 @@
 // they survive the snapshot retention and can carry what the owner records about them
 // (private or business, purpose). Pages and exports read the table.
 import { randomUUID } from 'node:crypto';
-import { and, asc, desc, eq, gte, isNull, lte, max, min, or } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNull, lte, max, min, or, sql } from 'drizzle-orm';
 import type { Database } from '../db/index.ts';
 import { snapshot, trip, vehicleConnection } from '../db/schema.ts';
 import type { Geocoder } from '../geocode.ts';
@@ -70,6 +70,7 @@ export function createLogbook(options: LogbookOptions) {
 			startLongitude: t.startLongitude ?? null,
 			endLatitude: t.endLatitude ?? null,
 			endLongitude: t.endLongitude ?? null,
+			outsideTempC: t.outsideTempC ?? null,
 			gap: t.gap
 		};
 	}
@@ -78,7 +79,8 @@ export function createLogbook(options: LogbookOptions) {
 	 * Copies finished trips of one connection into the log. Without `since` it looks at the
 	 * last two days, and only when a new snapshot arrived since the previous call. A trip
 	 * is finished once a later snapshot shows the vehicle parked; trips that may have begun
-	 * before the window are skipped, they were recorded by an earlier call.
+	 * before the window are skipped, they were recorded by an earlier call. Returns the
+	 * number of rows written (new trips and back-filled temperatures).
 	 */
 	async function record(connectionId: string, since?: Date): Promise<number> {
 		const [{ newest, oldest }] = await db
@@ -99,12 +101,17 @@ export function createLogbook(options: LogbookOptions) {
 			(t) => !t.ongoing && t.end.getTime() < last && (complete || t.start.getTime() > first)
 		);
 		if (finished.length === 0) return 0;
-		const inserted = await db
+		// Trips logged before the temperature was stored get it once the history is read again.
+		const written = await db
 			.insert(trip)
 			.values(finished.map((t) => toRow(connectionId, t)))
-			.onConflictDoNothing()
+			.onConflictDoUpdate({
+				target: [trip.connectionId, trip.startAt],
+				set: { outsideTempC: sql`excluded.outside_temp_c` },
+				setWhere: sql`${trip.outsideTempC} IS NULL AND excluded.outside_temp_c IS NOT NULL`
+			})
 			.returning({ id: trip.id });
-		return inserted.length;
+		return written.length;
 	}
 
 	/** Records new trips of every connection; the first call reads the whole history. */

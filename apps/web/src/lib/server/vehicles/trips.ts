@@ -24,6 +24,8 @@ export type Trip = {
 	endLongitude?: number;
 	startOdometerKm?: number;
 	endOdometerKm?: number;
+	/** Mean outside temperature the vehicle reported during the trip. */
+	outsideTempC?: number;
 };
 
 /** Shorter movements are GPS noise or manoeuvring, not trips. */
@@ -111,6 +113,10 @@ function toTrip(points: HistoryPoint[], ongoing: boolean, maxGapMs: number): Tri
 	}
 	if (startOdometer !== undefined) trip.startOdometerKm = startOdometer;
 	if (endOdometer !== undefined) trip.endOdometerKm = endOdometer;
+	const temps = points.flatMap((p) =>
+		p.data.outsideTempC === undefined ? [] : [p.data.outsideTempC]
+	);
+	if (temps.length) trip.outsideTempC = temps.reduce((sum, t) => sum + t, 0) / temps.length;
 	return trip;
 }
 
