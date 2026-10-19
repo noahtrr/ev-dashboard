@@ -36,6 +36,6 @@ Browser ──HTTPS──► Caddy (TLS, HTTP/3, security headers, compression) 
 apps/web/            SvelteKit app
 docker/              Dockerfile, s6 services, Caddyfile
 docs/wiki/           source of this wiki
-deploy/              automatic updater (systemd)
+deploy/              updater (systemd timer) and SSH deploy target
 .github/workflows/   CI, CodeQL, release, wiki
 ```

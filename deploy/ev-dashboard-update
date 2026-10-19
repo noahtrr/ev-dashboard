@@ -1,22 +1,29 @@
 #!/bin/sh
-# Pulls the latest release image, verifies its Cosign signature and restarts
-# the stack when the digest changed. Run by ev-dashboard-update.timer.
+# Deploys a signed EV Dashboard image. Without arguments it pulls the latest
+# release (run by ev-dashboard-update.timer); with an image digest it deploys
+# exactly that image (run by ev-dashboard-deploy for SSH deploys). The image is
+# started only after its Cosign signature has been verified, and the script
+# fails when the container does not become healthy.
 set -eu
 
 DIR=${EV_DIR:-/opt/ev-dashboard}
 IMAGE=${EV_IMAGE:-ghcr.io/noahtrr/ev-dashboard:latest}
-IDENTITY=${EV_IDENTITY:-'^https://github\.com/noahtrr/ev-dashboard/\.github/workflows/release\.yml@refs/tags/v'}
+IDENTITY=${EV_IDENTITY:-'^https://github\.com/noahtrr/ev-dashboard/\.github/workflows/release\.yml@refs/(heads/main$|tags/v)'}
 ISSUER=https://token.actions.githubusercontent.com
 COSIGN=ghcr.io/sigstore/cosign/cosign:v3.1.3@sha256:9e5c2f2edc34351160407ca3416c61855bdf9403c3c5936e0f0be7fc261611b8
+HEALTH_TIMEOUT=${EV_HEALTH_TIMEOUT:-120}
 
 repo=${IMAGE%:*}
 override="$DIR/compose.override.yaml"
+ref=$IMAGE
+[ $# -eq 0 ] || ref="$repo@$1"
 
-docker pull --quiet "$IMAGE" >/dev/null
-digest=$(docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$IMAGE" | grep "^$repo@" | head -n 1)
-[ -n "$digest" ] || { echo "no digest for $IMAGE" >&2; exit 1; }
+docker pull --quiet "$ref" >/dev/null
+digest=$(docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$ref" | grep "^$repo@" | head -n 1)
+[ -n "$digest" ] || { echo "no digest for $ref" >&2; exit 1; }
 
 if [ -f "$override" ] && grep -q "$digest" "$override"; then
+	echo "already running $digest"
 	exit 0
 fi
 
@@ -25,10 +32,22 @@ docker run --rm "$COSIGN" verify \
 	--certificate-oidc-issuer "$ISSUER" \
 	"$digest" >/dev/null
 
-# Pin the verified digest so compose never starts an unverified :latest.
+# Pin the verified digest so compose never starts an unverified image.
 printf 'services:\n  ev-dashboard:\n    image: %s\n' "$digest" >"$override.tmp"
 mv "$override.tmp" "$override"
 
 cd "$DIR"
 docker compose up -d --remove-orphans
+
+container=$(docker compose ps -q ev-dashboard)
+waited=0
+until [ "$(docker inspect --format '{{.State.Health.Status}}' "$container")" = healthy ]; do
+	if [ "$waited" -ge "$HEALTH_TIMEOUT" ]; then
+		echo "container not healthy after ${HEALTH_TIMEOUT}s" >&2
+		docker inspect --format '{{range .State.Health.Log}}{{.Output}}{{end}}' "$container" >&2
+		exit 1
+	fi
+	sleep 5
+	waited=$((waited + 5))
+done
 echo "deployed $digest"

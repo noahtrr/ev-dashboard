@@ -26,7 +26,8 @@ Every pull request runs these checks; `main` only accepts changes with green che
 - All actions pinned by commit SHA, updated through Renovate.
 - Minimal `permissions` per job, `persist-credentials: false` on checkout.
 - No `pull_request_target`, no secrets in pull request runs.
-- No deployment credentials in GitHub: servers pull new releases themselves and verify the signature first (see [Installation](Installation-EN#automatic-updates)).
+- Deployment either by a timer on the server (no credentials in GitHub) or over SSH from GitHub Actions with a key that may only pass an image digest. Either way the server verifies the Cosign signature before starting an image (see [Installation](Installation-EN#automatic-updates)).
+- SSH credentials live in the `production` environment and are only available to the deploy job on `main`.
 
 ## Verifying an image
 

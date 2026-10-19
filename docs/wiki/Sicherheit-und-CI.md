@@ -26,7 +26,8 @@ Jeder Pull Request durchläuft diese Prüfungen; `main` nimmt nur Änderungen mi
 - Alle Actions per Commit-SHA gepinnt, Aktualisierung über Renovate.
 - Minimale `permissions` pro Job, `persist-credentials: false` beim Checkout.
 - Kein `pull_request_target`, keine Secrets in PR-Läufen.
-- Keine Zugangsdaten für Server in GitHub: Server holen neue Releases selbst und prüfen vorher die Signatur (siehe [Installation](Installation#automatische-updates)).
+- Deployment entweder per Timer auf dem Server (keine Zugangsdaten in GitHub) oder per SSH aus GitHub Actions mit einem Schlüssel, der nur einen Image-Digest übergeben darf. In beiden Fällen prüft der Server die Cosign-Signatur, bevor er ein Image startet (siehe [Installation](Installation#automatische-updates)).
+- SSH-Zugangsdaten liegen im Environment `production` und sind nur für den Deploy-Job auf `main` verfügbar.
 
 ## Image prüfen
 

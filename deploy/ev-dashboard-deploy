@@ -1,0 +1,14 @@
+#!/bin/sh
+# SSH forced command for deploys from GitHub Actions. The key in
+# authorized_keys may only call this script, and the only accepted input is
+# one image digest (sha256:<64 hex>), which is handed to ev-dashboard-update.
+set -eu
+
+digest=${SSH_ORIGINAL_COMMAND:-}
+hex=${digest#sha256:}
+if [ "$hex" = "$digest" ] || [ ${#hex} -ne 64 ] || [ -n "$(printf %s "$hex" | tr -d 0-9a-f)" ]; then
+	echo "expected an image digest (sha256:<64 hex>)" >&2
+	exit 2
+fi
+
+exec /usr/local/bin/ev-dashboard-update "$digest"

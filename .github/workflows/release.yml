@@ -108,3 +108,34 @@ jobs:
         with:
           generate_release_notes: true
           files: sbom.spdx.json
+
+  deploy:
+    name: Deploy to production
+    # Runs for every push to main once the image is built, scanned and signed.
+    # Skipped until the DEPLOY_HOST repository variable is set.
+    if: github.ref == 'refs/heads/main' && vars.DEPLOY_HOST != ''
+    needs: image
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://${{ vars.DEPLOY_HOST }}
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - name: Deploy the signed image over SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ vars.DEPLOY_HOST }}
+          SSH_USER: ${{ vars.DEPLOY_USER || 'deploy' }}
+          DIGEST: ${{ needs.image.outputs.digest }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key
+          # The server's authorized_keys entry forces ev-dashboard-deploy;
+          # the digest is its only input.
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=20 "${SSH_USER}@${HOST}" "$DIGEST"
