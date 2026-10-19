@@ -29,6 +29,9 @@ export const MANUAL_FETCH_MIN_GAP_MS = 60 * 1000;
 /** How many snapshots with stored raw responses are searched for the latest one per endpoint. */
 const RAW_LOOKBACK = 50;
 
+/** Makes untrusted text safe for a single log line. */
+const clean = (text: string) => text.replace(/[^\x20-\x7e]/g, '?').slice(0, 300);
+
 export type ConnectionStatus = 'active' | 'reauth';
 
 export type ConnectionView = {
@@ -151,31 +154,57 @@ export function createVehicleService(options: VehicleServiceOptions) {
 		};
 	}
 
-	/** Checks and deletes the state. True only for this user, provider and within the TTL. */
+	/**
+	 * Checks and deletes the state. Returns undefined when it belongs to this user and provider
+	 * and is within the TTL, otherwise the reason it was rejected (logged, never shown).
+	 */
 	async function consumeState(userId: string, providerId: string, state: string) {
-		if (!state || state.length > 200) return false;
+		if (!state) return 'missing';
+		if (state.length > 200) return 'too_long';
 		const stateHash = hashState(state);
 		const row = await db.query.providerOAuthState.findFirst({
 			where: eq(providerOAuthState.stateHash, stateHash)
 		});
-		if (!row) return false;
+		if (!row) return 'unknown';
 		// Single use: gone whether it matches or not.
 		await db.delete(providerOAuthState).where(eq(providerOAuthState.stateHash, stateHash));
-		return (
-			row.userId === userId && row.providerId === providerId && row.expiresAt.getTime() > now()
-		);
+		if (row.userId !== userId) return 'other_user';
+		if (row.providerId !== providerId) return 'other_provider';
+		if (row.expiresAt.getTime() <= now()) return 'expired';
+		return undefined;
 	}
 
 	async function completeAuthorization(
 		userId: string,
 		providerId: string,
-		params: { state: string | null; code: string | null; error: string | null }
+		params: {
+			state: string | null;
+			code: string | null;
+			error: string | null;
+			errorDescription?: string | null;
+			/** Names of all query parameters, for diagnostics. */
+			paramNames?: string[];
+		}
 	): Promise<CallbackResult> {
 		const provider = providers.get(providerId);
-		if (!provider || !(await consumeState(userId, providerId, params.state ?? ''))) {
+		if (!provider) return { ok: false, error: 'state' };
+		const rejected = await consumeState(userId, providerId, params.state ?? '');
+		if (params.error) {
+			// Providers may redirect errors without echoing the state; report the error itself.
+			log(
+				`authorization at provider ${providerId} failed: ${clean(params.error)}` +
+					(params.errorDescription ? ` (${clean(params.errorDescription)})` : '')
+			);
+			return { ok: false, error: 'denied' };
+		}
+		if (rejected) {
+			log(
+				`authorization callback for provider ${providerId} rejected: state ${rejected}` +
+					` (params: ${(params.paramNames ?? []).map(clean).join(', ') || 'none'})`
+			);
 			return { ok: false, error: 'state' };
 		}
-		if (params.error || !params.code) return { ok: false, error: 'denied' };
+		if (!params.code) return { ok: false, error: 'denied' };
 		if (params.code.length > 4096) return { ok: false, error: 'exchange' };
 		const credentials = await getVehicleApiCredentials(db, key, userId);
 		if (!credentials) return { ok: false, error: 'missing_credentials' };

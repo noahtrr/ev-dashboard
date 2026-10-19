@@ -34,7 +34,9 @@ describe('provider callback', () => {
 		expect(vehicles.completeAuthorization).toHaveBeenCalledWith('u-alice', 'connect-query', {
 			state: 's',
 			code: 'k',
-			error: null
+			error: null,
+			errorDescription: null,
+			paramNames: ['state', 'code']
 		});
 		expect(vehicles.pollConnection).toHaveBeenCalledWith('c1');
 	});

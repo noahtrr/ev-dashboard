@@ -13,7 +13,9 @@ export const GET: RequestHandler = async ({ locals, params, url }) => {
 	const result = await vehicles.completeAuthorization(locals.user.id, params.provider, {
 		state: url.searchParams.get('state'),
 		code: url.searchParams.get('code'),
-		error: url.searchParams.get('error')
+		error: url.searchParams.get('error'),
+		errorDescription: url.searchParams.get('error_description'),
+		paramNames: [...new Set(url.searchParams.keys())]
 	});
 	if (!result.ok) redirect(303, `/account?vehicle=${result.error}#vehicles`);
 

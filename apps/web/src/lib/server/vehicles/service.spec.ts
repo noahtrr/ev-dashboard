@@ -173,6 +173,28 @@ describe('authorization state', () => {
 		).toEqual({ ok: false, error: 'denied' });
 	});
 
+	it('logs why a callback was rejected and reports provider errors without a state', async () => {
+		await service.completeAuthorization('alice', PROVIDER, {
+			state: null,
+			code: 'secret-code',
+			error: null,
+			paramNames: ['code']
+		});
+		expect(logs.at(-1)).toContain('state missing (params: code)');
+		expect(
+			await service.completeAuthorization('alice', PROVIDER, {
+				state: null,
+				code: null,
+				error: 'invalid_request',
+				errorDescription: 'redirect_uri mismatch\nfake line'
+			})
+		).toEqual({ ok: false, error: 'denied' });
+		expect(logs.at(-1)).toBe(
+			'authorization at provider mock failed: invalid_request (redirect_uri mismatch?fake line)'
+		);
+		expect(logs.join()).not.toContain('secret-code');
+	});
+
 	it('reports a failed code exchange without leaking details', async () => {
 		provider.exchangeCode.mockRejectedValueOnce(new ProviderError('auth', 400));
 		const state = await startState();
