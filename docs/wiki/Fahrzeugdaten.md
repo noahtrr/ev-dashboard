@@ -49,6 +49,7 @@ Nicht jedes Modell liefert jeden Wert; fehlende Werte zeigt das Dashboard als �
 - **Zu häufiges Abfragen kann das Fahrzeugkonto beim Anbieter sperren.** Den Standard nur ändern, wenn nötig.
 - Bei Fehlern verlängert sich der Abstand für diese Verbindung schrittweise (bis 6 Stunden); eine Rate-Limit-Antwort des Anbieters wird beachtet.
 - Das Zugriffstoken wird kurz vor Ablauf automatisch erneuert. Alle Tokens liegen verschlüsselt in der Datenbank und erreichen nie den Browser.
+- Einheitliche Werte werden bei jedem Abruf gespeichert, Rohdaten je Endpunkt nur, wenn sie sich geändert haben. Das spart viel Speicher.
 - Daten älter als `RETENTION_DAYS` Tage (Standard 365, `0` = unbegrenzt) werden einmal täglich gelöscht.
 
 ## Bekannte Unsicherheiten

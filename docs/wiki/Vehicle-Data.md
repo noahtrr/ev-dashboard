@@ -49,6 +49,7 @@ Not every model reports every value; missing values are shown as "–". Further 
 - **Polling too often can get the vehicle account locked at the provider.** Only change the default if you need to.
 - After errors, the interval for that connection grows step by step (up to 6 hours); a rate-limit response from the provider is respected.
 - The access token is refreshed automatically shortly before it expires. All tokens are stored encrypted in the database and never reach the browser.
+- Normalized values are stored on every fetch, raw data per endpoint only when it changed. This saves a lot of storage.
 - Data older than `RETENTION_DAYS` days (default 365, `0` = forever) is deleted once a day.
 
 ## Known uncertainties

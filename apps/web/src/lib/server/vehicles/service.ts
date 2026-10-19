@@ -2,7 +2,7 @@
 // with per-connection backoff, snapshots and retention. All user-facing functions take the
 // user ID and only ever touch that user's rows.
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { and, asc, count, desc, eq, isNull, lt, lte, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, isNull, lt, lte, ne, or } from 'drizzle-orm';
 import { decrypt, encrypt } from '../crypto.ts';
 import type { Database } from '../db/index.ts';
 import { providerOAuthState, snapshot, vehicleConnection } from '../db/schema.ts';
@@ -26,6 +26,8 @@ export const REFRESH_MARGIN_MS = 2 * 60 * 1000;
 export const MAX_BACKOFF_MS = 6 * 3600 * 1000;
 /** "Fetch now" is refused when the last attempt is more recent than this. */
 export const MANUAL_FETCH_MIN_GAP_MS = 60 * 1000;
+/** How many snapshots with stored raw responses are searched for the latest one per endpoint. */
+const RAW_LOOKBACK = 50;
 
 export type ConnectionStatus = 'active' | 'reauth';
 
@@ -263,8 +265,39 @@ export function createVehicleService(options: VehicleServiceOptions) {
 		return {
 			fetchedAt: row.fetchedAt,
 			data: parseJson<VehicleData>(row.data, {}),
-			raw: parseJson<RawResponses>(row.raw, {})
+			raw: await latestRaw(id)
 		};
+	}
+
+	/**
+	 * Snapshots store a raw response only when it differs from the previous one, so the
+	 * current raw state is the newest stored response per endpoint.
+	 */
+	async function latestRaw(connectionId: string): Promise<RawResponses> {
+		const rows = await db
+			.select({ raw: snapshot.raw })
+			.from(snapshot)
+			.where(and(eq(snapshot.connectionId, connectionId), ne(snapshot.raw, '{}')))
+			.orderBy(desc(snapshot.fetchedAt))
+			.limit(RAW_LOOKBACK);
+		const merged: RawResponses = {};
+		for (const row of rows) {
+			for (const [endpoint, response] of Object.entries(parseJson<RawResponses>(row.raw, {}))) {
+				merged[endpoint] ??= response;
+			}
+		}
+		return merged;
+	}
+
+	/** Keeps only the raw responses that changed since the last stored ones. */
+	async function changedRaw(connectionId: string, raw: RawResponses): Promise<RawResponses> {
+		const previous = await latestRaw(connectionId);
+		return Object.fromEntries(
+			Object.entries(raw).filter(
+				([endpoint, response]) =>
+					!(endpoint in previous) || JSON.stringify(previous[endpoint]) !== JSON.stringify(response)
+			)
+		);
 	}
 
 	async function markReauth(id: string, code: ProviderErrorCode) {
@@ -345,7 +378,7 @@ export function createVehicleService(options: VehicleServiceOptions) {
 				connectionId: id,
 				fetchedAt: t,
 				data: JSON.stringify(result.data),
-				raw: JSON.stringify(result.raw)
+				raw: JSON.stringify(await changedRaw(id, result.raw))
 			});
 			const vehicle = result.vehicles[0];
 			await db

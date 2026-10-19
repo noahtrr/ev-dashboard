@@ -165,7 +165,7 @@ export const snapshot = sqliteTable(
 		fetchedAt: integer('fetched_at', { mode: 'timestamp_ms' }).notNull(),
 		/** Normalized values as JSON (see providers/types.ts `VehicleData`). */
 		data: text('data').notNull(),
-		/** Raw response per endpoint as JSON (see providers/types.ts `RawResponses`). */
+		/** Raw responses as JSON (see providers/types.ts `RawResponses`), only the endpoints whose response changed since the previous stored one. */
 		raw: text('raw').notNull()
 	},
 	(t) => [

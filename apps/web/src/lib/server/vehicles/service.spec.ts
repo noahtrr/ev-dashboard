@@ -280,6 +280,37 @@ describe('polling', () => {
 		expect(await service.pollDue()).toBe(1);
 	});
 
+	it('stores raw responses only when they changed', async () => {
+		const id = await connect();
+		const garage = { status: 200, body: { vin: 'VIN1' } };
+		const result = (soc: number): ProviderSnapshot => ({
+			...snapshotResult(soc),
+			raw: { ...snapshotResult(soc).raw, garage }
+		});
+		provider.fetchSnapshot.mockResolvedValueOnce(result(50));
+		await service.pollConnection(id);
+		clock.t += INTERVAL;
+		provider.fetchSnapshot.mockResolvedValueOnce(result(50));
+		await service.pollConnection(id);
+		clock.t += INTERVAL;
+		provider.fetchSnapshot.mockResolvedValueOnce(result(40));
+		await service.pollConnection(id);
+
+		const rows = await db
+			.select({ raw: snapshot.raw })
+			.from(snapshot)
+			.where(eq(snapshot.connectionId, id))
+			.orderBy(snapshot.fetchedAt);
+		expect(rows.map((r) => Object.keys(JSON.parse(r.raw)).sort())).toEqual([
+			['garage', 'telemetry'],
+			[],
+			['telemetry']
+		]);
+		const latest = await service.latestSnapshot('alice', id);
+		expect(latest?.data).toEqual({ stateOfChargePct: 40 });
+		expect(latest?.raw).toEqual({ telemetry: { status: 200, body: { soc: 40 } }, garage });
+	});
+
 	it('backs off per connection after errors and resets on success', async () => {
 		const id = await connect();
 		provider.fetchSnapshot.mockRejectedValue(new ProviderError('network'));
