@@ -56,6 +56,24 @@ The credentials for the vehicle data provider (client ID and client secret) are 
 | `POLL_INTERVAL_SECONDS` | no | `300` | Seconds between two fetches per connected vehicle, at least `60`. Polling too often can get the vehicle account locked at the provider. |
 | `RETENTION_DAYS` | no | `365` | Days fetched vehicle data is kept; older data is deleted once a day. `0` = forever. |
 
+## Address
+
+The home page shows the street address of the vehicle position. To get it, the server sends the position to a Nominatim-compatible service (default: the public OpenStreetMap service). Results are cached, and at most one request per second goes out. With `GEOCODING_ENABLED=false` the position never leaves the server.
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `GEOCODING_ENABLED` | no | `true` | Show the street address of the vehicle position. |
+| `GEOCODING_URL` | no | `https://nominatim.openstreetmap.org` | Base URL of the Nominatim-compatible service, e.g. a self-hosted instance. |
+
+## Map
+
+The browser loads map tiles directly from the tile server, which therefore learns which map area is shown, roughly where the vehicle is. The default is [OpenFreeMap](https://openfreemap.org) (free, no key). Any server with vector tiles in the OpenMapTiles schema works, including a self-hosted one.
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `MAP_TILES_URL` | no | `https://tiles.openfreemap.org/planet` | TileJSON URL of the vector tiles. |
+| `MAP_GLYPHS_URL` | no | `https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf` | URL template for the map label fonts. |
+
 ## Data
 
 `/data` holds the SQLite database `ev-dashboard.db`, the generated keys `auth-secret` and `encryption-key`, and the Caddy certificates. Database migrations run automatically at startup. For a backup, stop the container and copy the directory, including the key files.

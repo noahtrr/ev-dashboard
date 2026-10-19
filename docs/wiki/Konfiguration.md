@@ -56,6 +56,24 @@ Die Zugangsdaten für den Fahrzeugdaten-Anbieter (Client ID und Client Secret) s
 | `POLL_INTERVAL_SECONDS` | nein | `300` | Sekunden zwischen zwei Abrufen je verbundenem Fahrzeug, mindestens `60`. Zu häufiges Abfragen kann das Fahrzeugkonto beim Anbieter sperren. |
 | `RETENTION_DAYS` | nein | `365` | Tage, die abgerufene Fahrzeugdaten aufbewahrt werden; ältere werden einmal täglich gelöscht. `0` = unbegrenzt. |
 
+## Adresse
+
+Die Startseite zeigt zur Fahrzeugposition die Straßenadresse. Dafür schickt der Server die Position an einen Nominatim-kompatiblen Dienst (Standard: der öffentliche Dienst von OpenStreetMap). Ergebnisse werden zwischengespeichert, und es geht höchstens eine Anfrage pro Sekunde raus. Mit `GEOCODING_ENABLED=false` verlässt die Position den Server nicht.
+
+| Variable | Pflicht | Standard | Beschreibung |
+|---|---|---|---|
+| `GEOCODING_ENABLED` | nein | `true` | Adresse zur Fahrzeugposition anzeigen. |
+| `GEOCODING_URL` | nein | `https://nominatim.openstreetmap.org` | Basisadresse des Nominatim-kompatiblen Dienstes, z. B. einer eigenen Instanz. |
+
+## Karte
+
+Der Browser lädt die Kartenkacheln direkt vom Kachelserver. Dieser erfährt dabei, welcher Kartenausschnitt angezeigt wird, also ungefähr, wo das Fahrzeug steht. Standard ist [OpenFreeMap](https://openfreemap.org) (kostenlos, ohne Schlüssel). Jeder Server mit Vektorkacheln im OpenMapTiles-Schema funktioniert, auch ein selbst betriebener.
+
+| Variable | Pflicht | Standard | Beschreibung |
+|---|---|---|---|
+| `MAP_TILES_URL` | nein | `https://tiles.openfreemap.org/planet` | TileJSON-Adresse der Vektorkacheln. |
+| `MAP_GLYPHS_URL` | nein | `https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf` | Adressvorlage für die Schriften der Kartenbeschriftung. |
+
 ## Daten
 
 Unter `/data` liegen die SQLite-Datenbank `ev-dashboard.db`, die erzeugten Schlüssel `auth-secret` und `encryption-key` sowie die Caddy-Zertifikate. Datenbank-Migrationen laufen beim Start automatisch. Für ein Backup den Container stoppen und das Verzeichnis sichern; die Schlüsseldateien gehören dazu.

@@ -46,6 +46,15 @@ Each fetch requests three endpoints: garage (vehicle details), telemetry and ale
 
 Not every model reports every value; missing values are shown as "–". Further endpoints (wallbox, departure times, charge schedules, charging history) are not requested yet.
 
+## Home page
+
+The home page shows two modules for the selected vehicle:
+
+- **Location:** a map with the vehicle position, the street address and when the position was determined. The address can be switched off; tile and address services are replaceable (see [Configuration](Configuration)).
+- **Range:** range in km, state of charge as a ring and the charging status, with the time until full while charging.
+
+Values older than three times `POLL_INTERVAL_SECONDS` (at least 30 minutes) are marked as "stale". With several vehicles you pick the vehicle at the top; "All values" leads to the details page.
+
 ## Polling and retention
 
 - A background job in the app polls every active connection every `POLL_INTERVAL_SECONDS` seconds (default 300, minimum 60), with some random spread.

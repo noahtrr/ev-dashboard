@@ -284,6 +284,21 @@ export function createVehicleService(options: VehicleServiceOptions) {
 		return row ? toView(row, await countSnapshots(row.id)) : undefined;
 	}
 
+	/** Newest normalized values without the raw responses (cheap, for the dashboard). */
+	async function latestValues(
+		userId: string,
+		id: string
+	): Promise<Omit<SnapshotView, 'raw'> | undefined> {
+		if (!(await ownedConnection(userId, id))) return undefined;
+		const row = await db.query.snapshot.findFirst({
+			where: eq(snapshot.connectionId, id),
+			orderBy: desc(snapshot.fetchedAt)
+		});
+		return row
+			? { fetchedAt: row.fetchedAt, data: parseJson<VehicleData>(row.data, {}) }
+			: undefined;
+	}
+
 	async function latestSnapshot(userId: string, id: string): Promise<SnapshotView | undefined> {
 		if (!(await ownedConnection(userId, id))) return undefined;
 		const row = await db.query.snapshot.findFirst({
@@ -530,6 +545,7 @@ export function createVehicleService(options: VehicleServiceOptions) {
 		listConnections,
 		getConnection,
 		latestSnapshot,
+		latestValues,
 		pollConnection,
 		pollDue,
 		fetchNow,

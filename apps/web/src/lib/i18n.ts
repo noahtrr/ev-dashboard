@@ -38,9 +38,29 @@ const de = {
 		}
 	},
 	home: {
-		label: 'EV Dashboard',
-		title: 'Bald verfügbar',
-		text: 'Das Grundgerüst läuft. Verbinde dein Fahrzeug auf der Kontoseite; das Dashboard folgt im nächsten Schritt.'
+		noVehicleTitle: 'Noch kein Fahrzeug verbunden',
+		noVehicleText:
+			'Verbinde dein Fahrzeug auf der Kontoseite. Danach siehst du hier Standort und Reichweite.',
+		toAccount: 'Zur Kontoseite',
+		noData: 'Noch keine Daten. Der erste Abruf läuft direkt nach dem Verbinden.',
+		reauth: 'Die Verbindung muss neu autorisiert werden. Die Werte unten sind nicht aktuell.',
+		vehicles: 'Fahrzeug',
+		location: 'Standort',
+		noPosition: 'Das Fahrzeug hat keine Position gemeldet.',
+		mapLabel: 'Karte mit der Position des Fahrzeugs',
+		positionTime: 'Position {time}',
+		range: 'Reichweite',
+		soc: 'Ladestand',
+		timeToFull: 'voll in {time}',
+		updated: 'Aktualisiert {time}',
+		stale: 'veraltet',
+		details: 'Alle Werte',
+		map: {
+			'CooperativeGesturesHandler.WindowsHelpText': 'Strg + Scrollen zum Zoomen der Karte',
+			'CooperativeGesturesHandler.MacHelpText': '⌘ + Scrollen zum Zoomen der Karte',
+			'CooperativeGesturesHandler.MobileHelpText': 'Karte mit zwei Fingern bewegen',
+			'AttributionControl.ToggleAttribution': 'Quellenangaben ein- oder ausblenden'
+		}
 	},
 	menu: {
 		open: 'Benutzermenü',
@@ -215,9 +235,29 @@ const en: Messages = {
 		}
 	},
 	home: {
-		label: 'EV Dashboard',
-		title: 'Coming soon',
-		text: 'The foundation is running. Connect your vehicle on the account page; the dashboard follows in the next step.'
+		noVehicleTitle: 'No vehicle connected yet',
+		noVehicleText:
+			'Connect your vehicle on the account page. Its location and range then show up here.',
+		toAccount: 'Go to account',
+		noData: 'No data yet. The first fetch runs right after connecting.',
+		reauth: 'The connection needs to be authorized again. The values below are not current.',
+		vehicles: 'Vehicle',
+		location: 'Location',
+		noPosition: 'The vehicle has not reported a position.',
+		mapLabel: 'Map showing the position of the vehicle',
+		positionTime: 'Position {time}',
+		range: 'Range',
+		soc: 'State of charge',
+		timeToFull: 'full in {time}',
+		updated: 'Updated {time}',
+		stale: 'stale',
+		details: 'All values',
+		map: {
+			'CooperativeGesturesHandler.WindowsHelpText': 'Use Ctrl + scroll to zoom the map',
+			'CooperativeGesturesHandler.MacHelpText': 'Use ⌘ + scroll to zoom the map',
+			'CooperativeGesturesHandler.MobileHelpText': 'Use two fingers to move the map',
+			'AttributionControl.ToggleAttribution': 'Toggle attribution'
+		}
 	},
 	menu: {
 		open: 'User menu',
@@ -372,6 +412,17 @@ export function pickLocale(header: string | null | undefined): Locale {
 }
 
 /** Replaces `{name}` placeholders. */
+/** "5 minutes ago" style text for a past date. */
+export function relativeTime(date: Date | string, locale: Locale, now = Date.now()): string {
+	const seconds = Math.round((new Date(date).getTime() - now) / 1000);
+	const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+	const abs = Math.abs(seconds);
+	if (abs < 60) return rtf.format(0, 'second');
+	if (abs < 3600) return rtf.format(Math.round(seconds / 60), 'minute');
+	if (abs < 86400) return rtf.format(Math.round(seconds / 3600), 'hour');
+	return rtf.format(Math.round(seconds / 86400), 'day');
+}
+
 export function format(text: string, values: Record<string, string>) {
 	return text.replace(/\{(\w+)\}/g, (match, key: string) => values[key] ?? match);
 }

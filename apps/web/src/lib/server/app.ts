@@ -5,6 +5,7 @@ import * as env from '$app/env/private';
 import { createAuth, OIDC_PROVIDER_ID, type Auth, type AuthSettings } from './auth/config.ts';
 import { deriveKey } from './crypto.ts';
 import { openDatabase, type Database } from './db/index.ts';
+import { createGeocoder, type Geocoder } from './geocode.ts';
 import { createProviders } from './providers/index.ts';
 import { loadOrCreateSecret } from './secrets.ts';
 import { createPoller, type Poller } from './vehicles/poller.ts';
@@ -17,6 +18,8 @@ type App = {
 	encryptionKey: Buffer;
 	methods: LoginMethods;
 	vehicles: VehicleService;
+	/** Absent when GEOCODING_ENABLED is false. */
+	geocoder?: Geocoder;
 };
 
 let app: App | undefined;
@@ -65,6 +68,12 @@ function create(): App {
 			appUrl: env.APP_URL,
 			pollIntervalMs: env.POLL_INTERVAL_SECONDS * 1000
 		}),
+		geocoder: env.GEOCODING_ENABLED
+			? createGeocoder({
+					baseUrl: env.GEOCODING_URL,
+					userAgent: `ev-dashboard/${env.APP_VERSION} (+${env.APP_URL})`
+				})
+			: undefined,
 		methods: {
 			emailPassword: settings.emailPassword,
 			passkey: settings.passkey,

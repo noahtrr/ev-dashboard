@@ -46,6 +46,15 @@ Bei jedem Abruf fragt das Dashboard drei Endpunkte ab: Garage (Fahrzeugstammdate
 
 Nicht jedes Modell liefert jeden Wert; fehlende Werte zeigt das Dashboard als „–“ an. Weitere Endpunkte (Wallbox, Abfahrtszeiten, Ladepläne, Ladehistorie) werden noch nicht abgefragt.
 
+## Startseite
+
+Die Startseite zeigt für das gewählte Fahrzeug zwei Module:
+
+- **Standort:** Karte mit der Fahrzeugposition, die Straßenadresse und wann die Position ermittelt wurde. Die Adresse lässt sich abschalten, Kachel- und Adressdienst sind austauschbar (siehe [Konfiguration](Konfiguration)).
+- **Reichweite:** Reichweite in km, Ladestand als Ring und der Ladestatus, beim Laden mit der Restzeit bis voll.
+
+Sind Werte älter als das Dreifache von `POLL_INTERVAL_SECONDS` (mindestens 30 Minuten), werden sie als „veraltet“ markiert. Bei mehreren Fahrzeugen wählst du oben das Fahrzeug, „Alle Werte“ führt zur Detailseite.
+
 ## Abfrage und Aufbewahrung
 
 - Ein Hintergrunddienst in der App fragt jede aktive Verbindung alle `POLL_INTERVAL_SECONDS` Sekunden ab (Standard 300, Minimum 60), mit etwas Zufallsstreuung.

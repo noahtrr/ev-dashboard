@@ -21,6 +21,12 @@ function integer(name: string, fallback: number, min: number) {
 	};
 }
 
+function httpUrl(name: string, value: string | undefined, fallback: string) {
+	const v = value?.trim() || fallback;
+	if (!/^https?:\/\//.test(v)) throw new Error(`${name} must start with http:// or https://`);
+	return v;
+}
+
 function optional(value: string | undefined) {
 	return value?.trim() || undefined;
 }
@@ -97,5 +103,28 @@ export const variables = defineEnvVars({
 	RETENTION_DAYS: {
 		description: 'Days to keep vehicle data snapshots; 0 keeps them forever.',
 		schema: integer('RETENTION_DAYS', 365, 0)
+	},
+	GEOCODING_ENABLED: {
+		description:
+			'Show the street address of the vehicle position. Sends the position to GEOCODING_URL.',
+		schema: flag('GEOCODING_ENABLED', true)
+	},
+	GEOCODING_URL: {
+		description: 'Base URL of a Nominatim-compatible reverse geocoding service.',
+		schema: (value) => httpUrl('GEOCODING_URL', value, 'https://nominatim.openstreetmap.org')
+	},
+	MAP_TILES_URL: {
+		description:
+			'TileJSON URL of vector tiles in the OpenMapTiles schema, loaded by the browser for the map.',
+		schema: (value) => httpUrl('MAP_TILES_URL', value, 'https://tiles.openfreemap.org/planet')
+	},
+	MAP_GLYPHS_URL: {
+		description: 'Font glyph URL template ({fontstack}, {range}) for map labels.',
+		schema: (value) =>
+			httpUrl(
+				'MAP_GLYPHS_URL',
+				value,
+				'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf'
+			)
 	}
 });

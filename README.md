@@ -6,7 +6,7 @@ A self-hostable, modular web app that visualizes data from your electric vehicle
 - **Configured through `.env`:** no config files to edit.
 - **Hardened supply chain:** scanned, signed and attested images for amd64 and arm64.
 
-> Status: early. Sign-in works (email, passkey, GitHub, Google, OIDC); vehicles can be connected and are polled in the background. The dashboard view is in progress.
+> Status: early. Sign-in works (email, passkey, GitHub, Google, OIDC); vehicles can be connected and are polled in the background; the home page shows location, address, range and state of charge.
 
 ## Quick start
 
