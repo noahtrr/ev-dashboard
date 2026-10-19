@@ -47,6 +47,8 @@ export type ConnectionView = {
 	lastError: ProviderErrorCode | null;
 	createdAt: Date;
 	snapshotCount: number;
+	/** Usable battery capacity in kWh, when the owner entered it. */
+	batteryCapacityKwh: number | null;
 };
 
 export type SnapshotView = { fetchedAt: Date; data: VehicleData; raw: RawResponses };
@@ -254,6 +256,7 @@ export function createVehicleService(options: VehicleServiceOptions) {
 			label: row.label,
 			status: row.status === 'reauth' ? 'reauth' : 'active',
 			lastSuccessAt: row.lastSuccessAt,
+			batteryCapacityKwh: row.batteryCapacityKwh,
 			lastErrorAt: row.lastErrorAt,
 			lastError: ERROR_CODES.includes(row.lastError as ProviderErrorCode)
 				? (row.lastError as ProviderErrorCode)
@@ -522,6 +525,16 @@ export function createVehicleService(options: VehicleServiceOptions) {
 		return pollConnection(id);
 	}
 
+	/** Stores the usable battery capacity (kWh), or clears it with `null`. */
+	async function setBatteryCapacity(userId: string, id: string, kwh: number | null) {
+		if (!(await ownedConnection(userId, id))) return false;
+		await db
+			.update(vehicleConnection)
+			.set({ batteryCapacityKwh: kwh, updatedAt: new Date(now()) })
+			.where(and(eq(vehicleConnection.id, id), eq(vehicleConnection.userId, userId)));
+		return true;
+	}
+
 	/** Deletes the connection, its tokens and (by cascade) its snapshots. */
 	async function disconnect(userId: string, id: string): Promise<boolean> {
 		if (!(await ownedConnection(userId, id))) return false;
@@ -532,12 +545,23 @@ export function createVehicleService(options: VehicleServiceOptions) {
 	}
 
 	/** Normalized values since `since`, oldest first (bounded), for charts and sessions. */
-	async function history(userId: string, id: string, since: Date): Promise<HistoryPoint[]> {
+	async function history(
+		userId: string,
+		id: string,
+		since: Date,
+		until?: Date
+	): Promise<HistoryPoint[]> {
 		if (!(await ownedConnection(userId, id))) return [];
 		const rows = await db
 			.select({ fetchedAt: snapshot.fetchedAt, data: snapshot.data })
 			.from(snapshot)
-			.where(and(eq(snapshot.connectionId, id), gte(snapshot.fetchedAt, since)))
+			.where(
+				and(
+					eq(snapshot.connectionId, id),
+					gte(snapshot.fetchedAt, since),
+					until ? lte(snapshot.fetchedAt, until) : undefined
+				)
+			)
 			// Newest first so a cut keeps the recent end, then back to chronological order.
 			.orderBy(desc(snapshot.fetchedAt))
 			.limit(HISTORY_MAX_ROWS);
@@ -571,6 +595,7 @@ export function createVehicleService(options: VehicleServiceOptions) {
 		pollDue,
 		fetchNow,
 		disconnect,
+		setBatteryCapacity,
 		prune,
 		/** Aborts outstanding provider requests (shutdown). */
 		stop: () => abort.abort()

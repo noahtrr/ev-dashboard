@@ -14,6 +14,8 @@ export type ChargeSession = {
 	endSocPct?: number;
 	/** Percentage points added. */
 	addedPct?: number;
+	/** Energy added, estimated from `addedPct` and the usable capacity the user entered. */
+	addedKwh?: number;
 	latitude?: number;
 	longitude?: number;
 	/** Latest estimate while charging. */
@@ -102,6 +104,29 @@ export function deriveSessions(
 	return sessions.reverse();
 }
 
+export const CAPACITY_MIN_KWH = 5;
+export const CAPACITY_MAX_KWH = 250;
+
+/** Parses the capacity form field: empty clears it, "77,4" and "77.4" are accepted. */
+export function parseCapacity(
+	value: FormDataEntryValue | null
+): { ok: true; value: number | null } | { ok: false } {
+	const text = typeof value === 'string' ? value.trim().replace(',', '.') : '';
+	if (!text) return { ok: true, value: null };
+	if (!/^\d{1,3}(\.\d{1,2})?$/.test(text)) return { ok: false };
+	const kwh = Number(text);
+	if (kwh < CAPACITY_MIN_KWH || kwh > CAPACITY_MAX_KWH) return { ok: false };
+	return { ok: true, value: kwh };
+}
+
+/** Energy for a number of percentage points, when the capacity is known. */
+export const energyKwh = (pct: number | undefined, capacityKwh: number | null) =>
+	pct === undefined || capacityKwh === null ? undefined : (pct / 100) * capacityKwh;
+
+/** Adds the estimated energy to each session when the capacity is known. */
+export const withEnergy = (sessions: ChargeSession[], capacityKwh: number | null) =>
+	sessions.map((s) => ({ ...s, addedKwh: energyKwh(s.addedPct, capacityKwh) }));
+
 /**
  * Thins a time series to about `max` points for a chart. Each bucket keeps its lowest and
  * highest value (in time order), so charging peaks and dips stay visible.
@@ -126,4 +151,69 @@ export function thinSeries<T extends { t: number; soc: number }>(items: T[], max
 	const last = items[items.length - 1];
 	if (out[out.length - 1] !== last) out.push(last);
 	return out;
+}
+
+export type SessionDetails = {
+	startRangeKm?: number;
+	endRangeKm?: number;
+	odometerKm?: number;
+	minOutsideTempC?: number;
+	maxOutsideTempC?: number;
+	/** Average charging speed in percentage points per hour. */
+	pctPerHour?: number;
+	/** Average power in kW, when the energy is known. */
+	averageKw?: number;
+	/** Provider's charging status text at the last snapshot. */
+	statusRaw?: string;
+	/** When the vehicle last reported its position during the session (ISO 8601). */
+	positionAt?: string;
+	/** Snapshots that make up the session. */
+	samples: number;
+};
+
+/**
+ * Collects everything the snapshots say about one session. `points` must contain the
+ * session's snapshots; the one just before it supplies the starting range like
+ * `deriveSessions` does for the state of charge.
+ */
+export function sessionDetails(
+	points: HistoryPoint[],
+	session: ChargeSession & { addedKwh?: number },
+	maxGapMs: number
+): SessionDetails {
+	const start = session.start.getTime();
+	const end = session.end.getTime();
+	const inside = points.filter((p) => p.at.getTime() >= start && p.at.getTime() <= end);
+	const before = points.filter((p) => p.at.getTime() < start).at(-1);
+	const recentBefore = before && start - before.at.getTime() <= maxGapMs ? before : undefined;
+	const first = <K extends keyof VehicleData>(key: K, list: HistoryPoint[]) =>
+		list.find((p) => p.data[key] !== undefined)?.data[key];
+	const last = <K extends keyof VehicleData>(key: K) =>
+		inside.findLast((p) => p.data[key] !== undefined)?.data[key];
+	const temps = inside.flatMap((p) =>
+		p.data.outsideTempC === undefined ? [] : [p.data.outsideTempC]
+	);
+	const hours = (end - start) / 3_600_000;
+
+	const details: SessionDetails = { samples: inside.length };
+	const startRange = first('rangeKm', recentBefore ? [recentBefore, ...inside] : inside);
+	const endRange = last('rangeKm');
+	if (startRange !== undefined) details.startRangeKm = startRange;
+	if (endRange !== undefined) details.endRangeKm = endRange;
+	const odometer = first('odometerKm', inside);
+	if (odometer !== undefined) details.odometerKm = odometer;
+	if (temps.length) {
+		details.minOutsideTempC = Math.min(...temps);
+		details.maxOutsideTempC = Math.max(...temps);
+	}
+	// Under ten minutes the snapshot interval makes a rate meaningless.
+	if (hours >= 1 / 6) {
+		if (session.addedPct !== undefined) details.pctPerHour = session.addedPct / hours;
+		if (session.addedKwh !== undefined) details.averageKw = session.addedKwh / hours;
+	}
+	const status = last('chargingStatusRaw');
+	if (status !== undefined) details.statusRaw = status;
+	const positionAt = last('positionAt');
+	if (positionAt !== undefined) details.positionAt = positionAt;
+	return details;
 }

@@ -2,7 +2,7 @@
 	import { resolve } from '$app/paths';
 	import TopBar from '#lib/components/TopBar.svelte';
 	import VehicleMap from '#lib/components/VehicleMap.svelte';
-	import { clockTime, DASH, duration, minutesBetween, wholeNumber } from '#lib/format.ts';
+	import { clockTime, DASH, duration, energy, minutesBetween, wholeNumber } from '#lib/format.ts';
 	import { format, messages, relativeTime } from '#lib/i18n.ts';
 	import type { PageProps } from './$types';
 
@@ -194,9 +194,13 @@
 					<h2 id="charging-title" class="title">{c.title}</h2>
 					{#if session}
 						<p class="big small-big" class:live={session.ongoing}>
-							{session.addedPct === undefined ? DASH : `+${number(session.addedPct)}`}<span
-								class="unit">%</span
-							>
+							{#if session.addedKwh !== undefined}
+								+{energy(session.addedKwh, data.locale)}<span class="unit">kWh</span>
+							{:else}
+								{session.addedPct === undefined ? DASH : `+${number(session.addedPct)}`}<span
+									class="unit">%</span
+								>
+							{/if}
 						</p>
 						<p class="context" class:charging={session.ongoing}>
 							{[

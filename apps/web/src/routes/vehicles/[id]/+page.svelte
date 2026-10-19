@@ -1,10 +1,11 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import TopBar from '#lib/components/TopBar.svelte';
 	import { format, messages } from '#lib/i18n.ts';
 	import type { PageProps } from './$types';
 
-	let { data }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 	const t = $derived(messages[data.locale]);
 	const d = $derived(t.vehicleDetail);
 	const localeTag = $derived(data.locale === 'de' ? 'de-DE' : 'en-GB');
@@ -101,6 +102,42 @@
 			</dl>
 		{:else}
 			<p class="muted">{d.noData}</p>
+		{/if}
+	</section>
+
+	<section class="card" aria-labelledby="battery">
+		<h2 id="battery">{d.capacityTitle}</h2>
+		<p class="muted small">{d.capacityIntro}</p>
+		<form
+			class="capacity"
+			method="POST"
+			action="?/capacity"
+			use:enhance={() =>
+				({ update }) =>
+					update({ reset: false })}
+		>
+			<label class="field">
+				{d.capacityLabel}
+				<span class="with-unit">
+					<input
+						name="capacity"
+						inputmode="decimal"
+						autocomplete="off"
+						placeholder="77"
+						value={data.connection.batteryCapacityKwh?.toLocaleString(localeTag) ?? ''}
+						aria-invalid={form?.capacityError ? 'true' : undefined}
+						aria-describedby="capacity-hint"
+					/>
+					<span class="unit">kWh</span>
+				</span>
+			</label>
+			<button class="btn" type="submit">{d.capacitySave}</button>
+		</form>
+		<p id="capacity-hint" class="muted small">{d.capacityHint}</p>
+		{#if form?.capacityError}
+			<p class="notice notice-error" role="alert">{d.capacityInvalid}</p>
+		{:else if form?.capacitySaved}
+			<p class="notice notice-ok" role="status">{d.capacitySaved}</p>
 		{/if}
 	</section>
 
@@ -227,6 +264,27 @@
 		.values {
 			grid-template-columns: repeat(3, minmax(0, 1fr));
 		}
+	}
+
+	.capacity {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		gap: 12px;
+	}
+
+	.with-unit {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.with-unit input {
+		width: 120px;
+	}
+
+	.with-unit .unit {
+		color: var(--muted);
 	}
 
 	.raw {

@@ -18,6 +18,11 @@ export function wholeNumber(value: number, locale: Locale): string {
 	return value.toLocaleString(localeTag(locale), { maximumFractionDigits: 0 });
 }
 
+/** Energy in kWh: one decimal for small amounts, whole numbers otherwise. */
+export function energy(kwh: number, locale: Locale): string {
+	return kwh.toLocaleString(localeTag(locale), { maximumFractionDigits: kwh < 10 ? 1 : 0 });
+}
+
 export function dateTime(value: Date | string, locale: Locale): string {
 	return new Date(value).toLocaleString(localeTag(locale), {
 		dateStyle: 'medium',

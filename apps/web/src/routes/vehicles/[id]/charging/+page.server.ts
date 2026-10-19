@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { getApp } from '#lib/server/app.ts';
-import { deriveSessions, thinSeries } from '#lib/server/vehicles/charging.ts';
+import { deriveSessions, thinSeries, withEnergy } from '#lib/server/vehicles/charging.ts';
 import type { PageServerLoad } from './$types';
 
 const PERIODS = [7, 30, 90] as const;
@@ -20,13 +20,20 @@ export const load = (async ({ locals, params, url }) => {
 	const to = Date.now();
 	const from = to - days * 24 * 3600 * 1000;
 	const points = await vehicles.history(locals.user.id, params.id, new Date(from));
-	const sessions = deriveSessions(points, vehicles.staleAfterMs, to);
+	const sessions = withEnergy(
+		deriveSessions(points, vehicles.staleAfterMs, to),
+		connection.batteryCapacityKwh
+	);
 	const soc = points
 		.filter((p) => p.data.stateOfChargePct !== undefined)
 		.map((p) => ({ t: p.at.getTime(), soc: p.data.stateOfChargePct! }));
 
 	return {
-		connection: { id: connection.id, label: connection.label },
+		connection: {
+			id: connection.id,
+			label: connection.label,
+			batteryCapacityKwh: connection.batteryCapacityKwh
+		},
 		days,
 		periods: [...PERIODS],
 		from,

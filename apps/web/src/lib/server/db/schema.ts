@@ -2,7 +2,7 @@
 // (field names must match); the vehicle tables below belong to the app.
 // After changing this file run `pnpm --filter @ev-dashboard/web db:generate`.
 import { sql } from 'drizzle-orm';
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 const now = sql`(cast(unixepoch('subsecond') * 1000 as integer))`;
 
@@ -147,6 +147,8 @@ export const vehicleConnection = sqliteTable(
 		/** Short error code, never a provider message (could echo tokens). */
 		lastError: text('last_error'),
 		failureCount: integer('failure_count').notNull().default(0),
+		/** Usable battery capacity in kWh, entered by the owner; turns percentages into energy. */
+		batteryCapacityKwh: real('battery_capacity_kwh'),
 		nextPollAt: integer('next_poll_at', { mode: 'timestamp_ms' }),
 		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
 		updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)

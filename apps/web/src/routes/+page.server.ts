@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import * as env from '$app/env/private';
 import { getApp } from '#lib/server/app.ts';
-import { deriveSessions } from '#lib/server/vehicles/charging.ts';
+import { deriveSessions, withEnergy } from '#lib/server/vehicles/charging.ts';
 import type { PageServerLoad } from './$types';
 
 /** How far back the home page looks for the last charging session. */
@@ -17,9 +17,12 @@ export const load = (async ({ locals, url }) => {
 	// The newest session (running or finished) for the charging module.
 	const since = new Date(Date.now() - CHARGING_LOOKBACK_DAYS * 24 * 3600 * 1000);
 	const [lastSession] = current
-		? deriveSessions(
-				await vehicles.history(locals.user.id, current.id, since),
-				vehicles.staleAfterMs
+		? withEnergy(
+				deriveSessions(
+					await vehicles.history(locals.user.id, current.id, since),
+					vehicles.staleAfterMs
+				),
+				current.batteryCapacityKwh
 			)
 		: [];
 	return {

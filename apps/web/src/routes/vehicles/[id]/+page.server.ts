@@ -1,6 +1,7 @@
-import { error } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { getApp } from '#lib/server/app.ts';
-import type { PageServerLoad } from './$types';
+import { parseCapacity } from '#lib/server/vehicles/charging.ts';
+import type { Actions, PageServerLoad } from './$types';
 
 /** Longest raw JSON text sent to the page per endpoint. */
 const MAX_RAW_CHARS = 200_000;
@@ -28,3 +29,18 @@ export const load = (async ({ locals, params }) => {
 		raw
 	};
 }) satisfies PageServerLoad;
+
+export const actions: Actions = {
+	capacity: async ({ locals, params, request }) => {
+		if (!locals.user) error(401, 'Unauthorized');
+		const parsed = parseCapacity((await request.formData()).get('capacity'));
+		if (!parsed.ok) return fail(400, { capacityError: true });
+		const saved = await getApp().vehicles.setBatteryCapacity(
+			locals.user.id,
+			params.id,
+			parsed.value
+		);
+		if (!saved) error(404, 'Not found');
+		return { capacitySaved: true };
+	}
+};

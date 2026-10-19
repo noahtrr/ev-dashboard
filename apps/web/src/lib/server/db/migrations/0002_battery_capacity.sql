@@ -1,0 +1,1 @@
+ALTER TABLE `vehicle_connection` ADD `battery_capacity_kwh` real;

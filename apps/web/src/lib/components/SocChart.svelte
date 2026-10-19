@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { dateTime, wholeNumber } from '#lib/format.ts';
+	import { clockTime, dateTime, wholeNumber } from '#lib/format.ts';
 	import type { Locale } from '#lib/i18n.ts';
 
 	type Point = { t: number; soc: number };
@@ -37,24 +37,41 @@
 		return d;
 	});
 
-	// Day ticks at local midnight, thinned to fit the width.
+	const HOUR = 3600 * 1000;
+	// Spans under two days get clock-time ticks, longer ones day ticks.
+	const hourly = $derived(to - from < 48 * HOUR);
+	const maxTicks = $derived(Math.max(2, Math.floor(plotW / 70)));
+
+	// Day ticks at local midnight, or full hours, thinned to fit the width.
 	const ticks = $derived.by(() => {
-		const days: number[] = [];
+		const all: number[] = [];
 		const f = new Date(from);
+		if (hourly) {
+			const step = [1, 2, 3, 6, 12].find((h) => (to - from) / (h * HOUR) <= maxTicks) ?? 24;
+			// Hours via the calendar, so ticks stay on local full hours across DST changes.
+			for (let i = 1; ; i++) {
+				const t = new Date(f.getFullYear(), f.getMonth(), f.getDate(), f.getHours() + i).getTime();
+				if (t > to) break;
+				if (new Date(t).getHours() % step === 0) all.push(t);
+			}
+			return all;
+		}
 		// Midnights via the calendar, so DST changes keep ticks on the day boundary.
 		for (let i = 1; ; i++) {
 			const t = new Date(f.getFullYear(), f.getMonth(), f.getDate() + i).getTime();
 			if (t > to) break;
-			days.push(t);
+			all.push(t);
 		}
-		const every = Math.max(1, Math.ceil(days.length / Math.max(2, Math.floor(plotW / 70))));
-		return days.filter((_, i) => i % every === 0);
+		const every = Math.max(1, Math.ceil(all.length / maxTicks));
+		return all.filter((_, i) => i % every === 0);
 	});
 	const tickLabel = (t: number) =>
-		new Date(t).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-GB', {
-			day: 'numeric',
-			month: 'short'
-		});
+		hourly
+			? clockTime(new Date(t), locale)
+			: new Date(t).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-GB', {
+					day: 'numeric',
+					month: 'short'
+				});
 
 	let active = $state<number | null>(null);
 	const hovered = $derived(active === null ? null : points[active]);

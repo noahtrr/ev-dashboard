@@ -3,7 +3,7 @@
 	import { resolve } from '$app/paths';
 	import SocChart from '#lib/components/SocChart.svelte';
 	import TopBar from '#lib/components/TopBar.svelte';
-	import { DASH, dateTime, duration, minutesBetween, wholeNumber } from '#lib/format.ts';
+	import { DASH, dateTime, duration, energy, minutesBetween, wholeNumber } from '#lib/format.ts';
 	import { format, messages } from '#lib/i18n.ts';
 	import type { PageProps } from './$types';
 
@@ -11,10 +11,19 @@
 	const t = $derived(messages[data.locale]);
 	const c = $derived(t.charging);
 	const number = (value: number) => wholeNumber(value, data.locale);
+	const capacity = $derived(data.connection.batteryCapacityKwh);
+	// With a known capacity amounts are shown in kWh, otherwise in percentage points.
+	const amount = (s: { addedPct?: number; addedKwh?: number }) =>
+		s.addedKwh !== undefined
+			? `+${energy(s.addedKwh, data.locale)} kWh`
+			: s.addedPct === undefined
+				? DASH
+				: `+${number(s.addedPct)} %`;
 
 	const totals = $derived({
 		count: data.sessions.length,
-		added: data.sessions.reduce((sum, s) => sum + (s.addedPct ?? 0), 0),
+		addedPct: data.sessions.reduce((sum, s) => sum + (s.addedPct ?? 0), 0),
+		addedKwh: data.sessions.reduce((sum, s) => sum + (s.addedKwh ?? 0), 0),
 		minutes: data.sessions.reduce((sum, s) => sum + minutesBetween(s.start, s.end), 0)
 	});
 	const bands = $derived(
@@ -57,7 +66,13 @@
 		</div>
 		<div>
 			<dt>{c.totalAdded}</dt>
-			<dd>{totals.count ? `+${number(totals.added)} %` : DASH}</dd>
+			<dd>
+				{totals.count
+					? amount(
+							capacity === null ? { addedPct: totals.addedPct } : { addedKwh: totals.addedKwh }
+						)
+					: DASH}
+			</dd>
 		</div>
 		<div>
 			<dt>{c.totalDuration}</dt>
@@ -96,7 +111,7 @@
 						<tr>
 							<th scope="col">{c.start}</th>
 							<th scope="col">{c.duration}</th>
-							<th scope="col">{c.level}</th>
+							<th scope="col" class="level">{c.level}</th>
 							<th scope="col" class="num">{c.added}</th>
 						</tr>
 					</thead>
@@ -104,24 +119,37 @@
 						{#each data.sessions as s (s.start)}
 							<tr>
 								<td>
-									{dateTime(s.start, data.locale)}
+									<a
+										class="row-link"
+										href={resolve('/vehicles/[id]/charging/[start]', {
+											id: data.connection.id,
+											start: String(new Date(s.start).getTime())
+										})}
+										aria-label={format(c.open, { date: dateTime(s.start, data.locale) })}
+										>{dateTime(s.start, data.locale)}</a
+									>
 									{#if s.ongoing}<span class="live">{c.ongoing}</span>{/if}
 								</td>
 								<td>{duration(minutesBetween(s.start, s.end))}</td>
-								<td class="mono">
+								<td class="mono level">
 									{s.startSocPct !== undefined && s.endSocPct !== undefined
 										? `${number(s.startSocPct)} → ${number(s.endSocPct)} %`
 										: DASH}
 								</td>
-								<td class="num mono"
-									>{s.addedPct === undefined ? DASH : `+${number(s.addedPct)} %`}</td
-								>
+								<td class="num mono">{amount(s)}</td>
 							</tr>
 						{/each}
 					</tbody>
 				</table>
 			</div>
-			<p class="muted small">{c.percentNote}</p>
+			<p class="muted small">
+				{#if capacity === null}
+					{c.percentNote}
+					<a href={resolve('/vehicles/[id]', { id: data.connection.id })}>{c.capacityLink}</a>
+				{:else}
+					{format(c.energyNote, { capacity: energy(capacity, data.locale) })}
+				{/if}
+			</p>
 		{/if}
 	</section>
 </main>
@@ -265,6 +293,51 @@
 		padding-right: 0;
 	}
 
+	/* The whole row opens the session; the link stretches over it. */
+	tbody tr {
+		position: relative;
+	}
+
+	tbody tr:hover {
+		background: color-mix(in srgb, var(--accent) 6%, transparent);
+	}
+
+	/* On phones the level moves to the session page, so the amount stays visible. */
+	@media (max-width: 480px) {
+		.level {
+			display: none;
+		}
+
+		table {
+			font-size: 13px;
+		}
+
+		th,
+		td {
+			padding-right: 8px;
+		}
+	}
+
+	.row-link {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.row-link::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+	}
+
+	.row-link:focus-visible {
+		outline: none;
+	}
+
+	tbody tr:has(.row-link:focus-visible) {
+		outline: 2px solid var(--accent);
+		outline-offset: -2px;
+	}
+
 	.live {
 		margin-left: 8px;
 		font-size: 12px;
@@ -273,5 +346,9 @@
 
 	.small {
 		font-size: 13px;
+	}
+
+	.small a {
+		color: var(--accent);
 	}
 </style>
