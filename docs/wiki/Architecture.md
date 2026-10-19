@@ -6,7 +6,7 @@
 Browser ──HTTPS──► Caddy (TLS, HTTP/3, security headers, compression)   :8080 / :8443
                      │  reverse_proxy 127.0.0.1:3000
                      ▼
-               SvelteKit app (Node 22, adapter-node)
+               SvelteKit app (Node 24, adapter-node)
                ├─ UI (Svelte 5, MapLibre + OpenStreetMap)
                ├─ Auth (Better Auth: email+password, passkey, GitHub, Google, OIDC)
                ├─ Vehicle data provider modules (connect-query)

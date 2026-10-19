@@ -2,7 +2,7 @@
 
 ## Voraussetzungen
 
-Node 22 und pnpm 10 (`corepack enable`), optional Docker.
+Node 24 und pnpm 10 (`corepack enable`), optional Docker.
 
 ## Befehle
 

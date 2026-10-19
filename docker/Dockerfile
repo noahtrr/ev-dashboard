@@ -73,7 +73,7 @@ LABEL org.opencontainers.image.title="EV Dashboard" \
 	org.opencontainers.image.version="${APP_VERSION}"
 
 # hadolint ignore=DL3018
-RUN apk add --no-cache nodejs-22 \
+RUN apk add --no-cache nodejs-24 \
 	&& addgroup -g 10001 app \
 	&& adduser -D -H -u 10001 -G app -s /sbin/nologin app \
 	&& mkdir -p /app /data /run \
