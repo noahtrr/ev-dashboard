@@ -87,6 +87,7 @@ COPY --from=build --chown=app:app /src/apps/web/package.json /app/package.json
 
 ENV APP_VERSION=${APP_VERSION} \
 	NODE_ENV=production \
+	DATA_DIR=/data \
 	XDG_DATA_HOME=/data \
 	XDG_CONFIG_HOME=/data \
 	S6_KEEP_ENV=0 \

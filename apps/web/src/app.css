@@ -65,3 +65,138 @@ body {
 		transition: none !important;
 	}
 }
+
+/* Shared building blocks for cards and forms */
+.card {
+	width: 100%;
+	padding: 24px;
+	border-radius: var(--radius);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.card h1,
+.card h2 {
+	margin: 0;
+	font-weight: 600;
+}
+
+.card h1 {
+	font-size: 28px;
+}
+
+.card h2 {
+	font-size: 18px;
+}
+
+.label {
+	font-size: 13px;
+	color: var(--accent);
+	font-weight: 500;
+}
+
+.muted {
+	margin: 0;
+	color: var(--muted);
+	line-height: 1.5;
+}
+
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	font-size: 14px;
+	color: var(--muted);
+}
+
+.field input {
+	font: inherit;
+	font-size: 16px;
+	color: var(--text);
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 12px 14px;
+	min-height: 48px;
+}
+
+.field input:focus-visible,
+.btn:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+.btn {
+	font: inherit;
+	font-size: 15px;
+	font-weight: 500;
+	min-height: 48px;
+	padding: 0 18px;
+	border-radius: 12px;
+	border: 1px solid var(--border);
+	background: transparent;
+	color: var(--text);
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	text-decoration: none;
+	transition: border-color 120ms ease;
+}
+
+.btn:hover {
+	border-color: var(--accent);
+}
+
+.btn:disabled {
+	opacity: 0.6;
+	cursor: progress;
+}
+
+.btn-primary {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--bg);
+}
+
+.btn-danger {
+	color: var(--danger);
+}
+
+.btn-danger:hover {
+	border-color: var(--danger);
+}
+
+.notice {
+	margin: 0;
+	padding: 12px 14px;
+	border-radius: 12px;
+	border: 1px solid var(--border);
+	font-size: 14px;
+	line-height: 1.4;
+}
+
+.notice-error {
+	color: var(--danger);
+	border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+.notice-ok {
+	color: var(--ok);
+	border-color: color-mix(in srgb, var(--ok) 40%, transparent);
+}
+
+.mono {
+	font-family: var(--font-mono);
+}
+
+main.center {
+	min-height: 100vh;
+	display: grid;
+	place-items: center;
+	padding: var(--space);
+}

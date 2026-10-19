@@ -1,12 +1,12 @@
 # Vehicle data
 
-The dashboard reads vehicle data through the manufacturer's official, read-only API. Each operator registers **their own app** in the provider's developer portal and puts its credentials into `.env`. No credentials are shared with the project.
+The dashboard reads vehicle data through the manufacturer's official, read-only API. Each operator registers **their own app** in the provider's developer portal and enters its credentials on the account page in the dashboard. No credentials are shared with the project.
 
 ## Flow
 
 1. Create an app in the provider's developer portal (personal use) and register this redirect URI:
    `https://<your-domain>/api/providers/<provider>/callback`
-2. Put client ID and client secret into `.env` (`VEHICLE_CLIENT_ID`, `VEHICLE_CLIENT_SECRET`).
+2. Enter client ID and client secret in the dashboard under **Account → Vehicle API**. Every user stores their own credentials; they are encrypted with `ENCRYPTION_KEY` (AES-256-GCM), and the secret is never shown again after saving.
 3. Choose "Connect vehicle" in the dashboard. You are sent to the provider's sign-in page and pick the vehicle to share.
 4. The dashboard receives an access token and a refresh token (OAuth 2.0 authorization code flow). Both are stored encrypted in the database.
 5. A background job fetches the data at a fixed interval.

@@ -1,4 +1,7 @@
 #!/command/with-contenv sh
 cd /app || exit 1
-export HOST=127.0.0.1 PORT=3000
-exec node build/index.js
+# Caddy is the only client; take scheme and host from its X-Forwarded-* headers so the
+# app sees the public origin (needed for SvelteKit's CSRF check on form actions).
+export HOST=127.0.0.1 PORT=3000 PROTOCOL_HEADER=x-forwarded-proto HOST_HEADER=x-forwarded-host
+# node:sqlite works without flags on Node 22 but still prints an ExperimentalWarning.
+exec node --disable-warning=ExperimentalWarning build/index.js

@@ -4,7 +4,7 @@
 
 **English:** Self-hostable, modular dashboard for your electric vehicle's data. Shipped as one slim all-in-one Docker image (app, SQLite, Caddy), configured through a `.env` file.
 
-> Status: Grundgerüst / scaffold. Anmeldung und Fahrzeugdaten folgen / login and vehicle data are coming next.
+> Status: früh / early. Anmeldung funktioniert, Fahrzeugdaten folgen / sign-in works, vehicle data is coming next.
 
 | Deutsch | English |
 |---|---|

@@ -13,7 +13,10 @@ pnpm lint       # Prettier + ESLint
 pnpm check      # svelte-check / TypeScript
 pnpm test       # Vitest
 pnpm build      # production build
+pnpm --filter @ev-dashboard/web db:generate   # new migration after a schema change
 ```
+
+The dev server stores its database and generated keys in `apps/web/data/` (`DATA_DIR`).
 
 Build and run the image locally:
 

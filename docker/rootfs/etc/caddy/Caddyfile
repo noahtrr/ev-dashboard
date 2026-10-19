@@ -23,5 +23,8 @@
 		-Server
 	}
 
-	reverse_proxy 127.0.0.1:3000
+	reverse_proxy 127.0.0.1:3000 {
+		# Single client address (honours trusted_proxies) for the app's auth rate limiting.
+		header_up X-Real-IP {client_ip}
+	}
 }

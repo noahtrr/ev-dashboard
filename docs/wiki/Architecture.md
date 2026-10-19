@@ -8,10 +8,10 @@ Browser ──HTTPS──► Caddy (TLS, HTTP/3, security headers, compression) 
                      ▼
                SvelteKit app (Node 22, adapter-node)
                ├─ UI (Svelte 5, MapLibre + OpenStreetMap)
-               ├─ Auth (Better Auth: email+password, passkey, GitHub, Google, OIDC)   planned
+               ├─ Auth (Better Auth: email+password, passkey, GitHub, Google, OIDC)
                ├─ Vehicle data provider modules                                     planned
                ├─ Poller (background fetching)                                      planned
-               └─ SQLite (volume /data)                                             planned
+               └─ Drizzle ORM ──► SQLite (node:sqlite, volume /data)
 ```
 
 ## Container
@@ -24,6 +24,13 @@ Browser ──HTTPS──► Caddy (TLS, HTTP/3, security headers, compression) 
 - If a service fails permanently the container exits so Docker can restart it.
 - Runs as user `app` (UID 10001) without Linux capabilities. Persistent data only under `/data`.
 - Health check: `GET /api/health` returns `{"status":"ok","version":"…","uptimeSeconds":…}`.
+
+## Data and authentication
+
+- SQLite through Node's built-in `node:sqlite` (no native addon, so no ABI issues between build and runtime Node or amd64/arm64), accessed with Drizzle ORM (`drizzle-orm/sqlite-proxy`).
+- Schema in `apps/web/src/lib/server/db/schema.ts`; migrations are generated with drizzle-kit and bundled into the build. They run automatically at startup.
+- Better Auth uses the Drizzle adapter. The sign-up rule (first account = administrator, afterwards only with `AUTH_ALLOW_SIGNUP`) runs in a database hook for every new account, whatever the method.
+- Caddy sets `X-Real-IP` (for rate limiting) and `X-Forwarded-Proto`/`-Host`, from which the app derives its public origin.
 
 ## Modularity
 
