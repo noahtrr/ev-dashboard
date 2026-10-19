@@ -10,6 +10,17 @@ function flag(name: string, fallback: boolean) {
 	};
 }
 
+function integer(name: string, fallback: number, min: number) {
+	return (value: string | undefined) => {
+		const v = value?.trim();
+		if (!v) return fallback;
+		if (!/^\d+$/.test(v)) throw new Error(`${name} must be a whole number (got '${value}')`);
+		const n = Number(v);
+		if (n < min) throw new Error(`${name} must be at least ${min} (got ${n})`);
+		return n;
+	};
+}
+
 function optional(value: string | undefined) {
 	return value?.trim() || undefined;
 }
@@ -77,5 +88,14 @@ export const variables = defineEnvVars({
 	OIDC_NAME: {
 		description: 'Label of the SSO button.',
 		schema: (value) => value?.trim() || 'SSO'
+	},
+	POLL_INTERVAL_SECONDS: {
+		description:
+			'Seconds between two vehicle data fetches per connected vehicle (minimum 60). Polling too often can get the vehicle account locked.',
+		schema: integer('POLL_INTERVAL_SECONDS', 300, 60)
+	},
+	RETENTION_DAYS: {
+		description: 'Days to keep vehicle data snapshots; 0 keeps them forever.',
+		schema: integer('RETENTION_DAYS', 365, 0)
 	}
 });

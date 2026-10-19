@@ -40,7 +40,7 @@ const de = {
 	home: {
 		label: 'EV Dashboard',
 		title: 'Bald verfügbar',
-		text: 'Das Grundgerüst läuft. Fahrzeugdaten folgen in den nächsten Schritten.'
+		text: 'Das Grundgerüst läuft. Verbinde dein Fahrzeug auf der Kontoseite; das Dashboard folgt im nächsten Schritt.'
 	},
 	menu: {
 		open: 'Benutzermenü',
@@ -79,6 +79,85 @@ const de = {
 			tooLong: 'Eine Eingabe ist zu lang.',
 			invalid: 'Eine Eingabe enthält ungültige Zeichen.'
 		}
+	},
+	connections: {
+		title: 'Fahrzeuge',
+		intro:
+			'Jede Verbindung ist eine Freigabe beim Anbieter für das dort gewählte Fahrzeug. Für mehrere Fahrzeuge verbindest du mehrmals.',
+		redirectUri: 'Redirect-URI',
+		redirectHint: 'Trage diese Adresse in deiner App beim Anbieter als Redirect-URI ein.',
+		copy: 'Kopieren',
+		copied: 'Kopiert',
+		connect: 'Fahrzeug verbinden',
+		connectHint: 'Speichere zuerst die Zugangsdaten der Fahrzeug-API.',
+		none: 'Noch kein Fahrzeug verbunden.',
+		unnamed: 'Fahrzeug',
+		statusActive: 'Verbunden',
+		statusReauth: 'Neu autorisieren',
+		reauthHint: 'Der Zugriff ist abgelaufen oder wurde widerrufen. Verbinde das Fahrzeug erneut.',
+		lastSuccess: 'Letzter Abruf',
+		lastError: 'Letzter Fehler',
+		never: 'noch nie',
+		fetchNow: 'Jetzt abrufen',
+		details: 'Details',
+		disconnect: 'Trennen',
+		confirmDisconnect:
+			'Verbindung trennen? Die Tokens und alle {count} gespeicherten Datenpunkte dieses Fahrzeugs werden gelöscht.',
+		confirm: 'Trennen und löschen',
+		disconnected: 'Verbindung getrennt und Daten gelöscht.',
+		fetched: 'Daten abgerufen.',
+		results: {
+			connected: 'Fahrzeug verbunden.',
+			state: 'Die Anmeldung war ungültig oder abgelaufen. Bitte versuche es erneut.',
+			denied: 'Die Freigabe wurde beim Anbieter abgebrochen.',
+			missing_credentials: 'Es sind keine Zugangsdaten der Fahrzeug-API gespeichert.',
+			exchange:
+				'Der Anbieter hat die Anmeldung nicht bestätigt. Prüfe Client ID, Client Secret und Redirect-URI.',
+			unknown_provider: 'Unbekannter Anbieter.'
+		},
+		errors: {
+			auth: 'Zugriff abgelehnt',
+			rate_limited: 'Zu viele Anfragen beim Anbieter',
+			http: 'Fehler beim Anbieter',
+			timeout: 'Zeitüberschreitung',
+			network: 'Netzwerkfehler',
+			invalid_response: 'Unerwartete Antwort',
+			missing_credentials: 'Zugangsdaten fehlen',
+			internal: 'Interner Fehler',
+			not_found: 'Verbindung nicht gefunden',
+			reauth: 'Neu autorisieren nötig',
+			too_soon: 'Bitte warte eine Minute zwischen zwei Abrufen.',
+			busy: 'Ein Abruf läuft bereits.'
+		}
+	},
+	vehicleDetail: {
+		back: 'Zurück zum Konto',
+		latest: 'Neueste Werte',
+		fetchedAt: 'Abgerufen am {date}',
+		reportedAt: 'Vom Fahrzeug gemeldet',
+		noData: 'Noch keine Daten abgerufen.',
+		position: 'Position',
+		soc: 'Ladestand',
+		range: 'Reichweite',
+		plug: 'Ladekabel',
+		plugged: 'eingesteckt',
+		unplugged: 'nicht eingesteckt',
+		charging: 'Ladestatus',
+		chargingStates: {
+			charging: 'lädt',
+			notCharging: 'lädt nicht',
+			complete: 'abgeschlossen',
+			fault: 'Fehler'
+		},
+		odometer: 'Kilometerstand',
+		outsideTemp: 'Außentemperatur',
+		battery12v: '12-V-Batterie',
+		alerts: 'Warnmeldungen',
+		raw: 'Rohdaten',
+		rawIntro:
+			'Die unveränderten Antworten des letzten Abrufs je Endpunkt. Sie zeigen, welche Werte dein Fahrzeug liefert.',
+		status: 'HTTP-Status {status}',
+		truncated: 'gekürzt'
 	}
 };
 
@@ -125,7 +204,7 @@ const en: Messages = {
 	home: {
 		label: 'EV Dashboard',
 		title: 'Coming soon',
-		text: 'The foundation is running. Vehicle data follows in the next steps.'
+		text: 'The foundation is running. Connect your vehicle on the account page; the dashboard follows in the next step.'
 	},
 	menu: {
 		open: 'User menu',
@@ -163,6 +242,85 @@ const en: Messages = {
 			tooLong: 'An entry is too long.',
 			invalid: 'An entry contains invalid characters.'
 		}
+	},
+	connections: {
+		title: 'Vehicles',
+		intro:
+			'Each connection is one consent at the provider for the vehicle you pick there. Connect again for more vehicles.',
+		redirectUri: 'Redirect URI',
+		redirectHint: 'Register this address as redirect URI in your app at the provider.',
+		copy: 'Copy',
+		copied: 'Copied',
+		connect: 'Connect vehicle',
+		connectHint: 'Save the vehicle API credentials first.',
+		none: 'No vehicle connected yet.',
+		unnamed: 'Vehicle',
+		statusActive: 'Connected',
+		statusReauth: 'Needs re-authorization',
+		reauthHint: 'Access expired or was revoked. Connect the vehicle again.',
+		lastSuccess: 'Last fetch',
+		lastError: 'Last error',
+		never: 'never',
+		fetchNow: 'Fetch now',
+		details: 'Details',
+		disconnect: 'Disconnect',
+		confirmDisconnect:
+			'Disconnect? The tokens and all {count} stored data points of this vehicle will be deleted.',
+		confirm: 'Disconnect and delete',
+		disconnected: 'Disconnected and data deleted.',
+		fetched: 'Data fetched.',
+		results: {
+			connected: 'Vehicle connected.',
+			state: 'The sign-in was invalid or expired. Please try again.',
+			denied: 'Consent was cancelled at the provider.',
+			missing_credentials: 'No vehicle API credentials are saved.',
+			exchange:
+				'The provider did not confirm the sign-in. Check client ID, client secret and redirect URI.',
+			unknown_provider: 'Unknown provider.'
+		},
+		errors: {
+			auth: 'Access denied',
+			rate_limited: 'Too many requests at the provider',
+			http: 'Provider error',
+			timeout: 'Timeout',
+			network: 'Network error',
+			invalid_response: 'Unexpected response',
+			missing_credentials: 'Credentials missing',
+			internal: 'Internal error',
+			not_found: 'Connection not found',
+			reauth: 'Re-authorization needed',
+			too_soon: 'Please wait a minute between two fetches.',
+			busy: 'A fetch is already running.'
+		}
+	},
+	vehicleDetail: {
+		back: 'Back to account',
+		latest: 'Latest values',
+		fetchedAt: 'Fetched on {date}',
+		reportedAt: 'Reported by the vehicle',
+		noData: 'No data fetched yet.',
+		position: 'Position',
+		soc: 'State of charge',
+		range: 'Range',
+		plug: 'Charging cable',
+		plugged: 'plugged in',
+		unplugged: 'not plugged in',
+		charging: 'Charging status',
+		chargingStates: {
+			charging: 'charging',
+			notCharging: 'not charging',
+			complete: 'complete',
+			fault: 'fault'
+		},
+		odometer: 'Odometer',
+		outsideTemp: 'Outside temperature',
+		battery12v: '12 V battery',
+		alerts: 'Alerts',
+		raw: 'Raw data',
+		rawIntro:
+			'The unmodified responses of the latest fetch per endpoint. They show which values your vehicle reports.',
+		status: 'HTTP status {status}',
+		truncated: 'truncated'
 	}
 };
 

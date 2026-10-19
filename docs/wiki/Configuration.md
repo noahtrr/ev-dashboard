@@ -17,7 +17,7 @@ All configuration is done through environment variables in the `.env` file. Temp
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `AUTH_SECRET` | no | generated | Signs sessions, at least 32 characters (`openssl rand -base64 32`). Empty: generated on first start and stored in `/data/auth-secret` (mode 0600). Changing it signs everyone out. |
-| `ENCRYPTION_KEY` | no | generated | Encrypts the vehicle API credentials in the database, at least 32 characters. Empty: generated in `/data/encryption-key` (0600). After a change, stored credentials can no longer be read and have to be entered again. |
+| `ENCRYPTION_KEY` | no | generated | Encrypts the vehicle API credentials in the database, at least 32 characters. Empty: generated in `/data/encryption-key` (0600). After a change, stored credentials and vehicle tokens can no longer be read: enter the credentials again and reconnect the vehicles. |
 | `AUTH_EMAIL_PASSWORD` | no | `true` | Sign in with email and password. |
 | `AUTH_PASSKEY` | no | `true` | Sign in with a passkey. The relying party is the host name of `APP_URL`. |
 | `AUTH_ALLOW_SIGNUP` | no | `false` | Allow new registrations after the first account, including the first sign-in of unknown users via GitHub, Google or SSO. |
@@ -49,7 +49,12 @@ At the OIDC provider, create a confidential client (authorization code with PKCE
 
 ## Vehicle API
 
-The credentials for the vehicle data provider (client ID and client secret) are not part of `.env`. Every user enters their own on the **Account → Vehicle API** page. They are stored encrypted with `ENCRYPTION_KEY` (AES-256-GCM); the secret is never shown again after saving. See [Vehicle data](Vehicle-Data).
+The credentials for the vehicle data provider (client ID and client secret) are not part of `.env`. Every user enters their own on the **Account → Vehicle API** page and registers the redirect URI `<APP_URL>/api/providers/connect-query/callback` (shown on the account page) in their app at the provider. Credentials and vehicle tokens are stored encrypted with `ENCRYPTION_KEY` (AES-256-GCM). See [Vehicle data](Vehicle-Data).
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `POLL_INTERVAL_SECONDS` | no | `300` | Seconds between two fetches per connected vehicle, at least `60`. Polling too often can get the vehicle account locked at the provider. |
+| `RETENTION_DAYS` | no | `365` | Days fetched vehicle data is kept; older data is deleted once a day. `0` = forever. |
 
 ## Data
 

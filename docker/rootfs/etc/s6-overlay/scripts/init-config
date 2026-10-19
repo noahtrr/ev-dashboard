@@ -1,5 +1,5 @@
 #!/command/with-contenv sh
-# Validates the .env configuration and derives the Caddy and app settings.
+# Validates the .env configuration and derives the Caddy settings.
 set -eu
 
 env_dir=/run/s6/container_environment
@@ -43,7 +43,6 @@ esac
 printf '%s' "$site" >"$env_dir/CADDY_SITE"
 printf '%s' "$tls" >"$env_dir/CADDY_TLS"
 printf '%s' "$email" >"$env_dir/CADDY_EMAIL"
-printf '%s' "${APP_URL%/}" >"$env_dir/ORIGIN"
 
 mkdir -p /data/caddy
 echo "[init-config] serving $APP_URL (TLS_MODE=$mode)"

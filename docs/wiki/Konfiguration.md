@@ -17,7 +17,7 @@ Die gesamte Konfiguration erfolgt über Umgebungsvariablen in der `.env`-Datei. 
 | Variable | Pflicht | Standard | Beschreibung |
 |---|---|---|---|
 | `AUTH_SECRET` | nein | erzeugt | Signiert die Sitzungen, mindestens 32 Zeichen (`openssl rand -base64 32`). Leer: wird beim ersten Start erzeugt und in `/data/auth-secret` (Modus 0600) gespeichert. Eine Änderung meldet alle Benutzer ab. |
-| `ENCRYPTION_KEY` | nein | erzeugt | Verschlüsselt die Fahrzeug-API-Zugangsdaten in der Datenbank, mindestens 32 Zeichen. Leer: wird in `/data/encryption-key` (0600) erzeugt. Nach einer Änderung sind gespeicherte Zugangsdaten unlesbar und müssen neu eingegeben werden. |
+| `ENCRYPTION_KEY` | nein | erzeugt | Verschlüsselt die Fahrzeug-API-Zugangsdaten in der Datenbank, mindestens 32 Zeichen. Leer: wird in `/data/encryption-key` (0600) erzeugt. Nach einer Änderung sind gespeicherte Zugangsdaten und Fahrzeug-Tokens unlesbar: Zugangsdaten neu eingeben und Fahrzeuge neu verbinden. |
 | `AUTH_EMAIL_PASSWORD` | nein | `true` | Anmeldung mit E-Mail und Passwort. |
 | `AUTH_PASSKEY` | nein | `true` | Anmeldung mit Passkey. Relying Party ist der Hostname aus `APP_URL`. |
 | `AUTH_ALLOW_SIGNUP` | nein | `false` | Neue Registrierungen nach dem ersten Konto erlauben, auch die erste Anmeldung unbekannter Benutzer über GitHub, Google oder SSO. |
@@ -49,7 +49,12 @@ Beim OIDC-Anbieter einen vertraulichen Client (Authorization Code mit PKCE) mit 
 
 ## Fahrzeug-API
 
-Die Zugangsdaten für den Fahrzeugdaten-Anbieter (Client ID und Client Secret) stehen nicht in der `.env`. Jeder Benutzer trägt seine eigenen auf der Seite **Konto → Fahrzeug-API** ein. Sie werden mit `ENCRYPTION_KEY` (AES-256-GCM) verschlüsselt gespeichert; das Secret wird nach dem Speichern nie wieder angezeigt. Siehe [Fahrzeugdaten](Fahrzeugdaten).
+Die Zugangsdaten für den Fahrzeugdaten-Anbieter (Client ID und Client Secret) stehen nicht in der `.env`. Jeder Benutzer trägt seine eigenen auf der Seite **Konto → Fahrzeug-API** ein und registriert in seiner App beim Anbieter die Redirect-URI `<APP_URL>/api/providers/connect-query/callback` (die Kontoseite zeigt sie an). Die Zugangsdaten und die Fahrzeug-Tokens werden mit `ENCRYPTION_KEY` (AES-256-GCM) verschlüsselt gespeichert. Siehe [Fahrzeugdaten](Fahrzeugdaten).
+
+| Variable | Pflicht | Standard | Beschreibung |
+|---|---|---|---|
+| `POLL_INTERVAL_SECONDS` | nein | `300` | Sekunden zwischen zwei Abrufen je verbundenem Fahrzeug, mindestens `60`. Zu häufiges Abfragen kann das Fahrzeugkonto beim Anbieter sperren. |
+| `RETENTION_DAYS` | nein | `365` | Tage, die abgerufene Fahrzeugdaten aufbewahrt werden; ältere werden einmal täglich gelöscht. `0` = unbegrenzt. |
 
 ## Daten
 

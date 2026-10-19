@@ -1,22 +1,64 @@
 # Fahrzeugdaten
 
-Das Dashboard liest Fahrzeugdaten über die offizielle, nur lesende Schnittstelle des Herstellers. Jeder Betreiber registriert dafür **eine eigene App** im Entwicklerportal des Anbieters und trägt deren Zugangsdaten im Dashboard auf der Kontoseite ein. Es werden keine Zugangsdaten mit dem Projekt geteilt.
+Das Dashboard liest Fahrzeugdaten über die offizielle, nur lesende Schnittstelle des Herstellers. Jeder Benutzer registriert dafür **eine eigene App** im Entwicklerportal des Anbieters und trägt deren Zugangsdaten im Dashboard auf der Kontoseite ein. Es werden keine Zugangsdaten mit dem Projekt geteilt.
 
-## Ablauf
+Im Code heißt das Provider-Modul neutral `connect-query`.
 
-1. Im Entwicklerportal des Anbieters eine App anlegen (persönliche Nutzung) und als Redirect-URI eintragen:
-   `https://<deine-domain>/api/providers/<provider>/callback`
-2. Client-ID und Client-Secret im Dashboard unter **Konto → Fahrzeug-API** eintragen. Jeder Benutzer hinterlegt seine eigenen Zugangsdaten; sie werden mit `ENCRYPTION_KEY` (AES-256-GCM) verschlüsselt gespeichert, und das Secret wird nach dem Speichern nie wieder angezeigt.
-3. Im Dashboard „Fahrzeug verbinden“ wählen. Du wirst zur Anmeldeseite des Anbieters geleitet und wählst dort das freizugebende Fahrzeug.
-4. Das Dashboard erhält ein Zugriffs- und ein Refresh-Token (OAuth 2.0 Authorization Code Flow). Beide werden verschlüsselt in der Datenbank gespeichert.
-5. Ein Hintergrunddienst fragt die Daten in festen Abständen ab.
+## Fahrzeug verbinden
+
+1. **App registrieren:** Im Entwicklerportal des Anbieters eine App für die persönliche Nutzung anlegen (alle Datenkategorien freigeben). Die Freischaltung kann einige Stunden dauern.
+2. **Redirect-URI eintragen:** Die Kontoseite zeigt unter **Fahrzeuge** die Redirect-URI deiner Instanz mit einem Kopieren-Knopf an. Sie lautet
+   `<APP_URL>/api/providers/connect-query/callback`
+   und muss exakt so in der App beim Anbieter stehen. Die Instanz muss unter `APP_URL` aus dem Browser erreichbar sein.
+3. **Zugangsdaten eintragen:** Client ID und Client Secret unter **Konto → Fahrzeug-API** speichern. Sie werden mit `ENCRYPTION_KEY` (AES-256-GCM) verschlüsselt gespeichert; das Secret wird nie wieder angezeigt.
+4. **Verbinden:** Unter **Konto → Fahrzeuge** auf **Fahrzeug verbinden** klicken. Du wirst zur Anmeldeseite des Anbieters geleitet, meldest dich an und wählst das freizugebende Fahrzeug. Danach kehrst du zur Kontoseite zurück, und der erste Abruf läuft sofort.
+
+Für mehrere Fahrzeuge verbindest du mehrmals: Jede Freigabe ist eine eigene Verbindung mit eigenem Token.
+
+### Verbindungen verwalten
+
+- **Status:** „Verbunden“ oder „Neu autorisieren“, dazu der Zeitpunkt des letzten erfolgreichen Abrufs und der letzte Fehler.
+- **Jetzt abrufen:** holt sofort neue Daten (höchstens einmal pro Minute).
+- **Details:** zeigt die neuesten Werte und die Rohdaten des letzten Abrufs je Endpunkt.
+- **Trennen:** löscht nach einer Rückfrage die Tokens und alle gespeicherten Daten dieses Fahrzeugs. Die Freigabe beim Anbieter selbst widerrufst du dort.
+- **Neu autorisieren:** Lässt sich das Token nicht mehr erneuern (abgelaufen, widerrufen, Zugangsdaten geändert oder gelöscht), wird die Verbindung nicht mehr abgefragt. Trenne sie und verbinde das Fahrzeug erneut.
+
+Jeder Benutzer sieht nur seine eigenen Fahrzeuge.
+
+## Abgerufene Daten
+
+Bei jedem Abruf fragt das Dashboard drei Endpunkte ab: Garage (Fahrzeugstammdaten), Telemetrie und Warnmeldungen. Die Antworten werden **unverändert** gespeichert und zusätzlich, soweit erkennbar, in einheitliche Werte übersetzt (metrische Einheiten):
+
+| Wert | Einheit |
+|---|---|
+| Position | Breiten-/Längengrad |
+| Ladestand | % |
+| Reichweite | km |
+| Ladekabel eingesteckt, Ladestatus | |
+| Kilometerstand | km |
+| Außentemperatur | °C |
+| 12-V-Batterie | V, % |
+| Anzahl Warnmeldungen | |
+| Zeitpunkt der Fahrzeugmeldung | |
+
+Nicht jedes Modell liefert jeden Wert; fehlende Werte zeigt das Dashboard als „–“ an. Weitere Endpunkte (Wallbox, Abfahrtszeiten, Ladepläne, Ladehistorie) werden noch nicht abgefragt.
+
+## Abfrage und Aufbewahrung
+
+- Ein Hintergrunddienst in der App fragt jede aktive Verbindung alle `POLL_INTERVAL_SECONDS` Sekunden ab (Standard 300, Minimum 60), mit etwas Zufallsstreuung.
+- **Zu häufiges Abfragen kann das Fahrzeugkonto beim Anbieter sperren.** Den Standard nur ändern, wenn nötig.
+- Bei Fehlern verlängert sich der Abstand für diese Verbindung schrittweise (bis 6 Stunden); eine Rate-Limit-Antwort des Anbieters wird beachtet.
+- Das Zugriffstoken wird kurz vor Ablauf automatisch erneuert. Alle Tokens liegen verschlüsselt in der Datenbank und erreichen nie den Browser.
+- Daten älter als `RETENTION_DAYS` Tage (Standard 365, `0` = unbegrenzt) werden einmal täglich gelöscht.
+
+## Bekannte Unsicherheiten
+
+- **Authorize-URL nicht bestätigt:** Die vorliegende API-Beschreibung nennt nur den Token-Endpunkt. Die verwendete Anmelde-URL stammt aus einem quelloffenen Client und ist im Code an einer Stelle hinterlegt. Schlägt die erste echte Anmeldung dort fehl, ist das die erste Stelle zum Prüfen.
+- **Antwortformate unbekannt:** Es gibt keine Beispielantworten. Die Übersetzung in einheitliche Werte ist deshalb tolerant und rät anhand typischer Feldnamen. Die Rohdaten auf der Detailseite zeigen, was dein Fahrzeug tatsächlich liefert; damit lässt sich die Übersetzung später verbessern.
+- **Mehrere Fahrzeuge in einer Freigabe:** Liefert die Garage mehrere Fahrzeuge, verwendet das Dashboard den Namen des ersten.
 
 ## Eigenschaften der Schnittstelle
 
 - **Nur lesend:** Laden starten, Verriegeln usw. sind nicht möglich.
-- **Ein Token je Fahrzeug:** Die Freigabe gilt für das beim Consent gewählte Fahrzeug. Mehrere Fahrzeuge bedeuten mehrere Verbindungen.
+- **Ein Token je Freigabe:** Die Endpunkte enthalten keine Fahrzeug-ID; das Token gilt für das beim Consent gewählte Fahrzeug.
 - **Polling statt Push:** Daten werden abgefragt, nicht vom Fahrzeug gesendet.
-- **Verfügbare Bereiche:** Telemetrie (Standort, Ladestand, Reichweite, Kilometerstand, Reifendruck, Türen, Temperaturen …), Garage (Fahrzeugstammdaten), Warnmeldungen, Wallbox, Abfahrtszeiten, Ladepläne und Ladehistorie.
-- Nicht jedes Modell liefert jeden Wert. Fehlende Werte zeigt das Dashboard als „nicht verfügbar“ an.
-
-Details zu Endpunkten und Antwortformaten folgen mit dem Provider-Modul.

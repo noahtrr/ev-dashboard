@@ -9,8 +9,8 @@ Browser ──HTTPS──► Caddy (TLS, HTTP/3, Security-Header, Kompression)  
                SvelteKit-App (Node 22, adapter-node)
                ├─ UI (Svelte 5, MapLibre + OpenStreetMap)
                ├─ Auth (Better Auth: E-Mail+Passwort, Passkey, GitHub, Google, OIDC)
-               ├─ Provider-Module für Fahrzeugdaten                                   geplant
-               ├─ Poller (Hintergrundabfrage)                                         geplant
+               ├─ Provider-Module für Fahrzeugdaten (connect-query)
+               ├─ Poller (Hintergrundabfrage, Snapshots)
                └─ Drizzle ORM ──► SQLite (node:sqlite, Volume /data)
 ```
 
@@ -35,6 +35,7 @@ Browser ──HTTPS──► Caddy (TLS, HTTP/3, Security-Header, Kompression)  
 ## Modularität
 
 - **Provider-Module** kapseln einen Fahrzeugdaten-Anbieter hinter der Schnittstelle `VehicleProvider` (`authorizeUrl`, `exchangeCode`, `refresh`, `listVehicles`, `fetchSnapshot`). Weitere Anbieter lassen sich ergänzen, ohne den Kern zu ändern.
+  Das erste Modul, `connect-query`, liegt in `apps/web/src/lib/server/providers/`. Verbindungen (eine je Freigabe, Tokens verschlüsselt) und der Poller im App-Prozess liegen in `apps/web/src/lib/server/vehicles/`; jeder Abruf landet in der Tabelle `snapshot` als einheitliche Werte plus Rohantworten.
 - **UI-Module** (Karte, Reichweite, Laden, Fahrten …) sind eigenständige Karten mit gleichem Aufbau und lassen sich ein- und ausblenden.
 
 ## Repository

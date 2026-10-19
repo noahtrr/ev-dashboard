@@ -1,7 +1,8 @@
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { asc, eq } from 'drizzle-orm';
 import { getApp } from '#lib/server/app.ts';
 import { passkey } from '#lib/server/db/schema.ts';
+import { DEFAULT_PROVIDER_ID } from '#lib/server/providers/index.ts';
 import {
 	deleteVehicleApiCredentials,
 	getVehicleApiStatus,
@@ -26,13 +27,22 @@ export const load = (async ({ locals }) => {
 				.where(eq(passkey.userId, user.id))
 				.orderBy(asc(passkey.createdAt))
 		: [];
+	const { vehicles } = getApp();
 	return {
 		passkeysEnabled: methods.passkey,
 		passkeys,
 		// Only the client ID and the timestamp; the secret never reaches the browser.
-		vehicleApi: await getVehicleApiStatus(db, encryptionKey, user.id)
+		vehicleApi: await getVehicleApiStatus(db, encryptionKey, user.id),
+		redirectUri: vehicles.redirectUri(DEFAULT_PROVIDER_ID),
+		// Status fields only; tokens stay on the server.
+		connections: await vehicles.listConnections(user.id)
 	};
 }) satisfies PageServerLoad;
+
+function connectionId(form: FormData) {
+	const id = form.get('connectionId');
+	return typeof id === 'string' && id.length <= 64 ? id : '';
+}
 
 export const actions: Actions = {
 	saveVehicleApi: async ({ locals, request }) => {
@@ -48,5 +58,28 @@ export const actions: Actions = {
 		const user = requireUser(locals);
 		await deleteVehicleApiCredentials(getApp().db, user.id);
 		return { vehicleDeleted: true };
+	},
+	connectVehicle: async ({ locals }) => {
+		const user = requireUser(locals);
+		const result = await getApp().vehicles.startAuthorization(user.id, DEFAULT_PROVIDER_ID);
+		if (!result.ok) return fail(400, { connectError: result.error });
+		// Built by the provider module from its own constants, never from user input.
+		redirect(303, result.url, { external: true });
+	},
+	fetchNow: async ({ locals, request }) => {
+		const user = requireUser(locals);
+		const id = connectionId(await request.formData());
+		const result = await getApp().vehicles.fetchNow(user.id, id);
+		if (!result.ok && result.error === 'not_found') error(404, 'Not found');
+		return { fetchResult: { id, ...result } };
+	},
+	disconnect: async ({ locals, request }) => {
+		const user = requireUser(locals);
+		const form = await request.formData();
+		// The page asks for confirmation first; the flag guards against stray submits.
+		if (form.get('confirm') !== 'yes') return fail(400, { disconnectError: 'confirm' });
+		const removed = await getApp().vehicles.disconnect(user.id, connectionId(form));
+		if (!removed) error(404, 'Not found');
+		return { disconnected: true };
 	}
 };

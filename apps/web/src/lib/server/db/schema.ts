@@ -1,5 +1,5 @@
 // Drizzle schema. The first four tables plus `passkey` follow Better Auth's model
-// (field names must match); `vehicle_api_credential` belongs to the app.
+// (field names must match); the vehicle tables below belong to the app.
 // After changing this file run `pnpm --filter @ev-dashboard/web db:generate`.
 import { sql } from 'drizzle-orm';
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
@@ -101,3 +101,75 @@ export const vehicleApiCredential = sqliteTable('vehicle_api_credential', {
 	clientSecret: text('client_secret').notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)
 });
+
+/**
+ * Pending OAuth authorization of a vehicle provider. The `state` parameter is stored only
+ * as a SHA-256 hash; a row is single-use (deleted when the callback consumes it).
+ */
+export const providerOAuthState = sqliteTable(
+	'provider_oauth_state',
+	{
+		stateHash: text('state_hash').primaryKey(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		providerId: text('provider_id').notNull(),
+		expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now)
+	},
+	(t) => [index('provider_oauth_state_user_id_idx').on(t.userId)]
+);
+
+/**
+ * One consent at a vehicle provider (one token pair). Tokens are encrypted (see crypto.ts)
+ * with the connection ID as context.
+ */
+export const vehicleConnection = sqliteTable(
+	'vehicle_connection',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		providerId: text('provider_id').notNull(),
+		/** Display name, taken from the provider's vehicle list when available. */
+		label: text('label'),
+		/** Provider's vehicle identifier, when the vehicle list reports one. */
+		externalId: text('external_id'),
+		accessToken: text('access_token').notNull(),
+		refreshToken: text('refresh_token'),
+		accessTokenExpiresAt: integer('access_token_expires_at', { mode: 'timestamp_ms' }).notNull(),
+		/** `active` or `reauth` (refresh failed; the owner has to connect again). */
+		status: text('status').notNull().default('active'),
+		lastSuccessAt: integer('last_success_at', { mode: 'timestamp_ms' }),
+		lastAttemptAt: integer('last_attempt_at', { mode: 'timestamp_ms' }),
+		lastErrorAt: integer('last_error_at', { mode: 'timestamp_ms' }),
+		/** Short error code, never a provider message (could echo tokens). */
+		lastError: text('last_error'),
+		failureCount: integer('failure_count').notNull().default(0),
+		nextPollAt: integer('next_poll_at', { mode: 'timestamp_ms' }),
+		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
+		updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)
+	},
+	(t) => [index('vehicle_connection_user_id_idx').on(t.userId)]
+);
+
+/** Time series of fetched vehicle data: normalized values plus the raw responses. */
+export const snapshot = sqliteTable(
+	'snapshot',
+	{
+		id: integer('id').primaryKey({ autoIncrement: true }),
+		connectionId: text('connection_id')
+			.notNull()
+			.references(() => vehicleConnection.id, { onDelete: 'cascade' }),
+		fetchedAt: integer('fetched_at', { mode: 'timestamp_ms' }).notNull(),
+		/** Normalized values as JSON (see providers/types.ts `VehicleData`). */
+		data: text('data').notNull(),
+		/** Raw response per endpoint as JSON (see providers/types.ts `RawResponses`). */
+		raw: text('raw').notNull()
+	},
+	(t) => [
+		index('snapshot_connection_fetched_idx').on(t.connectionId, t.fetchedAt),
+		index('snapshot_fetched_at_idx').on(t.fetchedAt)
+	]
+);

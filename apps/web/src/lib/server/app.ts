@@ -5,10 +5,19 @@ import * as env from '$app/env/private';
 import { createAuth, OIDC_PROVIDER_ID, type Auth, type AuthSettings } from './auth/config.ts';
 import { deriveKey } from './crypto.ts';
 import { openDatabase, type Database } from './db/index.ts';
+import { createProviders } from './providers/index.ts';
 import { loadOrCreateSecret } from './secrets.ts';
+import { createPoller, type Poller } from './vehicles/poller.ts';
+import { createVehicleService, type VehicleService } from './vehicles/service.ts';
 import type { LoginMethods } from '../auth-shared.ts';
 
-type App = { db: Database; auth: Auth; encryptionKey: Buffer; methods: LoginMethods };
+type App = {
+	db: Database;
+	auth: Auth;
+	encryptionKey: Buffer;
+	methods: LoginMethods;
+	vehicles: VehicleService;
+};
 
 let app: App | undefined;
 
@@ -41,10 +50,21 @@ function create(): App {
 	if (settings.google) social.push({ id: 'google', label: 'Google' });
 	if (settings.oidc) social.push({ id: OIDC_PROVIDER_ID, label: settings.oidc.name });
 
+	const encryptionKey = deriveKey(
+		loadOrCreateSecret(dataDir, 'encryption-key', env.ENCRYPTION_KEY)
+	);
+
 	return {
 		db,
 		auth: createAuth(settings, db),
-		encryptionKey: deriveKey(loadOrCreateSecret(dataDir, 'encryption-key', env.ENCRYPTION_KEY)),
+		encryptionKey,
+		vehicles: createVehicleService({
+			db,
+			key: encryptionKey,
+			providers: createProviders(),
+			appUrl: env.APP_URL,
+			pollIntervalMs: env.POLL_INTERVAL_SECONDS * 1000
+		}),
 		methods: {
 			emailPassword: settings.emailPassword,
 			passkey: settings.passkey,
@@ -57,4 +77,41 @@ function create(): App {
 export function getApp(): App {
 	app ??= create();
 	return app;
+}
+
+/** How often the poller looks for due connections (each has its own schedule). */
+const POLLER_PERIOD_MS = 30_000;
+const PRUNE_EVERY_MS = 24 * 3600 * 1000;
+
+// On globalThis so a dev-server reload does not start a second loop.
+const POLLER_KEY = Symbol.for('ev-dashboard.vehicle-poller');
+type PollerGlobal = typeof globalThis & { [POLLER_KEY]?: Poller };
+
+/** Starts the vehicle data poller once per process and stops it on shutdown. */
+export function startVehiclePoller() {
+	const g = globalThis as PollerGlobal;
+	if (g[POLLER_KEY]) return;
+	const { vehicles } = getApp();
+	let lastPrune = 0;
+	const poller = createPoller({
+		periodMs: POLLER_PERIOD_MS,
+		initialDelayMs: 5_000,
+		tick: async () => {
+			if (Date.now() - lastPrune >= PRUNE_EVERY_MS) {
+				lastPrune = Date.now();
+				await vehicles.prune(env.RETENTION_DAYS);
+			}
+			await vehicles.pollDue();
+		},
+		onError: (error) => console.error('[vehicles] poller run failed:', (error as Error)?.name)
+	});
+	g[POLLER_KEY] = poller;
+	poller.start();
+
+	const shutdown = () => {
+		vehicles.stop();
+		void poller.stop();
+	};
+	// Emitted by adapter-node after the HTTP server closed (SIGTERM/SIGINT).
+	(process as NodeJS.EventEmitter).once('sveltekit:shutdown', shutdown);
 }
