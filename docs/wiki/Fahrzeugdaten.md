@@ -59,6 +59,16 @@ Ladungen werden aus den gespeicherten Abrufen abgeleitet: Aufeinanderfolgende Ab
 
 Fahrten werden ebenfalls aus den gespeicherten Abrufen abgeleitet: Zwischen zwei Abrufen ist das Fahrzeug gefahren, wenn die Zündung an ist, der Kilometerstand gestiegen ist oder (ohne Kilometerstand) sich die Position um mehr als 300 m geändert hat. Aufeinanderfolgende solche Abschnitte bilden eine Fahrt, vom letzten Abruf vor der Abfahrt bis zum ersten Abruf am Ziel. Beginn und Ende sind daher auf `POLL_INTERVAL_SECONDS` genau, und die Route verbindet nur die abgerufenen Positionen. Kürzere Bewegungen als 200 m zählen nicht. Die Strecke kommt aus dem Kilometerstand, sonst aus den Positionen. Den Verbrauch in kWh/100 km zeigt das Dashboard, sobald die nutzbare Kapazität eingetragen ist, sonst den verbrauchten Ladestand in Prozentpunkten.
 
+### Fahrtenbuch und Export
+
+Sobald das Fahrzeug nach einer Fahrt wieder steht, übernimmt die App die Fahrt ins Fahrtenbuch. Dort bleibt sie auch, wenn ältere Abrufe nach `RETENTION_DAYS` gelöscht werden. Start- und Zieladresse werden im Hintergrund nachgeschlagen, wenn `GEOCODING_ENABLED` aktiv ist.
+
+- **Einordnen:** Auf der Seite einer Fahrt wählst du **Privat** oder **Geschäftlich** und kannst einen Zweck oder eine Notiz eintragen (bis 500 Zeichen). Die Fahrtenliste zeigt die Fahrtart jeder Fahrt, die Kilometer je Fahrtart und lässt sich nach Geschäftlich, Privat oder Offen filtern.
+- **Export:** Über **Export** wählst du Zeitraum, Fahrten (alle, nur geschäftliche oder nur private) und Format. **Excel** enthält ein Blatt mit allen Fahrten und ein Blatt mit Summen je Fahrtart, **CSV** passt zu Buchhaltungsprogrammen (deutsch mit Semikolon und Dezimalkomma), **Text** ist eine lesbare Liste zum Ausdrucken. Datum und Uhrzeit folgen der Zeitzone deines Browsers.
+- **Vorlagen:** Eigene Excel-Vorlagen lädst du auf der Export-Seite hoch (bis 2 MB, höchstens 10). Sie bleiben in der Datenbank deines Servers und gelangen nie ins Repository. Unterstützt wird derzeit eine Jahresabrechnung mit einer Zeile pro Monat: Die App trägt Abrechnungsbeginn und -ende, den Kilometerstand zu Beginn, je Monat den Kilometerstand am Monatsende, die privaten Kilometer und die Zahl der Tage mit geschäftlichen Fahrten ein. Alles Weitere, etwa Formeln und Felder für Name oder Unterschrift, bleibt unverändert. Monate, die noch nicht begonnen haben, bleiben leer. Liegt der Zeitraumbeginn vor der ersten Fahrt im Fahrtenbuch, gilt für diese Monate der erste bekannte Kilometerstand.
+
+Das Fahrtenbuch ist eine Übersicht aus den Fahrzeugdaten und kein Fahrtenbuch im steuerlichen Sinn, da Einträge nachträglich geändert werden können.
+
 Sind Werte älter als das Dreifache von `POLL_INTERVAL_SECONDS` (mindestens 30 Minuten), werden sie als „veraltet“ markiert. Bei mehreren Fahrzeugen wählst du oben das Fahrzeug, „Alle Werte“ führt zur Detailseite.
 
 ## Abfrage und Aufbewahrung

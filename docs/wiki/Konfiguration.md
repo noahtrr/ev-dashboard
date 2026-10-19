@@ -56,7 +56,7 @@ Die Zugangsdaten für den Fahrzeugdaten-Anbieter (Client ID und Client Secret) s
 | Variable | Pflicht | Standard | Beschreibung |
 |---|---|---|---|
 | `POLL_INTERVAL_SECONDS` | nein | `300` | Sekunden zwischen zwei Abrufen je verbundenem Fahrzeug, mindestens `60`. Zu häufiges Abfragen kann das Fahrzeugkonto beim Anbieter sperren. |
-| `RETENTION_DAYS` | nein | `365` | Tage, die abgerufene Fahrzeugdaten aufbewahrt werden; ältere werden einmal täglich gelöscht. `0` = unbegrenzt. |
+| `RETENTION_DAYS` | nein | `365` | Tage, die abgerufene Fahrzeugdaten aufbewahrt werden; ältere werden einmal täglich gelöscht. Das Fahrtenbuch bleibt erhalten. `0` = unbegrenzt. |
 
 ## Adresse
 

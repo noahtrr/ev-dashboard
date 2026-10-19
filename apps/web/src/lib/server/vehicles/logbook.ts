@@ -2,7 +2,7 @@
 // they survive the snapshot retention and can carry what the owner records about them
 // (private or business, purpose). Pages and exports read the table.
 import { randomUUID } from 'node:crypto';
-import { and, asc, desc, eq, gte, isNull, lte, max, or } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNull, lte, max, min, or } from 'drizzle-orm';
 import type { Database } from '../db/index.ts';
 import { snapshot, trip, vehicleConnection } from '../db/schema.ts';
 import type { Geocoder } from '../geocode.ts';
@@ -81,8 +81,8 @@ export function createLogbook(options: LogbookOptions) {
 	 * before the window are skipped, they were recorded by an earlier call.
 	 */
 	async function record(connectionId: string, since?: Date): Promise<number> {
-		const [{ newest }] = await db
-			.select({ newest: max(snapshot.fetchedAt) })
+		const [{ newest, oldest }] = await db
+			.select({ newest: max(snapshot.fetchedAt), oldest: min(snapshot.fetchedAt) })
 			.from(snapshot)
 			.where(eq(snapshot.connectionId, connectionId));
 		const newestMs = newest ? new Date(newest).getTime() : 0;
@@ -93,11 +93,10 @@ export function createLogbook(options: LogbookOptions) {
 		if (series.length < 2) return 0;
 		const first = series[0].at.getTime();
 		const last = series.at(-1)!.at.getTime();
+		// With the whole history in view, a trip at the very beginning is complete too.
+		const complete = since !== undefined || first <= new Date(oldest!).getTime();
 		const finished = deriveTrips(series, maxGapMs, now()).filter(
-			(t) =>
-				!t.ongoing &&
-				t.end.getTime() < last &&
-				(since !== undefined || t.start.getTime() > first)
+			(t) => !t.ongoing && t.end.getTime() < last && (complete || t.start.getTime() > first)
 		);
 		if (finished.length === 0) return 0;
 		const inserted = await db
@@ -189,7 +188,11 @@ export function createLogbook(options: LogbookOptions) {
 					.limit(ADDRESS_BATCH);
 				for (const row of rows) {
 					const set: { startAddress?: string; endAddress?: string } = {};
-					if (row.startAddress === null && row.startLatitude !== null && row.startLongitude !== null) {
+					if (
+						row.startAddress === null &&
+						row.startLatitude !== null &&
+						row.startLongitude !== null
+					) {
 						const address = await geocoder.lookup(row.startLatitude, row.startLongitude, language);
 						if (address) set.startAddress = address;
 					}

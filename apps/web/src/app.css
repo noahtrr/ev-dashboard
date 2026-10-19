@@ -13,6 +13,8 @@
 	--ok: #4ade80;
 	--warn: #fbbf24;
 	--danger: #f87171;
+	/* Private trips in the trip log. */
+	--private: #f59e0b;
 
 	--radius: 20px;
 	--space: 16px;
@@ -29,6 +31,7 @@
 		--ok: #15803d;
 		--warn: #a16207;
 		--danger: #b91c1c;
+		--private: #b45309;
 	}
 }
 
@@ -42,6 +45,7 @@
 	--ok: #15803d;
 	--warn: #a16207;
 	--danger: #b91c1c;
+	--private: #b45309;
 }
 
 *,

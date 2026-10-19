@@ -236,6 +236,89 @@ const de = {
 			'Beginn und Ende sind auf das Abrufintervall genau, die Route verbindet die abgerufenen Positionen.',
 		gapNote: 'Während dieser Fahrt fehlen Abrufe, Zeiten und Geschwindigkeit sind deshalb ungenau.'
 	},
+	logbook: {
+		purposes: { business: 'Geschäftlich', private: 'Privat', open: 'Offen' },
+		filter: 'Fahrtart',
+		all: 'Alle',
+		kmByPurpose: 'Kilometer nach Fahrtart',
+		classify: 'Einordnen',
+		purpose: 'Fahrtart',
+		note: 'Zweck oder Notiz',
+		notePlaceholder: 'z. B. Kunde, Reiseziel, Anlass',
+		save: 'Speichern',
+		saved: 'Gespeichert',
+		notLogged: 'Die Fahrt kommt ins Fahrtenbuch, sobald das Fahrzeug wieder steht.',
+		noteTooLong: 'Die Notiz darf höchstens {n} Zeichen lang sein.',
+		export: 'Export',
+		exportTitle: 'Exportieren',
+		backToLog: 'Zurück zum Fahrtenbuch',
+		range: 'Zeitraum',
+		ranges: {
+			thisMonth: 'Dieser Monat',
+			lastMonth: 'Letzter Monat',
+			thisYear: 'Dieses Jahr',
+			lastYear: 'Letztes Jahr'
+		},
+		fromDate: 'Von',
+		toDate: 'Bis',
+		which: 'Fahrten',
+		format: 'Format',
+		formats: {
+			xlsx: { label: 'Excel', hint: 'Tabelle mit Summen je Fahrtart' },
+			csv: { label: 'CSV', hint: 'Für Buchhaltung und andere Programme' },
+			txt: { label: 'Text', hint: 'Lesbare Liste zum Ausdrucken' }
+		},
+		download: 'Herunterladen',
+		rangeError: 'Bitte gib einen gültigen Zeitraum an.',
+		templates: 'Vorlagen',
+		templatesIntro:
+			'Eigene Excel-Vorlagen füllt die App mit den Monatswerten aus dem Fahrtenbuch. Sie bleiben auf diesem Server.',
+		templateKinds: {
+			'annual-mileage':
+				'Jahresabrechnung: Km-Stand, private km und geschäftliche Einsatztage je Monat, höchstens 18 Monate'
+		} as Record<string, string>,
+		noTemplates: 'Noch keine Vorlage hochgeladen.',
+		fill: 'Ausfüllen',
+		upload: 'Vorlage hochladen',
+		templateName: 'Name',
+		templateFile: 'Excel-Datei (.xlsx)',
+		remove: 'Entfernen',
+		removeConfirm: 'Vorlage „{name}“ entfernen?',
+		uploaded: 'Vorlage gespeichert.',
+		templateErrors: {
+			not_xlsx: 'Die Datei ist keine Excel-Datei (.xlsx).',
+			unknown_layout: 'Der Aufbau dieser Vorlage wird nicht unterstützt.',
+			too_large: 'Die Datei ist größer als 2 MB.',
+			too_many: 'Es sind schon 10 Vorlagen gespeichert.',
+			period_too_long: 'Diese Vorlage fasst höchstens 18 Monate.',
+			name: 'Bitte gib einen Namen an (höchstens 80 Zeichen).'
+		},
+		// Inside exported files.
+		fileTitle: 'Fahrtenbuch',
+		columns: {
+			date: 'Datum',
+			departure: 'Abfahrt',
+			arrival: 'Ankunft',
+			startAddress: 'Startadresse',
+			endAddress: 'Zieladresse',
+			startKm: 'Km-Stand Abfahrt',
+			endKm: 'Km-Stand Ankunft',
+			distance: 'Strecke km',
+			purpose: 'Fahrtart',
+			note: 'Zweck / Notiz'
+		},
+		sheetTrips: 'Fahrten',
+		sheetTotals: 'Summen',
+		count: 'Fahrten',
+		share: 'Anteil',
+		total: 'Gesamt',
+		period: 'Zeitraum {from} bis {to}',
+		vehicle: 'Fahrzeug: {name}',
+		empty: 'Keine Fahrten in diesem Zeitraum.',
+		text: { from: 'Von', to: 'Nach', odometer: 'Km-Stand', note: 'Notiz' },
+		disclaimer:
+			'Aus den Fahrzeugdaten erstellt. Kein Fahrtenbuch im steuerlichen Sinn, da Einträge nachträglich geändert werden können.'
+	},
 	vehicleDetail: {
 		back: 'Zurück zum Konto',
 		latest: 'Neueste Werte',
@@ -525,6 +608,89 @@ const en: Messages = {
 		accuracyNote:
 			'Start and end are accurate to one polling interval; the route connects the fetched positions.',
 		gapNote: 'Fetches are missing during this trip, so times and speed are approximate.'
+	},
+	logbook: {
+		purposes: { business: 'Business', private: 'Private', open: 'Open' },
+		filter: 'Purpose',
+		all: 'All',
+		kmByPurpose: 'Kilometres by purpose',
+		classify: 'Classify',
+		purpose: 'Purpose',
+		note: 'Purpose or note',
+		notePlaceholder: 'e.g. customer, destination, occasion',
+		save: 'Save',
+		saved: 'Saved',
+		notLogged: 'The trip goes into the trip log once the vehicle is parked again.',
+		noteTooLong: 'The note can be at most {n} characters long.',
+		export: 'Export',
+		exportTitle: 'Export',
+		backToLog: 'Back to trip log',
+		range: 'Period',
+		ranges: {
+			thisMonth: 'This month',
+			lastMonth: 'Last month',
+			thisYear: 'This year',
+			lastYear: 'Last year'
+		},
+		fromDate: 'From',
+		toDate: 'To',
+		which: 'Trips',
+		format: 'Format',
+		formats: {
+			xlsx: { label: 'Excel', hint: 'Spreadsheet with totals per purpose' },
+			csv: { label: 'CSV', hint: 'For accounting and other programs' },
+			txt: { label: 'Text', hint: 'Readable list for printing' }
+		},
+		download: 'Download',
+		rangeError: 'Please enter a valid period.',
+		templates: 'Templates',
+		templatesIntro:
+			'The app fills your own Excel templates with the monthly values from the trip log. They stay on this server.',
+		templateKinds: {
+			'annual-mileage':
+				'Annual statement: odometer, private km and business days per month, at most 18 months'
+		} as Record<string, string>,
+		noTemplates: 'No template uploaded yet.',
+		fill: 'Fill in',
+		upload: 'Upload template',
+		templateName: 'Name',
+		templateFile: 'Excel file (.xlsx)',
+		remove: 'Remove',
+		removeConfirm: 'Remove template “{name}”?',
+		uploaded: 'Template saved.',
+		templateErrors: {
+			not_xlsx: 'The file is not an Excel file (.xlsx).',
+			unknown_layout: 'The layout of this template is not supported.',
+			too_large: 'The file is larger than 2 MB.',
+			too_many: '10 templates are already saved.',
+			period_too_long: 'This template holds at most 18 months.',
+			name: 'Please enter a name (at most 80 characters).'
+		},
+		// Inside exported files.
+		fileTitle: 'Trip log',
+		columns: {
+			date: 'Date',
+			departure: 'Departure',
+			arrival: 'Arrival',
+			startAddress: 'Start address',
+			endAddress: 'Destination address',
+			startKm: 'Odometer start',
+			endKm: 'Odometer end',
+			distance: 'Distance km',
+			purpose: 'Purpose',
+			note: 'Purpose / note'
+		},
+		sheetTrips: 'Trips',
+		sheetTotals: 'Totals',
+		count: 'trips',
+		share: 'Share',
+		total: 'Total',
+		period: 'Period {from} to {to}',
+		vehicle: 'Vehicle: {name}',
+		empty: 'No trips in this period.',
+		text: { from: 'From', to: 'To', odometer: 'Odometer', note: 'Note' },
+		disclaimer:
+			'Created from vehicle data. Not a tax-compliant logbook, as entries can be changed afterwards.'
 	},
 	vehicleDetail: {
 		back: 'Back to account',

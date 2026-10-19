@@ -3,5 +3,7 @@ cd /app || exit 1
 # Caddy is the only client; take scheme and host from its X-Forwarded-* headers so the
 # app sees the public origin (needed for SvelteKit's CSRF check on form actions).
 export HOST=127.0.0.1 PORT=3000 PROTOCOL_HEADER=x-forwarded-proto HOST_HEADER=x-forwarded-host
+# Room for Excel template uploads (2 MB each) plus form overhead.
+export BODY_SIZE_LIMIT=3M
 # node:sqlite works without flags on Node 22 but still prints an ExperimentalWarning.
 exec node --disable-warning=ExperimentalWarning build/index.js

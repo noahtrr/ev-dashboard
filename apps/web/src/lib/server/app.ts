@@ -5,6 +5,7 @@ import * as env from '$app/env/private';
 import { createAuth, OIDC_PROVIDER_ID, type Auth, type AuthSettings } from './auth/config.ts';
 import { deriveKey } from './crypto.ts';
 import { openDatabase, type Database } from './db/index.ts';
+import { createTemplateStore, type TemplateStore } from './export/templates.ts';
 import { createGeocoder, type Geocoder } from './geocode.ts';
 import { createProviders } from './providers/index.ts';
 import { loadOrCreateSecret } from './secrets.ts';
@@ -20,6 +21,7 @@ type App = {
 	methods: LoginMethods;
 	vehicles: VehicleService;
 	logbook: Logbook;
+	templates: TemplateStore;
 	/** Absent when GEOCODING_ENABLED is false. */
 	geocoder?: Geocoder;
 };
@@ -73,6 +75,7 @@ function create(): App {
 		encryptionKey,
 		vehicles,
 		logbook: createLogbook({ db, maxGapMs: vehicles.staleAfterMs }),
+		templates: createTemplateStore(db),
 		geocoder: env.GEOCODING_ENABLED
 			? createGeocoder({
 					baseUrl: env.GEOCODING_URL,
@@ -111,13 +114,13 @@ export function startVehiclePoller() {
 		periodMs: POLLER_PERIOD_MS,
 		initialDelayMs: 5_000,
 		tick: async () => {
+			await vehicles.pollDue();
+			// Finished trips are copied into the trip log before pruning can remove them.
+			await logbook.recordAll();
 			if (Date.now() - lastPrune >= PRUNE_EVERY_MS) {
 				lastPrune = Date.now();
 				await vehicles.prune(env.RETENTION_DAYS);
 			}
-			await vehicles.pollDue();
-			// Before pruning can remove them, finished trips are copied into the trip log.
-			await logbook.recordAll();
 		},
 		onError: (error) => console.error('[vehicles] poller run failed:', (error as Error)?.name)
 	});

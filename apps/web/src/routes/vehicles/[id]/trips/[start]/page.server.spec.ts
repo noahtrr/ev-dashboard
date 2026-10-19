@@ -4,7 +4,7 @@ const state = vi.hoisted(() => ({ app: undefined as unknown }));
 vi.mock('#lib/server/app.ts', () => ({ getApp: () => state.app }));
 vi.mock('$app/env/private', () => ({ MAP_TILES_URL: 'tiles', MAP_GLYPHS_URL: 'glyphs' }));
 
-const { load } = await import('./+page.server.ts');
+const { actions, load } = await import('./+page.server.ts');
 
 type Event = Parameters<typeof load>[0];
 const call = (userId: string, id: string, start: string) =>
@@ -35,10 +35,21 @@ const vehicles = {
 	),
 	history: vi.fn(async () => points)
 };
+const logged = {
+	id: 'log1',
+	startAt: new Date(T0),
+	purpose: 'business',
+	note: 'Kunde'
+};
+const logbook = {
+	find: vi.fn(async (userId: string) => (userId === 'alice' ? logged : undefined)),
+	classify: vi.fn(async (userId: string) => userId === 'alice')
+};
 const geocoder = { lookup: vi.fn(async (lat: number) => (lat > 52.55 ? 'Ziel 1' : 'Start 1')) };
 
 beforeEach(() => {
-	state.app = { vehicles, geocoder };
+	state.app = { vehicles, logbook, geocoder };
+	logbook.classify.mockClear();
 });
 
 describe('trip page', () => {
@@ -50,6 +61,7 @@ describe('trip page', () => {
 		expect(data.details.path).toHaveLength(3);
 		expect(await data.startAddress).toBe('Start 1');
 		expect(await data.endAddress).toBe('Ziel 1');
+		expect(data.entry).toEqual({ id: 'log1', purpose: 'business', note: 'Kunde' });
 	});
 
 	it('is a 404 for unknown trips, bad ids and other users', async () => {
@@ -58,5 +70,38 @@ describe('trip page', () => {
 		});
 		await expect(call('alice', 'c1', '1e9')).rejects.toMatchObject({ status: 404 });
 		await expect(call('bob', 'c1', String(T0))).rejects.toMatchObject({ status: 404 });
+	});
+});
+
+describe('classify action', () => {
+	type ActionEvent = Parameters<typeof actions.classify>[0];
+	const submit = (userId: string, fields: Record<string, string>) =>
+		actions.classify({
+			locals: { locale: 'de', user: { id: userId, name: '', email: '', role: 'user' } },
+			params: { id: 'c1', start: String(T0) },
+			request: new Request('http://x', { method: 'POST', body: new URLSearchParams(fields) })
+		} as unknown as ActionEvent);
+
+	it('saves purpose and a trimmed note', async () => {
+		expect(await submit('alice', { id: 'log1', purpose: 'private', note: '  Sport ' })).toEqual({
+			classified: true
+		});
+		expect(logbook.classify).toHaveBeenCalledWith('alice', 'c1', 'log1', {
+			purpose: 'private',
+			note: 'Sport'
+		});
+	});
+
+	it('rejects bad input and other users', async () => {
+		await expect(submit('alice', { id: 'log1', purpose: 'holiday' })).rejects.toMatchObject({
+			status: 400
+		});
+		expect(await submit('alice', { id: 'log1', note: 'x'.repeat(501) })).toMatchObject({
+			status: 400,
+			data: { classifyError: 'note_too_long' }
+		});
+		await expect(submit('bob', { id: 'log1', purpose: 'private' })).rejects.toMatchObject({
+			status: 404
+		});
 	});
 });

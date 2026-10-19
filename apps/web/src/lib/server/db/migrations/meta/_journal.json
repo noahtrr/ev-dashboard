@@ -29,6 +29,13 @@
       "when": 1792404402989,
       "tag": "0003_trip_log",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792405846674,
+      "tag": "0004_export_template",
+      "breakpoints": true
     }
   ]
 }

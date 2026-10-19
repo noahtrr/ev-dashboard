@@ -59,6 +59,16 @@ Sessions are derived from the stored fetches: consecutive fetches with the statu
 
 Trips are derived from the stored fetches as well: the vehicle drove between two fetches if the ignition is on, the odometer went up or (without an odometer) the position changed by more than 300 m. Consecutive such intervals form a trip, from the last fetch before departure to the first fetch at the destination. Start and end are therefore accurate to `POLL_INTERVAL_SECONDS`, and the route only connects the fetched positions. Movements shorter than 200 m do not count. The distance comes from the odometer, otherwise from the positions. The dashboard shows consumption in kWh/100 km once the usable capacity is entered, otherwise the state of charge used in percentage points.
 
+### Trip log and export
+
+Once the vehicle is parked again after a trip, the app copies the trip into the trip log. It stays there even when older fetches are deleted after `RETENTION_DAYS`. Start and destination addresses are looked up in the background when `GEOCODING_ENABLED` is on.
+
+- **Classify:** On a trip's page you choose **Private** or **Business** and can add a purpose or note (up to 500 characters). The trip list shows each trip's purpose and the kilometres per purpose, and can be filtered by business, private or open.
+- **Export:** **Export** lets you pick the period, the trips (all, business only or private only) and the format. **Excel** holds a sheet with all trips and a sheet with totals per purpose, **CSV** suits accounting programs (German with semicolons and decimal commas), **Text** is a readable list for printing. Dates and times follow your browser's time zone.
+- **Templates:** You upload your own Excel templates on the export page (up to 2 MB, at most 10). They stay in your server's database and never go into the repository. Currently supported is an annual statement with one row per month: the app enters the start and end of the period, the odometer at the start, and per month the odometer at the end of the month, the private kilometres and the number of days with business trips. Everything else, such as formulas and fields for name or signature, stays unchanged. Months that have not begun yet stay empty. If the period starts before the first trip in the log, those months get the first known odometer reading.
+
+The trip log is an overview built from vehicle data and not a tax-compliant logbook, as entries can be changed afterwards.
+
 Values older than three times `POLL_INTERVAL_SECONDS` (at least 30 minutes) are marked as "stale". With several vehicles you pick the vehicle at the top; "All values" leads to the details page.
 
 ## Polling and retention

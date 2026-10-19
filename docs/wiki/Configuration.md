@@ -56,7 +56,7 @@ The credentials for the vehicle data provider (client ID and client secret) are 
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `POLL_INTERVAL_SECONDS` | no | `300` | Seconds between two fetches per connected vehicle, at least `60`. Polling too often can get the vehicle account locked at the provider. |
-| `RETENTION_DAYS` | no | `365` | Days fetched vehicle data is kept; older data is deleted once a day. `0` = forever. |
+| `RETENTION_DAYS` | no | `365` | Days fetched vehicle data is kept; older data is deleted once a day. The trip log is kept. `0` = forever. |
 
 ## Address
 

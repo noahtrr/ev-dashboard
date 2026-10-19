@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import TopBar from '#lib/components/TopBar.svelte';
 	import VehicleMap from '#lib/components/VehicleMap.svelte';
@@ -16,9 +17,10 @@
 	import { format, messages } from '#lib/i18n.ts';
 	import type { PageProps } from './$types';
 
-	let { data }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 	const t = $derived(messages[data.locale]);
 	const c = $derived(t.trips);
+	const l = $derived(t.logbook);
 	const h = $derived(t.home);
 	const trip = $derived(data.trip);
 	const x = $derived(data.details);
@@ -33,6 +35,18 @@
 			? { value: energy(trip.usedKwh, data.locale), unit: 'kWh' }
 			: { value: trip.usedPct === undefined ? DASH : number(trip.usedPct), unit: '%' }
 	);
+
+	// Edits since the last save; a successful save shows "Saved" until the next change.
+	let dirty = $state(false);
+	let busy = $state(false);
+	const classify = () => {
+		busy = true;
+		return async ({ update }: { update: (o?: { reset?: boolean }) => Promise<void> }) => {
+			await update({ reset: false });
+			busy = false;
+			dirty = false;
+		};
+	};
 
 	// Only the values the vehicle reported are listed.
 	const rows = $derived(
@@ -115,6 +129,47 @@
 			</dd>
 		</div>
 	</dl>
+
+	<section class="card classify" aria-labelledby="purpose-title">
+		<h2 id="purpose-title" class="title">{l.purpose}</h2>
+		{#if data.entry}
+			<form method="POST" action="?/classify" use:enhance={classify} oninput={() => (dirty = true)}>
+				<input type="hidden" name="id" value={data.entry.id} />
+				<div class="segments" role="radiogroup" aria-labelledby="purpose-title">
+					{#each ['private', 'business'] as const as purpose (purpose)}
+						<label class="segment {purpose}">
+							<input
+								type="radio"
+								name="purpose"
+								value={purpose}
+								checked={data.entry.purpose === purpose}
+							/>
+							<span class="dot"></span>{l.purposes[purpose]}
+						</label>
+					{/each}
+				</div>
+				<label class="field">
+					{l.note}
+					<textarea
+						name="note"
+						rows="2"
+						maxlength={data.noteMaxLength}
+						placeholder={l.notePlaceholder}>{data.entry.note ?? ''}</textarea
+					>
+				</label>
+				{#if form?.classifyError}
+					<p class="notice notice-error" role="alert">
+						{format(l.noteTooLong, { n: String(data.noteMaxLength) })}
+					</p>
+				{/if}
+				<button class="btn btn-primary" disabled={busy}>
+					{form?.classified && !dirty ? l.saved : l.save}
+				</button>
+			</form>
+		{:else}
+			<p class="muted small">{l.notLogged}</p>
+		{/if}
+	</section>
 
 	<div class="grid">
 		<section class="module" aria-labelledby="route-title">
@@ -375,6 +430,87 @@
 
 	.places div.end::before {
 		background: var(--accent);
+	}
+
+	.classify form {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		margin-top: 4px;
+	}
+
+	.segments {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 4px;
+		padding: 4px;
+		border-radius: 14px;
+		background: var(--bg);
+		border: 1px solid var(--border);
+	}
+
+	.segment {
+		position: relative;
+		min-height: 44px;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		font-size: 15px;
+		font-weight: 600;
+		color: var(--muted);
+		cursor: pointer;
+	}
+
+	.segment input {
+		position: absolute;
+		opacity: 0;
+		inset: 0;
+		margin: 0;
+		cursor: pointer;
+	}
+
+	.segment:has(input:checked) {
+		background: var(--surface);
+		color: var(--text);
+		box-shadow: 0 0 0 1px var(--border);
+	}
+
+	.segment:has(input:focus-visible) {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.segment .dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 999px;
+		background: var(--accent);
+	}
+
+	.segment.private .dot {
+		background: var(--private);
+	}
+
+	.classify textarea {
+		font: inherit;
+		font-size: 15px;
+		color: var(--text);
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		padding: 12px 14px;
+		resize: vertical;
+	}
+
+	.classify textarea:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.classify .btn {
+		align-self: flex-start;
 	}
 
 	.facts {

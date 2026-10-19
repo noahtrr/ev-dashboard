@@ -2,7 +2,15 @@
 // (field names must match); the vehicle tables below belong to the app.
 // After changing this file run `pnpm --filter @ev-dashboard/web db:generate`.
 import { sql } from 'drizzle-orm';
-import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import {
+	blob,
+	index,
+	integer,
+	real,
+	sqliteTable,
+	text,
+	uniqueIndex
+} from 'drizzle-orm/sqlite-core';
 
 const now = sql`(cast(unixepoch('subsecond') * 1000 as integer))`;
 
@@ -211,4 +219,21 @@ export const trip = sqliteTable(
 		updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)
 	},
 	(t) => [uniqueIndex('trip_connection_start_idx').on(t.connectionId, t.startAt)]
+);
+
+/** Excel templates an owner uploaded to fill from the trip log (see export/templates.ts). */
+export const exportTemplate = sqliteTable(
+	'export_template',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		name: text('name').notNull(),
+		/** Detected layout, e.g. `annual-mileage`. */
+		kind: text('kind').notNull(),
+		data: blob('data', { mode: 'buffer' }).notNull(),
+		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now)
+	},
+	(t) => [index('export_template_user_idx').on(t.userId)]
 );
