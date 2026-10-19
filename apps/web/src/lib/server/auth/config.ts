@@ -6,6 +6,7 @@ import { passkey } from '@better-auth/passkey';
 import { count } from 'drizzle-orm';
 import type { Database } from '../db/index.ts';
 import * as schema from '../db/schema.ts';
+import { MIN_PASSWORD_LENGTH } from '../../auth-shared.ts';
 import { decideSignup } from './policy.ts';
 
 type OAuthClient = { clientId: string; clientSecret: string };
@@ -58,7 +59,16 @@ export function createAuth(settings: AuthSettings, db: Database) {
 		baseURL: settings.baseURL,
 		secret: settings.secret,
 		database: drizzleAdapter(db, { provider: 'sqlite', schema }),
-		emailAndPassword: { enabled: settings.emailPassword, autoSignIn: true },
+		emailAndPassword: {
+			enabled: settings.emailPassword,
+			autoSignIn: true,
+			minPasswordLength: MIN_PASSWORD_LENGTH
+		},
+		account: {
+			// Signing in with GitHub, Google or SSO links to the existing account with the same
+			// email, but only when the provider reports that email as verified.
+			accountLinking: { enabled: true }
+		},
 		socialProviders: {
 			...(settings.github && { github: settings.github }),
 			...(settings.google && { google: settings.google })

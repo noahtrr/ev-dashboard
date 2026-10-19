@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { authClient } from '#lib/auth-client.ts';
-	import { authErrorMessage, type LoginMethods } from '#lib/auth-shared.ts';
+	import { authErrorMessage, MIN_PASSWORD_LENGTH, type LoginMethods } from '#lib/auth-shared.ts';
 	import { format, type Messages } from '#lib/i18n.ts';
 
 	type Props = {
@@ -139,7 +139,7 @@
 					name="password"
 					type="password"
 					autocomplete={creating ? 'new-password' : 'current-password'}
-					minlength={creating ? 8 : undefined}
+					minlength={creating ? MIN_PASSWORD_LENGTH : undefined}
 					required
 					bind:value={password}
 				/>

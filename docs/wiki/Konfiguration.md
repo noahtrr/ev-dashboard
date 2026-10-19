@@ -32,6 +32,8 @@ Die gesamte Konfiguration erfolgt über Umgebungsvariablen in der `.env`-Datei. 
 - **Weitere Konten** werden abgelehnt, solange `AUTH_ALLOW_SIGNUP` nicht `true` ist. Das gilt auch für die erste Anmeldung eines unbekannten Benutzers über GitHub, Google oder SSO.
 - Alle Seiten außer `/api/health`, `/api/auth/*`, `/login`, `/signup` und `/setup` erfordern eine Anmeldung.
 - Die Anmelde-Endpunkte haben eine Ratenbegrenzung (z. B. 10 Anmeldeversuche pro Minute und Adresse).
+- Passwörter brauchen mindestens 8 Zeichen.
+- Meldet sich jemand über GitHub, Google oder SSO mit derselben E-Mail an wie ein bestehendes Konto, wird die Anmeldung mit diesem Konto verknüpft. Voraussetzung: Der Anbieter meldet die E-Mail als bestätigt. So lässt sich ein Konto auf mehreren Wegen nutzen, ohne dass Fremde mit einer unbestätigten Adresse hineinkommen.
 - Passkeys verwaltet jeder Benutzer auf der Seite **Konto** (Menü oben rechts).
 - E-Mail-Bestätigung und Passwort-Zurücksetzen per Mail gibt es noch nicht (kein SMTP).
 

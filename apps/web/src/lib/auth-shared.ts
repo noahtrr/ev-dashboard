@@ -9,6 +9,9 @@ export type LoginMethods = {
 	allowSignup: boolean;
 };
 
+/** Shortest accepted password, enforced by the server and hinted in the form. */
+export const MIN_PASSWORD_LENGTH = 8;
+
 /** Only same-origin paths are accepted as post-login targets. */
 export function safeRedirect(target: string | null | undefined, fallback = '/') {
 	if (!target || !target.startsWith('/') || target.startsWith('//') || target.startsWith('/\\')) {

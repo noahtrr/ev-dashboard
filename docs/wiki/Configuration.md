@@ -32,6 +32,8 @@ All configuration is done through environment variables in the `.env` file. Temp
 - **Further accounts** are refused unless `AUTH_ALLOW_SIGNUP` is `true`. This also applies to the first sign-in of an unknown user via GitHub, Google or SSO.
 - Every page except `/api/health`, `/api/auth/*`, `/login`, `/signup` and `/setup` requires sign-in.
 - The auth endpoints are rate limited (e.g. 10 sign-in attempts per minute and address).
+- Passwords need at least 8 characters.
+- Signing in via GitHub, Google or SSO with the same email as an existing account links that sign-in to the account, provided the provider reports the email as verified. One account can thus be used several ways without letting others in through an unverified address.
 - Each user manages their passkeys on the **Account** page (menu at the top right).
 - Email verification and password reset by mail are not available yet (no SMTP).
 
