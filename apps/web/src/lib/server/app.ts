@@ -8,6 +8,7 @@ import { openDatabase, type Database } from './db/index.ts';
 import { createGeocoder, type Geocoder } from './geocode.ts';
 import { createProviders } from './providers/index.ts';
 import { loadOrCreateSecret } from './secrets.ts';
+import { createLogbook, type Logbook } from './vehicles/logbook.ts';
 import { createPoller, type Poller } from './vehicles/poller.ts';
 import { createVehicleService, type VehicleService } from './vehicles/service.ts';
 import type { LoginMethods } from '../auth-shared.ts';
@@ -18,6 +19,7 @@ type App = {
 	encryptionKey: Buffer;
 	methods: LoginMethods;
 	vehicles: VehicleService;
+	logbook: Logbook;
 	/** Absent when GEOCODING_ENABLED is false. */
 	geocoder?: Geocoder;
 };
@@ -57,17 +59,20 @@ function create(): App {
 		loadOrCreateSecret(dataDir, 'encryption-key', env.ENCRYPTION_KEY)
 	);
 
+	const vehicles = createVehicleService({
+		db,
+		key: encryptionKey,
+		providers: createProviders(),
+		appUrl: env.APP_URL,
+		pollIntervalMs: env.POLL_INTERVAL_SECONDS * 1000
+	});
+
 	return {
 		db,
 		auth: createAuth(settings, db),
 		encryptionKey,
-		vehicles: createVehicleService({
-			db,
-			key: encryptionKey,
-			providers: createProviders(),
-			appUrl: env.APP_URL,
-			pollIntervalMs: env.POLL_INTERVAL_SECONDS * 1000
-		}),
+		vehicles,
+		logbook: createLogbook({ db, maxGapMs: vehicles.staleAfterMs }),
 		geocoder: env.GEOCODING_ENABLED
 			? createGeocoder({
 					baseUrl: env.GEOCODING_URL,
@@ -100,7 +105,7 @@ type PollerGlobal = typeof globalThis & { [POLLER_KEY]?: Poller };
 export function startVehiclePoller() {
 	const g = globalThis as PollerGlobal;
 	if (g[POLLER_KEY]) return;
-	const { vehicles } = getApp();
+	const { vehicles, logbook } = getApp();
 	let lastPrune = 0;
 	const poller = createPoller({
 		periodMs: POLLER_PERIOD_MS,
@@ -111,6 +116,8 @@ export function startVehiclePoller() {
 				await vehicles.prune(env.RETENTION_DAYS);
 			}
 			await vehicles.pollDue();
+			// Before pruning can remove them, finished trips are copied into the trip log.
+			await logbook.recordAll();
 		},
 		onError: (error) => console.error('[vehicles] poller run failed:', (error as Error)?.name)
 	});
