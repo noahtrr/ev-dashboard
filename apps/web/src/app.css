@@ -15,6 +15,9 @@
 	--danger: #f87171;
 	/* Private trips in the trip log. */
 	--private: #f59e0b;
+	/* Charging costs at home and away (validated as a pair for colour vision deficiency). */
+	--home: #1d9bd6;
+	--away: #e0559a;
 
 	--radius: 20px;
 	--space: 16px;
@@ -32,6 +35,8 @@
 		--warn: #a16207;
 		--danger: #b91c1c;
 		--private: #b45309;
+		--home: #0369a1;
+		--away: #be185d;
 	}
 }
 
@@ -46,6 +51,8 @@
 	--warn: #a16207;
 	--danger: #b91c1c;
 	--private: #b45309;
+	--home: #0369a1;
+	--away: #be185d;
 }
 
 *,

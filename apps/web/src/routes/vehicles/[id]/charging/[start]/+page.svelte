@@ -1,22 +1,27 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import SocChart from '#lib/components/SocChart.svelte';
 	import TopBar from '#lib/components/TopBar.svelte';
 	import VehicleMap from '#lib/components/VehicleMap.svelte';
+	import { priceEntryAt, sessionCost } from '#lib/costs.ts';
 	import {
 		DASH,
 		clockTime,
 		dateTime,
 		duration,
 		energy,
+		euro,
+		localeTag,
 		minutesBetween,
+		oneDecimal,
 		wholeNumber
 	} from '#lib/format.ts';
 	import { format, messages, relativeTime } from '#lib/i18n.ts';
 	import type { PageProps } from './$types';
 
-	let { data }: PageProps = $props();
+	let { data, form }: PageProps = $props();
 	const t = $derived(messages[data.locale]);
 	const c = $derived(t.charging);
 	const h = $derived(t.home);
@@ -70,6 +75,50 @@
 			[c.samples, String(x.samples)]
 		].filter((row): row is [string, string] => row[1] !== undefined)
 	);
+
+	// Price days follow the browser's time zone, so the amount appears after hydration.
+	const k = $derived(t.costs);
+	const kind = $derived(data.costs.home ? 'home' : 'away');
+	const cost = $derived.by(() => {
+		if (!mounted) return null;
+		const start = new Date(s.start).getTime();
+		const costed = sessionCost(
+			{
+				t: start,
+				end: new Date(s.end).getTime(),
+				addedPct: s.addedPct ?? null,
+				home: data.costs.home,
+				priceCt: data.costs.entry.priceCt,
+				costEur: data.costs.entry.costEur
+			},
+			data.costs.prices,
+			data.connection.batteryCapacityKwh,
+			data.costs.lossPct
+		);
+		const price = priceEntryAt(data.costs.prices, kind, start);
+		return { ...costed, from: price?.from };
+	});
+	const calc = $derived.by(() => {
+		if (!cost || cost.eur === null) return '';
+		if (cost.source === 'receipt') return k.calcReceipt;
+		const line = format(k.calc, {
+			battery: oneDecimal(cost.batteryKwh ?? 0, data.locale),
+			grid: oneDecimal(cost.gridKwh ?? 0, data.locale),
+			ct: oneDecimal(cost.ct ?? 0, data.locale)
+		});
+		const source =
+			cost.source === 'own'
+				? k.sources.own
+				: cost.from
+					? format(k.sources.price, {
+							date: new Date(`${cost.from}T12:00:00`).toLocaleDateString(localeTag(data.locale), {
+								dateStyle: 'medium'
+							})
+						})
+					: '';
+		return source ? `${line} (${source})` : line;
+	});
+	const hasEntry = $derived(data.costs.entry.priceCt !== null || data.costs.entry.costEur !== null);
 
 	// The chart depends on the browser's width and time zone, so it renders after hydration.
 	let mounted = $state(false);
@@ -166,6 +215,70 @@
 			{/if}
 		</section>
 	</div>
+
+	<section class="card cost" aria-labelledby="cost-title">
+		<div class="cost-head">
+			<h2 id="cost-title" class="title">{k.sessionTitle}</h2>
+			<span class="place"><i class={kind}></i>{k.kinds[kind]}</span>
+		</div>
+		{#if s.ongoing}
+			<p class="muted small">{k.ongoing}</p>
+		{:else if !cost}
+			<div class="cost-placeholder" aria-hidden="true"></div>
+		{:else if cost.eur !== null}
+			<p class="cost-total">{euro(cost.eur, data.locale)}<span class="unit">€</span></p>
+			<p class="muted small">{calc}</p>
+		{:else if cost.gridKwh === null}
+			<p class="muted small">{k.noSessionCapacity}</p>
+		{:else}
+			<p class="muted small">
+				{k.noSessionPrice}
+				<a href={resolve('/vehicles/[id]#prices', { id: data.connection.id })}>{k.setupLink}</a>
+			</p>
+		{/if}
+		{#if !s.ongoing}
+			<div class="cost-actions">
+				{#if !data.costs.home && hasPosition}
+					<form method="POST" action="?/home" use:enhance>
+						<button class="chip" type="submit">{k.setHomeHere}</button>
+					</form>
+				{/if}
+				{#if hasEntry}
+					<form method="POST" action="?/clearEntry" use:enhance>
+						<button class="chip" type="submit">{k.clearOwn}</button>
+					</form>
+				{/if}
+			</div>
+			<details class="own" open={form?.entryError ? true : undefined}>
+				<summary>{k.ownPrice}</summary>
+				<form class="own-form" method="POST" action="?/entry" use:enhance>
+					<label class="field">
+						{k.ownCt}
+						<input
+							name="ct"
+							inputmode="decimal"
+							autocomplete="off"
+							value={data.costs.entry.priceCt?.toLocaleString(localeTag(data.locale)) ?? ''}
+						/>
+					</label>
+					<label class="field">
+						{k.ownEur}
+						<input
+							name="eur"
+							inputmode="decimal"
+							autocomplete="off"
+							value={data.costs.entry.costEur?.toLocaleString(localeTag(data.locale)) ?? ''}
+						/>
+					</label>
+					<button class="btn" type="submit">{k.apply}</button>
+				</form>
+				<p class="muted small">{k.ownPriceHint}</p>
+				{#if form?.entryError}
+					<p class="notice notice-error" role="alert">{k.invalidEntry}</p>
+				{/if}
+			</details>
+		{/if}
+	</section>
 
 	<section class="card" aria-labelledby="chart-title">
 		<h2 id="chart-title" class="title">{c.chart}</h2>
@@ -368,6 +481,109 @@
 		margin: 0;
 		text-align: right;
 		font-family: var(--font-mono);
+	}
+
+	.cost-head {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 12px;
+	}
+
+	.place {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 13px;
+		color: var(--muted);
+	}
+
+	.place i {
+		width: 8px;
+		height: 8px;
+		border-radius: 2px;
+	}
+
+	.place .home {
+		background: var(--home);
+	}
+
+	.place .away {
+		background: var(--away);
+	}
+
+	.cost-total {
+		margin: 0;
+		font-size: 36px;
+		font-weight: 600;
+		letter-spacing: -0.02em;
+		font-family: var(--font-mono);
+	}
+
+	.cost-placeholder {
+		height: 64px;
+	}
+
+	.cost-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.cost-actions:empty {
+		display: none;
+	}
+
+	.chip {
+		font: inherit;
+		font-size: 14px;
+		min-height: 40px;
+		padding: 0 14px;
+		border-radius: 20px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: var(--text);
+		cursor: pointer;
+	}
+
+	.chip:hover {
+		border-color: var(--accent);
+	}
+
+	.chip:focus-visible,
+	.own summary:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.own {
+		border-top: 1px solid var(--border);
+		padding-top: 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.own summary {
+		cursor: pointer;
+		font-size: 14px;
+		color: var(--accent);
+	}
+
+	.own-form {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		gap: 12px;
+		margin: 10px 0;
+	}
+
+	.own-form input {
+		width: 120px;
+	}
+
+	.small a {
+		color: var(--accent);
 	}
 
 	.chart-placeholder {

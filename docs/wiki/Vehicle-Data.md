@@ -54,7 +54,7 @@ The home page shows four modules for the selected vehicle:
 
 - **Location:** a map with the vehicle position, the street address and when the position was determined. The address can be switched off; tile and address services are replaceable (see [Configuration](Configuration)).
 - **Range:** range in km, state of charge as a ring and the charging status, with the time until full while charging.
-- **Charging:** the ongoing or last charging session with the amount added and its duration. **Charging history** leads to a page with the state of charge over time (7, 30 or 90 days, charging times highlighted) and every session in the period. Selecting a session opens its detail page: location with map and address, start and end, state of charge and range before and after, average charging speed and power, odometer, outside temperature, the vehicle's charging status and the state of charge during the session. Only values the vehicle reported are shown.
+- **Charging:** the ongoing or last charging session with the amount added and its duration. **Charging history** leads to a page with the state of charge over time (7, 30 or 90 days, charging times highlighted) and every session in the period. Selecting a session opens its detail page: location with map and address, start and end, state of charge and range before and after, average charging speed and power, odometer, outside temperature, the vehicle's charging status the state of charge during the session and its costs. Only values the vehicle reported are shown. **Costs** leads to the cost overview (see [Costs](#costs)).
 - **Trips:** the ongoing or last trip with distance, time, duration and consumption. **Trip log** leads to a page with the distance per day (7, 30 or 90 days), totals for trips, distance, driving time and average consumption, and every trip in the period. Selecting a trip opens its detail page: map with the route, start and destination address, start and end, distance, consumption, state of charge, range and odometer before and after, average speed and outside temperature.
 
 Sessions are derived from the stored fetches: consecutive fetches with the status "charging" form a session. If the vehicle reports no charging status, a rising state of charge with the cable plugged in counts. More than three times `POLL_INTERVAL_SECONDS` (at least 30 minutes) between two fetches starts a new session. The API does not report the battery size, so the charged amount is given in percentage points at first. If you enter the usable capacity under **Battery** on the vehicle's detail page (Account → vehicle; 5 to 250 kWh), the dashboard shows charged energy and charging power in kWh and kW. These values are estimated from the percentage points and the capacity; charging losses are not included.
@@ -80,6 +80,21 @@ In the trips module, **Consumption** leads to an analysis over 30 days, 12 month
 - consumption by outside temperature (below 0, 0–10, 10–20, above 20 °C) and by trip length (under 10, 10–50, over 50 km).
 
 Each trip's consumption is estimated from the charge level before and after the trip and the usable capacity; averages are weighted by distance. Trips under 1 km, trips with missing fetches and trips in which the charge level rose do not count. Groups under 20 km are not shown, because the charge level is reported in whole percent only. Without a capacity the page shows percentage points of the battery per 100 km. A trip's outside temperature is the mean of the reported values and is stored with the trip in the trip log; for trips recorded before this feature, the app fills it in as long as the fetches are still there. Weeks and months follow your browser's time zone.
+
+### Costs
+
+In the charging module, **Costs** leads to an overview of the current month, the last 12 months or the whole period:
+
+- the total split into **Home** and **Away**, for the month with the previous month, otherwise with the average per month, plus the cost per 100 km, the energy drawn from the grid and the average price per kWh;
+- a stacked bar chart per month (home and away);
+- the costs by trip purpose, split by the private, business and unclassified kilometres in the trip log;
+- the electricity charged at home per month in kWh and euros, e.g. for reimbursement of a company car, with **Export CSV** (one row per session with date, time, kWh into the battery and from the grid, price and cost).
+
+You enter the prices on the vehicle's details page under **Electricity prices**, separately for home and away, each in ct/kWh and valid from a day on. A new price does not change earlier sessions. There you also set the **charging losses** (default 10 %): the energy from the grid is the energy put into the battery times (1 + losses). Whether a session was at home depends on its place: on a session's page, **This is home** makes its place the home location; every session within 150 m then counts as home, all others as away.
+
+A session's page shows its costs and how they were worked out. Under **Own price** you enter a price in ct/kWh or the amount from the receipt for that session, e.g. at a fast charger; that amount then applies regardless of capacity and charging losses.
+
+Costs are estimated from the charged state of charge and the usable capacity; without a capacity only sessions with an amount from a receipt count. Like trips, finished charging sessions are kept permanently, so their costs survive `RETENTION_DAYS`; on the first start after the update the app reads the fetches that are still stored. Months and price days follow your browser's time zone.
 
 ### Condition
 

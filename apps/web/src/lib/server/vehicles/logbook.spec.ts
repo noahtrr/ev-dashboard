@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { openDatabase } from '../db/index.ts';
-import { snapshot, trip, user, vehicleConnection } from '../db/schema.ts';
+import { chargeSession, snapshot, trip, user, vehicleConnection } from '../db/schema.ts';
 import type { VehicleData } from '../providers/types.ts';
 import { createLogbook, type Logbook } from './logbook.ts';
 
@@ -47,6 +47,36 @@ beforeEach(async () => {
 });
 
 describe('logbook', () => {
+	it('keeps finished charging sessions, so their costs outlive the snapshots', async () => {
+		const charging = (soc: number): VehicleData => ({
+			...parked(100, 52.5),
+			stateOfChargePct: soc,
+			chargingState: 'charging'
+		});
+		await fetched(0, { ...parked(100, 52.5), stateOfChargePct: 40 });
+		await fetched(5, charging(45));
+		await fetched(10, charging(52));
+		await logbook.recordAll();
+		expect(await db.select().from(chargeSession)).toEqual([]);
+
+		await fetched(15, { ...parked(100, 52.5), stateOfChargePct: 52 });
+		await fetched(20, { ...parked(100, 52.5), stateOfChargePct: 52 });
+		await logbook.recordAll();
+		await logbook.record('c1', new Date(0));
+		const rows = await db.select().from(chargeSession);
+		expect(rows).toHaveLength(1);
+		expect(rows[0]).toMatchObject({
+			connectionId: 'c1',
+			startAt: new Date(T0 + 5 * MIN),
+			endAt: new Date(T0 + 10 * MIN),
+			startSocPct: 40,
+			endSocPct: 52,
+			latitude: 52.5,
+			priceCtPerKwh: null,
+			costEur: null
+		});
+	});
+
 	it('records a trip once the vehicle is parked again, and only once', async () => {
 		await fetched(0, parked(100, 52.5));
 		await fetched(5, moving(104, 52.53));

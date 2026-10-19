@@ -1,7 +1,10 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import TopBar from '#lib/components/TopBar.svelte';
+	import { localDay, PRICE_KINDS } from '#lib/costs.ts';
+	import { oneDecimal } from '#lib/format.ts';
 	import { format, messages } from '#lib/i18n.ts';
 	import type { PageProps } from './$types';
 
@@ -20,6 +23,23 @@
 		value
 			? new Date(value).toLocaleString(localeTag, { dateStyle: 'medium', timeStyle: 'short' })
 			: DASH;
+
+	const k = $derived(t.costs);
+	// "Valid from" defaults to today in the viewer's time zone.
+	let today = $state('');
+	onMount(() => (today = localDay(Date.now())));
+	const dayText = (day: string) =>
+		new Date(`${day}T12:00:00`).toLocaleDateString(localeTag, { dateStyle: 'medium' });
+	const priceLists = $derived(
+		PRICE_KINDS.map((kind) => ({
+			kind,
+			prices: [...data.costs.prices.filter((p) => p.kind === kind)].reverse()
+		}))
+	);
+	const keep =
+		() =>
+		({ update }: { update: (o?: { reset?: boolean }) => Promise<void> }) =>
+			update({ reset: false });
 
 	const rows = $derived.by(() => {
 		const v = values;
@@ -139,6 +159,109 @@
 		{:else if form?.capacitySaved}
 			<p class="notice notice-ok" role="status">{d.capacitySaved}</p>
 		{/if}
+	</section>
+
+	<section class="card" id="prices" aria-labelledby="prices-title">
+		<h2 id="prices-title">{k.settingsTitle}</h2>
+		<p class="muted small">{k.settingsIntro}</p>
+		{#each priceLists as list (list.kind)}
+			<div class="price-kind">
+				<h3>{k.kinds[list.kind]}</h3>
+				{#if list.prices.length === 0}
+					<p class="muted small">{k.noPrice}</p>
+				{:else}
+					<ul class="price-list">
+						{#each list.prices as p (p.id)}
+							<li>
+								<span class="mono">{oneDecimal(p.ct, data.locale)} ct/kWh</span>
+								<span class="muted">{format(k.since, { date: dayText(p.from) })}</span>
+								<form method="POST" action="?/deletePrice" use:enhance={keep}>
+									<input type="hidden" name="id" value={p.id} />
+									<button
+										class="text-btn"
+										type="submit"
+										aria-label={format(k.removePrice, { date: dayText(p.from) })}>{k.remove}</button
+									>
+								</form>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+				<form class="price-form" method="POST" action="?/price" use:enhance>
+					<input type="hidden" name="kind" value={list.kind} />
+					<label class="field">
+						{k.price}
+						<span class="with-unit">
+							<input
+								name="ct"
+								inputmode="decimal"
+								autocomplete="off"
+								required
+								placeholder={list.kind === 'home' ? '32' : '49'}
+								aria-invalid={form?.priceError === list.kind ? 'true' : undefined}
+							/>
+							<span class="unit">ct/kWh</span>
+						</span>
+					</label>
+					<label class="field">
+						{k.validFrom}
+						<input name="from" type="date" required value={today} />
+					</label>
+					<button class="btn" type="submit">{k.addPrice}</button>
+				</form>
+				{#if form?.priceError === list.kind}
+					<p class="notice notice-error" role="alert">{k.invalidPrice}</p>
+				{:else if form?.priceSaved === list.kind}
+					<p class="notice notice-ok" role="status">{k.saved}</p>
+				{/if}
+			</div>
+		{/each}
+
+		<div class="price-kind">
+			<form class="price-form" method="POST" action="?/loss" use:enhance={keep}>
+				<label class="field">
+					{k.loss}
+					<span class="with-unit">
+						<input
+							name="loss"
+							inputmode="decimal"
+							autocomplete="off"
+							placeholder={String(data.costs.defaultLossPct)}
+							value={data.costs.lossPct?.toLocaleString(localeTag) ?? ''}
+							aria-invalid={form?.lossError ? 'true' : undefined}
+							aria-describedby="loss-hint"
+						/>
+						<span class="unit">%</span>
+					</span>
+				</label>
+				<button class="btn" type="submit">{k.saveLoss}</button>
+			</form>
+			<p id="loss-hint" class="muted small">{k.lossHint}</p>
+			{#if form?.lossError}
+				<p class="notice notice-error" role="alert">{k.invalidLoss}</p>
+			{:else if form?.lossSaved}
+				<p class="notice notice-ok" role="status">{k.saved}</p>
+			{/if}
+		</div>
+
+		<div class="price-kind">
+			<h3>{k.homePlace}</h3>
+			{#if data.costs.home}
+				{#await data.costs.homeAddress then address}
+					{#if address}<p class="address">{address}</p>{/if}
+				{/await}
+				<p class="muted small">
+					{format(k.homeSet, {
+						coords: `${data.costs.home.latitude.toFixed(5)}, ${data.costs.home.longitude.toFixed(5)}`
+					})}
+				</p>
+				<form method="POST" action="?/clearHome" use:enhance>
+					<button class="text-btn" type="submit">{k.clearHome}</button>
+				</form>
+			{:else}
+				<p class="muted small">{k.homeUnset}</p>
+			{/if}
+		</div>
 	</section>
 
 	{#if data.raw.length > 0}
@@ -285,6 +408,82 @@
 
 	.with-unit .unit {
 		color: var(--muted);
+	}
+
+	.price-kind {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding-top: 14px;
+		border-top: 1px solid var(--border);
+	}
+
+	h3 {
+		margin: 0;
+		font-size: 15px;
+		font-weight: 600;
+	}
+
+	.price-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.price-list li {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 6px 12px;
+		font-size: 14px;
+	}
+
+	.price-list li:first-child .mono {
+		font-weight: 600;
+	}
+
+	.price-list form {
+		margin-left: auto;
+	}
+
+	.price-form {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		gap: 12px;
+	}
+
+	.price-form .with-unit input {
+		width: 88px;
+	}
+
+	.price-form input[type='date'] {
+		width: 150px;
+	}
+
+	.address {
+		margin: 0;
+		font-size: 15px;
+		font-weight: 500;
+	}
+
+	.text-btn {
+		font: inherit;
+		font-size: 13px;
+		border: 0;
+		padding: 0;
+		background: none;
+		color: var(--accent);
+		cursor: pointer;
+	}
+
+	.text-btn:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+		border-radius: 4px;
 	}
 
 	.raw {

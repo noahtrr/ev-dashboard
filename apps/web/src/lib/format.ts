@@ -49,3 +49,11 @@ export function clockTime(value: Date | string, locale: Locale): string {
 		minute: '2-digit'
 	});
 }
+
+/** Euros with two decimals, e.g. "12,40". */
+export function euro(value: number, locale: Locale): string {
+	return value.toLocaleString(localeTag(locale), {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2
+	});
+}

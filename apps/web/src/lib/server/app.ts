@@ -9,6 +9,7 @@ import { createTemplateStore, type TemplateStore } from './export/templates.ts';
 import { createGeocoder, type Geocoder } from './geocode.ts';
 import { createProviders } from './providers/index.ts';
 import { loadOrCreateSecret } from './secrets.ts';
+import { createCosts, type Costs } from './vehicles/costs.ts';
 import { createLogbook, type Logbook } from './vehicles/logbook.ts';
 import { createPoller, type Poller } from './vehicles/poller.ts';
 import { createVehicleService, type VehicleService } from './vehicles/service.ts';
@@ -21,6 +22,7 @@ type App = {
 	methods: LoginMethods;
 	vehicles: VehicleService;
 	logbook: Logbook;
+	costs: Costs;
 	templates: TemplateStore;
 	/** Absent when GEOCODING_ENABLED is false. */
 	geocoder?: Geocoder;
@@ -75,6 +77,7 @@ function create(): App {
 		encryptionKey,
 		vehicles,
 		logbook: createLogbook({ db, maxGapMs: vehicles.staleAfterMs }),
+		costs: createCosts(db),
 		templates: createTemplateStore(db),
 		geocoder: env.GEOCODING_ENABLED
 			? createGeocoder({
@@ -115,7 +118,7 @@ export function startVehiclePoller() {
 		initialDelayMs: 5_000,
 		tick: async () => {
 			await vehicles.pollDue();
-			// Finished trips are copied into the trip log before pruning can remove them.
+			// Finished trips and charging sessions are copied before pruning can remove them.
 			await logbook.recordAll();
 			if (Date.now() - lastPrune >= PRUNE_EVERY_MS) {
 				lastPrune = Date.now();

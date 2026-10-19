@@ -302,9 +302,14 @@
 					{#if session && !session.ongoing}
 						<span>{format(c.last, { time: ago(session.end) })}</span>
 					{/if}
-					<a class="details" href={resolve('/vehicles/[id]/charging', { id: vehicle.id })}
-						>{c.history} →</a
-					>
+					<span class="links">
+						<a class="details" href={resolve('/vehicles/[id]/charging', { id: vehicle.id })}
+							>{c.history} →</a
+						>
+						<a class="details" href={resolve('/vehicles/[id]/costs', { id: vehicle.id })}
+							>{t.costs.link} →</a
+						>
+					</span>
 				</p>
 			</section>
 

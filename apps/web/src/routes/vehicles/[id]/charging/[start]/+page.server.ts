@@ -1,26 +1,28 @@
-import { error } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import * as env from '$app/env/private';
+import { DEFAULT_LOSS_PCT, parseDecimal } from '#lib/costs.ts';
 import { getApp } from '#lib/server/app.ts';
 import { deriveSessions, sessionDetails, withEnergy } from '#lib/server/vehicles/charging.ts';
-import type { PageServerLoad } from './$types';
+import { COST_MAX_EUR, isHome, PRICE_MAX_CT, PRICE_MIN_CT } from '#lib/server/vehicles/costs.ts';
+import type { Actions, PageServerLoad } from './$types';
 
 /** Longest session the page looks for; longer runs are cut here. */
 const MAX_SESSION_MS = 7 * 24 * 3600 * 1000;
 
-export const load = (async ({ locals, params }) => {
-	if (!locals.user) error(401, 'Unauthorized');
-	const { vehicles, geocoder } = getApp();
+/** The owner's session around `start` (milliseconds in the URL), or a 404. */
+async function findSession(userId: string, connectionId: string, startParam: string) {
+	const { vehicles } = getApp();
 	// Only the owner's connections are found; anything else is a 404.
-	const connection = await vehicles.getConnection(locals.user.id, params.id);
+	const connection = await vehicles.getConnection(userId, connectionId);
 	if (!connection) error(404, 'Not found');
 
 	// The session is addressed by its start time in milliseconds (any time inside it works).
-	const start = /^\d{1,15}$/.test(params.start) ? Number(params.start) : NaN;
+	const start = /^\d{1,15}$/.test(startParam) ? Number(startParam) : NaN;
 	if (!Number.isSafeInteger(start)) error(404, 'Not found');
 	const gap = vehicles.staleAfterMs;
 	const points = await vehicles.history(
-		locals.user.id,
-		params.id,
+		userId,
+		connectionId,
 		new Date(start - gap),
 		new Date(start + MAX_SESSION_MS)
 	);
@@ -28,6 +30,19 @@ export const load = (async ({ locals, params }) => {
 		(s) => s.start.getTime() <= start && start <= s.end.getTime()
 	);
 	if (!session) error(404, 'Not found');
+	return { connection, points, session, gap };
+}
+
+export const load = (async ({ locals, params }) => {
+	if (!locals.user) error(401, 'Unauthorized');
+	const { geocoder, costs } = getApp();
+	const { connection, points, session, gap } = await findSession(
+		locals.user.id,
+		params.id,
+		params.start
+	);
+	const settings = await costs.settings(locals.user.id, params.id);
+	const entry = await costs.entry(locals.user.id, params.id, session.start);
 
 	// The chart shows a little of the time before and after the session.
 	const end = session.end.getTime();
@@ -48,6 +63,22 @@ export const load = (async ({ locals, params }) => {
 			batteryCapacityKwh: connection.batteryCapacityKwh
 		},
 		session,
+		costs: {
+			prices: settings?.prices ?? [],
+			lossPct: settings?.lossPct ?? DEFAULT_LOSS_PCT,
+			home: settings?.home
+				? isHome(
+						{
+							homeLatitude: settings.home.latitude,
+							homeLongitude: settings.home.longitude
+						},
+						latitude,
+						longitude
+					)
+				: false,
+			hasHome: settings?.home !== null && settings?.home !== undefined,
+			entry: entry ?? { priceCt: null, costEur: null }
+		},
 		details: sessionDetails(points, session, gap),
 		chart,
 		from,
@@ -61,3 +92,45 @@ export const load = (async ({ locals, params }) => {
 				: null
 	};
 }) satisfies PageServerLoad;
+
+export const actions: Actions = {
+	/** Makes this session's place the home location. */
+	home: async ({ locals, params }) => {
+		if (!locals.user) error(401, 'Unauthorized');
+		const { session } = await findSession(locals.user.id, params.id, params.start);
+		if (session.latitude === undefined || session.longitude === undefined) return fail(400, {});
+		await getApp().costs.setHome(locals.user.id, params.id, {
+			latitude: session.latitude,
+			longitude: session.longitude
+		});
+		return {};
+	},
+	/** The owner's price (ct/kWh) or total (€) for this session; exactly one of them. */
+	entry: async ({ locals, params, request }) => {
+		if (!locals.user) error(401, 'Unauthorized');
+		const { session } = await findSession(locals.user.id, params.id, params.start);
+		const form = await request.formData();
+		const priceCt = parseDecimal(form.get('ct') ?? '', PRICE_MIN_CT, PRICE_MAX_CT);
+		const costEur = parseDecimal(form.get('eur') ?? '', 0, COST_MAX_EUR);
+		if (
+			session.ongoing ||
+			priceCt === undefined ||
+			costEur === undefined ||
+			(priceCt === null) === (costEur === null)
+		) {
+			return fail(400, { entryError: true });
+		}
+		await getApp().costs.setEntry(locals.user.id, params.id, session, { priceCt, costEur });
+		return { entrySaved: true };
+	},
+	clearEntry: async ({ locals, params }) => {
+		if (!locals.user) error(401, 'Unauthorized');
+		const { session } = await findSession(locals.user.id, params.id, params.start);
+		if (session.ongoing) return fail(400, {});
+		await getApp().costs.setEntry(locals.user.id, params.id, session, {
+			priceCt: null,
+			costEur: null
+		});
+		return {};
+	}
+};

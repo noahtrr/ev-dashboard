@@ -1,13 +1,14 @@
 // Trip log: finished trips are copied from the snapshot series into the `trip` table, so
 // they survive the snapshot retention and can carry what the owner records about them
-// (private or business, purpose). Pages and exports read the table.
+// (private or business, purpose). Pages and exports read the table. Finished charging
+// sessions are copied into `charge_session` the same way, for their costs.
 import { randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, gte, isNull, lte, max, min, or, sql } from 'drizzle-orm';
 import type { Database } from '../db/index.ts';
-import { snapshot, trip, vehicleConnection } from '../db/schema.ts';
+import { chargeSession, snapshot, trip, vehicleConnection } from '../db/schema.ts';
 import type { Geocoder } from '../geocode.ts';
 import type { VehicleData } from '../providers/types.ts';
-import type { HistoryPoint } from './charging.ts';
+import { deriveSessions, type HistoryPoint } from './charging.ts';
 import { deriveTrips, type Trip } from './trips.ts';
 
 export const TRIP_PURPOSES = ['private', 'business'] as const;
@@ -79,8 +80,9 @@ export function createLogbook(options: LogbookOptions) {
 	 * Copies finished trips of one connection into the log. Without `since` it looks at the
 	 * last two days, and only when a new snapshot arrived since the previous call. A trip
 	 * is finished once a later snapshot shows the vehicle parked; trips that may have begun
-	 * before the window are skipped, they were recorded by an earlier call. Returns the
-	 * number of rows written (new trips and back-filled temperatures).
+	 * before the window are skipped, they were recorded by an earlier call. Charging sessions
+	 * are copied by the same rules. Returns the number of rows written (new trips and
+	 * sessions, back-filled temperatures).
 	 */
 	async function record(connectionId: string, since?: Date): Promise<number> {
 		const [{ newest, oldest }] = await db
@@ -97,21 +99,44 @@ export function createLogbook(options: LogbookOptions) {
 		const last = series.at(-1)!.at.getTime();
 		// With the whole history in view, a trip at the very beginning is complete too.
 		const complete = since !== undefined || first <= new Date(oldest!).getTime();
-		const finished = deriveTrips(series, maxGapMs, now()).filter(
-			(t) => !t.ongoing && t.end.getTime() < last && (complete || t.start.getTime() > first)
-		);
-		if (finished.length === 0) return 0;
-		// Trips logged before the temperature was stored get it once the history is read again.
-		const written = await db
-			.insert(trip)
-			.values(finished.map((t) => toRow(connectionId, t)))
-			.onConflictDoUpdate({
-				target: [trip.connectionId, trip.startAt],
-				set: { outsideTempC: sql`excluded.outside_temp_c` },
-				setWhere: sql`${trip.outsideTempC} IS NULL AND excluded.outside_temp_c IS NOT NULL`
-			})
-			.returning({ id: trip.id });
-		return written.length;
+		const isFinished = (t: { ongoing: boolean; start: Date; end: Date }) =>
+			!t.ongoing && t.end.getTime() < last && (complete || t.start.getTime() > first);
+		const finished = deriveTrips(series, maxGapMs, now()).filter(isFinished);
+		const sessions = deriveSessions(series, maxGapMs, now()).filter(isFinished);
+		let written = 0;
+		if (finished.length > 0) {
+			// Trips logged before the temperature was stored get it once the history is read again.
+			const rows = await db
+				.insert(trip)
+				.values(finished.map((t) => toRow(connectionId, t)))
+				.onConflictDoUpdate({
+					target: [trip.connectionId, trip.startAt],
+					set: { outsideTempC: sql`excluded.outside_temp_c` },
+					setWhere: sql`${trip.outsideTempC} IS NULL AND excluded.outside_temp_c IS NOT NULL`
+				})
+				.returning({ id: trip.id });
+			written += rows.length;
+		}
+		if (sessions.length > 0) {
+			const rows = await db
+				.insert(chargeSession)
+				.values(
+					sessions.map((s) => ({
+						id: randomUUID(),
+						connectionId,
+						startAt: s.start,
+						endAt: s.end,
+						startSocPct: s.startSocPct ?? null,
+						endSocPct: s.endSocPct ?? null,
+						latitude: s.latitude ?? null,
+						longitude: s.longitude ?? null
+					}))
+				)
+				.onConflictDoNothing()
+				.returning({ id: chargeSession.id });
+			written += rows.length;
+		}
+		return written;
 	}
 
 	/** Records new trips of every connection; the first call reads the whole history. */

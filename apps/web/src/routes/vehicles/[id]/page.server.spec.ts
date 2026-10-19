@@ -38,8 +38,26 @@ const vehicles = {
 	)
 };
 
+const owns = (userId: string, id: string) => userId === 'alice' && id === 'c1';
+const costs = {
+	settings: vi.fn(async (userId: string, id: string) =>
+		owns(userId, id)
+			? {
+					home: { latitude: 52.5, longitude: 13.4 },
+					lossPct: null,
+					prices: [{ id: 'p1', kind: 'home', from: '2026-01-01', ct: 32 }]
+				}
+			: undefined
+	),
+	setPrice: vi.fn(async (userId: string, id: string) => owns(userId, id)),
+	deletePrice: vi.fn(async (userId: string, id: string) => owns(userId, id)),
+	setLoss: vi.fn(async (userId: string, id: string) => owns(userId, id)),
+	setHome: vi.fn(async (userId: string, id: string) => owns(userId, id))
+};
+const geocoder = { lookup: vi.fn(async () => 'Hauptstraße 1, 10115 Berlin') };
+
 beforeEach(() => {
-	state.app = { vehicles };
+	state.app = { vehicles, costs, geocoder };
 });
 
 describe('vehicle detail page', () => {
@@ -57,6 +75,13 @@ describe('vehicle detail page', () => {
 			},
 			{ endpoint: 'alerts', status: 0, error: 'timeout', text: 'null', truncated: false }
 		]);
+		expect(data.costs).toMatchObject({
+			prices: [{ id: 'p1', kind: 'home', from: '2026-01-01', ct: 32 }],
+			lossPct: null,
+			defaultLossPct: 10,
+			home: { latitude: 52.5, longitude: 13.4 }
+		});
+		expect(await data.costs.homeAddress).toBe('Hauptstraße 1, 10115 Berlin');
 	});
 
 	it('is a 404 for anyone else and a 401 without session', async () => {
@@ -92,5 +117,53 @@ describe('capacity action', () => {
 			data: { capacityError: true }
 		});
 		await expect(save('bob', 'c1', '50')).rejects.toMatchObject({ status: 404 });
+	});
+});
+
+describe('cost settings actions', () => {
+	type ActionEvent = Parameters<typeof actions.price>[0];
+	const post = (name: keyof typeof actions, userId: string, fields: Record<string, string>) => {
+		const body = new FormData();
+		for (const [key, value] of Object.entries(fields)) body.set(key, value);
+		return actions[name]({
+			locals: { locale: 'en', user: { id: userId, name: '', email: '', role: 'user' } },
+			params: { id: 'c1' },
+			request: new Request('http://localhost/', { method: 'POST', body })
+		} as unknown as ActionEvent);
+	};
+
+	it('stores a price from a day on', async () => {
+		expect(await post('price', 'alice', { kind: 'away', ct: '49,5', from: '2026-03-01' })).toEqual({
+			priceSaved: 'away'
+		});
+		expect(costs.setPrice).toHaveBeenLastCalledWith('alice', 'c1', 'away', '2026-03-01', 49.5);
+	});
+
+	it('rejects invalid prices and other users', async () => {
+		for (const fields of [
+			{ kind: 'home', ct: '', from: '2026-03-01' },
+			{ kind: 'home', ct: '600', from: '2026-03-01' },
+			{ kind: 'home', ct: '30', from: '2026-02-30' },
+			{ kind: 'gas', ct: '30', from: '2026-03-01' }
+		]) {
+			expect(await post('price', 'alice', fields)).toMatchObject({ status: 400 });
+		}
+		await expect(
+			post('price', 'bob', { kind: 'home', ct: '30', from: '2026-03-01' })
+		).rejects.toMatchObject({ status: 404 });
+		await expect(post('deletePrice', 'bob', { id: 'p1' })).rejects.toMatchObject({ status: 404 });
+	});
+
+	it('stores or clears the charging losses and clears the home location', async () => {
+		expect(await post('loss', 'alice', { loss: '12' })).toEqual({ lossSaved: true });
+		expect(costs.setLoss).toHaveBeenLastCalledWith('alice', 'c1', 12);
+		await post('loss', 'alice', { loss: '' });
+		expect(costs.setLoss).toHaveBeenLastCalledWith('alice', 'c1', null);
+		expect(await post('loss', 'alice', { loss: '80' })).toMatchObject({
+			status: 400,
+			data: { lossError: true }
+		});
+		await post('clearHome', 'alice', {});
+		expect(costs.setHome).toHaveBeenLastCalledWith('alice', 'c1', null);
 	});
 });

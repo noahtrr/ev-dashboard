@@ -54,7 +54,7 @@ Die Startseite zeigt für das gewählte Fahrzeug vier Module:
 
 - **Standort:** Karte mit der Fahrzeugposition, die Straßenadresse und wann die Position ermittelt wurde. Die Adresse lässt sich abschalten, Kachel- und Adressdienst sind austauschbar (siehe [Konfiguration](Konfiguration)).
 - **Reichweite:** Reichweite in km, Ladestand als Ring und der Ladestatus, beim Laden mit der Restzeit bis voll.
-- **Laden:** die laufende oder letzte Ladung mit geladener Menge und Dauer. Von dort führt **Ladehistorie** zu einer Seite mit dem Ladestand-Verlauf (7, 30 oder 90 Tage, Ladezeiten hervorgehoben) und allen Ladungen des Zeitraums. Ein Klick auf eine Ladung öffnet ihre Detailseite: Ladeort mit Karte und Adresse, Beginn und Ende, Ladestand und Reichweite vorher und nachher, durchschnittliche Ladegeschwindigkeit und Ladeleistung, Kilometerstand, Außentemperatur, den Ladestatus des Fahrzeugs und den Verlauf während der Ladung. Angezeigt wird nur, was das Fahrzeug gemeldet hat.
+- **Laden:** die laufende oder letzte Ladung mit geladener Menge und Dauer. Von dort führt **Ladehistorie** zu einer Seite mit dem Ladestand-Verlauf (7, 30 oder 90 Tage, Ladezeiten hervorgehoben) und allen Ladungen des Zeitraums. Ein Klick auf eine Ladung öffnet ihre Detailseite: Ladeort mit Karte und Adresse, Beginn und Ende, Ladestand und Reichweite vorher und nachher, durchschnittliche Ladegeschwindigkeit und Ladeleistung, Kilometerstand, Außentemperatur, den Ladestatus des Fahrzeugs den Verlauf während der Ladung und ihre Kosten. Angezeigt wird nur, was das Fahrzeug gemeldet hat. **Kosten** führt zur Kostenübersicht (siehe [Kosten](#kosten)).
 - **Fahrten:** die laufende oder letzte Fahrt mit Strecke, Uhrzeit, Dauer und Verbrauch. Von dort führt **Fahrtenbuch** zu einer Seite mit der Strecke pro Tag (7, 30 oder 90 Tage), Summen für Fahrten, Strecke, Fahrzeit und Durchschnittsverbrauch sowie allen Fahrten des Zeitraums. Ein Klick auf eine Fahrt öffnet ihre Detailseite: Karte mit der Route, Start- und Zieladresse, Beginn und Ende, Strecke, Verbrauch, Ladestand, Reichweite und Kilometerstand vorher und nachher, Durchschnittsgeschwindigkeit und Außentemperatur.
 
 Ladungen werden aus den gespeicherten Abrufen abgeleitet: Aufeinanderfolgende Abrufe mit dem Status „lädt“ bilden eine Ladung. Meldet das Fahrzeug keinen Ladestatus, zählt ein steigender Ladestand bei eingestecktem Kabel. Liegen zwischen zwei Abrufen mehr als das Dreifache von `POLL_INTERVAL_SECONDS` (mindestens 30 Minuten), beginnt eine neue Ladung. Die Schnittstelle meldet die Akkugröße nicht, daher wird die geladene Menge zunächst in Prozentpunkten angegeben. Trägst du auf der Detailseite des Fahrzeugs (Konto → Fahrzeug) unter **Akku** die nutzbare Kapazität ein (5 bis 250 kWh), zeigt das Dashboard die geladene Energie und die Ladeleistung in kWh bzw. kW. Diese Werte sind aus Prozentpunkten und Kapazität geschätzt; Ladeverluste sind nicht enthalten.
@@ -80,6 +80,21 @@ Im Fahrten-Modul führt **Verbrauch** zu einer Auswertung über 30 Tage, 12 Mona
 - der Verbrauch nach Außentemperatur (unter 0, 0–10, 10–20, über 20 °C) und nach Fahrtlänge (unter 10, 10–50, über 50 km).
 
 Der Verbrauch jeder Fahrt ist aus dem Ladestand vor und nach der Fahrt und der nutzbaren Kapazität geschätzt; Durchschnitte sind nach Strecke gewichtet. Fahrten unter 1 km, Fahrten mit fehlenden Abrufen und Fahrten, bei denen der Ladestand gestiegen ist, zählen nicht. Gruppen unter 20 km werden nicht angezeigt, weil der Ladestand nur in ganzen Prozent gemeldet wird. Ohne eingetragene Kapazität zeigt die Seite Prozentpunkte des Akkus je 100 km. Die Außentemperatur einer Fahrt ist der Mittelwert der gemeldeten Werte und wird mit der Fahrt im Fahrtenbuch gespeichert; bei Fahrten, die vor dieser Funktion erfasst wurden, trägt die App sie nach, solange die Abrufe noch vorhanden sind. Wochen und Monate folgen der Zeitzone deines Browsers.
+
+### Kosten
+
+Im Lade-Modul führt **Kosten** zu einer Übersicht über den laufenden Monat, die letzten 12 Monate oder den ganzen Zeitraum:
+
+- die Summe mit der Aufteilung **Zuhause** und **Unterwegs**, im Monat mit dem Vormonat, sonst mit dem Schnitt pro Monat, dazu Kosten pro 100 km, Energie aus dem Netz und der durchschnittliche Preis je kWh;
+- ein gestapeltes Balkendiagramm pro Monat (zuhause und unterwegs);
+- die Kosten nach Fahrtart, aufgeteilt nach den privaten, geschäftlichen und nicht eingeordneten Kilometern im Fahrtenbuch;
+- den zuhause geladenen Strom je Monat in kWh und Euro, etwa für die Erstattung beim Dienstwagen, mit **CSV exportieren** (eine Zeile je Ladung mit Datum, Uhrzeit, kWh im Akku und aus dem Netz, Preis und Kosten).
+
+Die Preise trägst du auf der Detailseite des Fahrzeugs unter **Strompreise** ein, getrennt für zuhause und unterwegs, jeweils in ct/kWh und gültig ab einem Tag. Ein neuer Preis ändert frühere Ladungen nicht. Dort stellst du auch die **Ladeverluste** ein (Standard 10 %): Die Energie aus dem Netz ist die Energie im Akku mal (1 + Ladeverluste). Welche Ladungen zuhause waren, bestimmt der Ort: Auf der Seite einer Ladung legst du mit **Hier ist zuhause** den Ladeort fest; alle Ladungen im Umkreis von 150 m zählen dann als zuhause, alle anderen als unterwegs.
+
+Auf der Seite einer Ladung siehst du die Kosten mit Rechenweg. Unter **Eigener Preis** trägst du für diese Ladung einen Preis in ct/kWh oder den Betrag vom Beleg ein, etwa an einer Schnellladesäule; der Betrag gilt dann unabhängig von Kapazität und Ladeverlusten.
+
+Die Kosten sind aus dem geladenen Ladestand und der nutzbaren Kapazität geschätzt, ohne eingetragene Kapazität zählen nur Ladungen mit Betrag vom Beleg. Abgeschlossene Ladungen übernimmt die App wie Fahrten dauerhaft, damit die Kosten auch nach `RETENTION_DAYS` erhalten bleiben; beim ersten Start nach dem Update werden die noch vorhandenen Abrufe ausgewertet. Monate und Gültigkeitstage folgen der Zeitzone deines Browsers.
 
 ### Zustand
 

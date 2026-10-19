@@ -157,6 +157,11 @@ export const vehicleConnection = sqliteTable(
 		failureCount: integer('failure_count').notNull().default(0),
 		/** Usable battery capacity in kWh, entered by the owner; turns percentages into energy. */
 		batteryCapacityKwh: real('battery_capacity_kwh'),
+		/** Where the owner charges at home; sessions within `HOME_RADIUS_M` use the home price. */
+		homeLatitude: real('home_latitude'),
+		homeLongitude: real('home_longitude'),
+		/** Share lost between grid and battery, in percent; null means the default. */
+		chargingLossPct: real('charging_loss_pct'),
 		nextPollAt: integer('next_poll_at', { mode: 'timestamp_ms' }),
 		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
 		updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)
@@ -221,6 +226,58 @@ export const trip = sqliteTable(
 		updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)
 	},
 	(t) => [uniqueIndex('trip_connection_start_idx').on(t.connectionId, t.startAt)]
+);
+
+/**
+ * Finished charging sessions copied from the snapshot series (like `trip`), so their costs
+ * outlive the snapshot retention, plus what the owner entered about them.
+ */
+export const chargeSession = sqliteTable(
+	'charge_session',
+	{
+		id: text('id').primaryKey(),
+		connectionId: text('connection_id')
+			.notNull()
+			.references(() => vehicleConnection.id, { onDelete: 'cascade' }),
+		/** First snapshot that showed charging; identifies the session within its connection. */
+		startAt: integer('start_at', { mode: 'timestamp_ms' }).notNull(),
+		endAt: integer('end_at', { mode: 'timestamp_ms' }).notNull(),
+		startSocPct: real('start_soc_pct'),
+		endSocPct: real('end_soc_pct'),
+		latitude: real('latitude'),
+		longitude: real('longitude'),
+		/** Price the owner entered for this session, cents per kWh from the grid. */
+		priceCtPerKwh: real('price_ct_per_kwh'),
+		/** Total the owner entered, e.g. from a receipt, in euros; wins over any price. */
+		costEur: real('cost_eur'),
+		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
+		updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)
+	},
+	(t) => [uniqueIndex('charge_session_connection_start_idx').on(t.connectionId, t.startAt)]
+);
+
+/** Electricity prices per connection; each applies from `validFrom` until the next one. */
+export const electricityPrice = sqliteTable(
+	'electricity_price',
+	{
+		id: text('id').primaryKey(),
+		connectionId: text('connection_id')
+			.notNull()
+			.references(() => vehicleConnection.id, { onDelete: 'cascade' }),
+		/** `home` or `away`. */
+		kind: text('kind').notNull(),
+		/** First day the price applies, `YYYY-MM-DD` in the owner's calendar. */
+		validFrom: text('valid_from').notNull(),
+		ctPerKwh: real('ct_per_kwh').notNull(),
+		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now)
+	},
+	(t) => [
+		uniqueIndex('electricity_price_connection_kind_from_idx').on(
+			t.connectionId,
+			t.kind,
+			t.validFrom
+		)
+	]
 );
 
 /** Excel templates an owner uploaded to fill from the trip log (see export/templates.ts). */

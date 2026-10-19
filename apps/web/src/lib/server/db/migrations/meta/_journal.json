@@ -43,6 +43,13 @@
       "when": 1792409986874,
       "tag": "0005_trip_temperature",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792437322784,
+      "tag": "0006_charging_costs",
+      "breakpoints": true
     }
   ]
 }
