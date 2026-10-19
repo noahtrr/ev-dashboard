@@ -10,9 +10,12 @@
 		label: string;
 		/** UI strings of the map controls, by MapLibre key. */
 		strings: Record<string, string>;
+		/** A route as [longitude, latitude] pairs; the marker then sits at its end. */
+		path?: [number, number][];
 	};
 
-	let { latitude, longitude, sources, label, strings }: Props = $props();
+	let { latitude, longitude, sources, label, strings, path = [] }: Props = $props();
+	const ROUTE = 'route';
 
 	let container: HTMLDivElement;
 	let map: MapLibreMap | undefined;
@@ -53,6 +56,21 @@
 					locale: strings
 				});
 				map.touchZoomRotate.disableRotation();
+				if (path.length > 1) {
+					// Custom layers are dropped with every style change, so they are re-added each time.
+					map.on('style.load', addRoute);
+					const bounds = path.reduce(
+						(b, point) => b.extend(point),
+						new maplibre.LngLatBounds(path[0], path[0])
+					);
+					const frame = () => map?.fitBounds(bounds, { padding: 48, duration: 0, maxZoom: 16 });
+					frame();
+					// Keep the whole route in view when the layout changes (rotation, window size).
+					map.on('resize', frame);
+					const origin = document.createElement('div');
+					origin.className = 'route-start';
+					new maplibre.Marker({ element: origin }).setLngLat(path[0]).addTo(map);
+				}
 				const dot = document.createElement('div');
 				dot.className = 'vehicle-dot';
 				marker = new maplibre.Marker({ element: dot }).setLngLat([longitude, latitude]).addTo(map);
@@ -70,11 +88,27 @@
 		};
 	});
 
-	// Follow the vehicle when the position changes (e.g. switching vehicles).
+	function addRoute() {
+		if (!map || map.getSource(ROUTE)) return;
+		const accent = getComputedStyle(container).getPropertyValue('--accent').trim() || '#38bdf8';
+		map.addSource(ROUTE, {
+			type: 'geojson',
+			data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: path } }
+		});
+		map.addLayer({
+			id: ROUTE,
+			type: 'line',
+			source: ROUTE,
+			layout: { 'line-join': 'round', 'line-cap': 'round' },
+			paint: { 'line-color': accent, 'line-width': 4, 'line-opacity': 0.85 }
+		});
+	}
+
+	// Follow the vehicle when the position changes (e.g. switching vehicles); a route stays framed.
 	$effect(() => {
 		const center: [number, number] = [longitude, latitude];
 		marker?.setLngLat(center);
-		map?.jumpTo({ center });
+		if (path.length < 2) map?.jumpTo({ center });
 	});
 </script>
 
@@ -109,6 +143,14 @@
 		background: var(--accent);
 		border: 3px solid var(--surface);
 		box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 25%, transparent);
+	}
+
+	.map :global(.route-start) {
+		width: 14px;
+		height: 14px;
+		border-radius: 999px;
+		background: var(--surface);
+		border: 3px solid var(--accent);
 	}
 
 	.map :global(.maplibregl-ctrl-attrib) {

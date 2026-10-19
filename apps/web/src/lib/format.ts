@@ -18,9 +18,22 @@ export function wholeNumber(value: number, locale: Locale): string {
 	return value.toLocaleString(localeTag(locale), { maximumFractionDigits: 0 });
 }
 
-/** Energy in kWh: one decimal for small amounts, whole numbers otherwise. */
-export function energy(kwh: number, locale: Locale): string {
-	return kwh.toLocaleString(localeTag(locale), { maximumFractionDigits: kwh < 10 ? 1 : 0 });
+/** One decimal for small amounts, whole numbers otherwise (kWh, km). */
+export function amount(value: number, locale: Locale): string {
+	return value.toLocaleString(localeTag(locale), { maximumFractionDigits: value < 10 ? 1 : 0 });
+}
+
+/** Energy in kWh. */
+export const energy = amount;
+/** Distance in km. */
+export const kilometres = amount;
+
+/** Always one decimal, e.g. consumption in kWh/100 km. */
+export function oneDecimal(value: number, locale: Locale): string {
+	return value.toLocaleString(localeTag(locale), {
+		minimumFractionDigits: 1,
+		maximumFractionDigits: 1
+	});
 }
 
 export function dateTime(value: Date | string, locale: Locale): string {

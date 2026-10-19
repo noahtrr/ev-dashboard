@@ -48,13 +48,16 @@ Not every model reports every value; missing values are shown as "–". Further 
 
 ## Home page
 
-The home page shows three modules for the selected vehicle:
+The home page shows four modules for the selected vehicle:
 
 - **Location:** a map with the vehicle position, the street address and when the position was determined. The address can be switched off; tile and address services are replaceable (see [Configuration](Configuration)).
 - **Range:** range in km, state of charge as a ring and the charging status, with the time until full while charging.
 - **Charging:** the ongoing or last charging session with the amount added and its duration. **Charging history** leads to a page with the state of charge over time (7, 30 or 90 days, charging times highlighted) and every session in the period. Selecting a session opens its detail page: location with map and address, start and end, state of charge and range before and after, average charging speed and power, odometer, outside temperature, the vehicle's charging status and the state of charge during the session. Only values the vehicle reported are shown.
+- **Trips:** the ongoing or last trip with distance, time, duration and consumption. **Trip log** leads to a page with the distance per day (7, 30 or 90 days), totals for trips, distance, driving time and average consumption, and every trip in the period. Selecting a trip opens its detail page: map with the route, start and destination address, start and end, distance, consumption, state of charge, range and odometer before and after, average speed and outside temperature.
 
 Sessions are derived from the stored fetches: consecutive fetches with the status "charging" form a session. If the vehicle reports no charging status, a rising state of charge with the cable plugged in counts. More than three times `POLL_INTERVAL_SECONDS` (at least 30 minutes) between two fetches starts a new session. The API does not report the battery size, so the charged amount is given in percentage points at first. If you enter the usable capacity under **Battery** on the vehicle's detail page (Account → vehicle; 5 to 250 kWh), the dashboard shows charged energy and charging power in kWh and kW. These values are estimated from the percentage points and the capacity; charging losses are not included.
+
+Trips are derived from the stored fetches as well: the vehicle drove between two fetches if the ignition is on, the odometer went up or (without an odometer) the position changed by more than 300 m. Consecutive such intervals form a trip, from the last fetch before departure to the first fetch at the destination. Start and end are therefore accurate to `POLL_INTERVAL_SECONDS`, and the route only connects the fetched positions. Movements shorter than 200 m do not count. The distance comes from the odometer, otherwise from the positions. The dashboard shows consumption in kWh/100 km once the usable capacity is entered, otherwise the state of charge used in percentage points.
 
 Values older than three times `POLL_INTERVAL_SECONDS` (at least 30 minutes) are marked as "stale". With several vehicles you pick the vehicle at the top; "All values" leads to the details page.
 

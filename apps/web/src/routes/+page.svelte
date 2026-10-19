@@ -2,7 +2,16 @@
 	import { resolve } from '$app/paths';
 	import TopBar from '#lib/components/TopBar.svelte';
 	import VehicleMap from '#lib/components/VehicleMap.svelte';
-	import { clockTime, DASH, duration, energy, minutesBetween, wholeNumber } from '#lib/format.ts';
+	import {
+		clockTime,
+		DASH,
+		duration,
+		energy,
+		kilometres,
+		minutesBetween,
+		oneDecimal,
+		wholeNumber
+	} from '#lib/format.ts';
 	import { format, messages, relativeTime } from '#lib/i18n.ts';
 	import type { PageProps } from './$types';
 
@@ -11,6 +20,7 @@
 	const h = $derived(t.home);
 	const d = $derived(t.vehicleDetail);
 	const c = $derived(t.charging);
+	const tr = $derived(t.trips);
 	const vehicle = $derived(data.selected);
 	const values = $derived(vehicle?.data ?? null);
 	const session = $derived(data.lastSession);
@@ -64,6 +74,16 @@
 	});
 
 	const number = (value: number) => wholeNumber(value, data.locale);
+
+	const trip = $derived(data.lastTrip);
+	// kWh/100 km with a known capacity, otherwise the percentage points used.
+	const tripUsage = $derived.by(() => {
+		if (!trip) return '';
+		if (trip.usedKwh !== undefined && trip.distanceKm >= 1) {
+			return `${oneDecimal((trip.usedKwh / trip.distanceKm) * 100, data.locale)} kWh/100 km`;
+		}
+		return trip.usedPct === undefined ? '' : `−${number(trip.usedPct)} %`;
+	});
 
 	const sessionLevels = $derived(
 		session?.startSocPct !== undefined && session.endSocPct !== undefined
@@ -222,6 +242,38 @@
 					{/if}
 					<a class="details" href={resolve('/vehicles/[id]/charging', { id: vehicle.id })}
 						>{c.history} →</a
+					>
+				</p>
+			</section>
+
+			<section class="module trips-module" aria-labelledby="trips-title">
+				<div class="module-body">
+					<h2 id="trips-title" class="title">{tr.title}</h2>
+					{#if trip}
+						<p class="big small-big" class:live={trip.ongoing}>
+							{kilometres(trip.distanceKm, data.locale)}<span class="unit">km</span>
+						</p>
+						<p class="context" class:charging={trip.ongoing}>
+							{[
+								trip.ongoing
+									? format(tr.since, { time: clockTime(trip.start, data.locale) })
+									: `${clockTime(trip.start, data.locale)} – ${clockTime(trip.end, data.locale)}`,
+								duration(minutesBetween(trip.start, trip.end)),
+								tripUsage
+							]
+								.filter(Boolean)
+								.join(' · ')}
+						</p>
+					{:else}
+						<p class="muted">{tr.none}</p>
+					{/if}
+				</div>
+				<p class="stamp module-foot foot-row">
+					{#if trip && !trip.ongoing}
+						<span>{format(tr.last, { time: ago(trip.end) })}</span>
+					{/if}
+					<a class="details" href={resolve('/vehicles/[id]/trips', { id: vehicle.id })}
+						>{tr.history} →</a
 					>
 				</p>
 			</section>
@@ -500,11 +552,18 @@
 		}
 
 		.location {
-			grid-row: span 2;
+			grid-row: span 3;
+		}
+
+		/* The map grows with the modules beside it. */
+		.location .map-wrap {
+			flex: 1;
+			min-height: 360px;
 		}
 
 		.range,
-		.charging-module {
+		.charging-module,
+		.trips-module {
 			align-self: start;
 		}
 	}

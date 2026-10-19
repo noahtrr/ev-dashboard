@@ -2,10 +2,11 @@ import { error } from '@sveltejs/kit';
 import * as env from '$app/env/private';
 import { getApp } from '#lib/server/app.ts';
 import { deriveSessions, withEnergy } from '#lib/server/vehicles/charging.ts';
+import { deriveTrips, withTripEnergy } from '#lib/server/vehicles/trips.ts';
 import type { PageServerLoad } from './$types';
 
-/** How far back the home page looks for the last charging session. */
-const CHARGING_LOOKBACK_DAYS = 30;
+/** How far back the home page looks for the last charging session and trip. */
+const LOOKBACK_DAYS = 30;
 
 export const load = (async ({ locals, url }) => {
 	// The handle hook already sends anonymous visitors to the login page.
@@ -14,17 +15,12 @@ export const load = (async ({ locals, url }) => {
 	const connections = await vehicles.listConnections(locals.user.id);
 	const current = connections.find((c) => c.id === url.searchParams.get('v')) ?? connections[0];
 	const latest = current ? await vehicles.latestValues(locals.user.id, current.id) : undefined;
-	// The newest session (running or finished) for the charging module.
-	const since = new Date(Date.now() - CHARGING_LOOKBACK_DAYS * 24 * 3600 * 1000);
-	const [lastSession] = current
-		? withEnergy(
-				deriveSessions(
-					await vehicles.history(locals.user.id, current.id, since),
-					vehicles.staleAfterMs
-				),
-				current.batteryCapacityKwh
-			)
-		: [];
+	// The newest charging session and trip (running or finished) for their modules.
+	const since = new Date(Date.now() - LOOKBACK_DAYS * 24 * 3600 * 1000);
+	const points = current ? await vehicles.history(locals.user.id, current.id, since) : [];
+	const capacity = current?.batteryCapacityKwh ?? null;
+	const [lastSession] = withEnergy(deriveSessions(points, vehicles.staleAfterMs), capacity);
+	const [lastTrip] = withTripEnergy(deriveTrips(points, vehicles.staleAfterMs), capacity);
 	return {
 		vehicles: connections.map((c) => ({ id: c.id, label: c.label })),
 		selected: current
@@ -37,6 +33,7 @@ export const load = (async ({ locals, url }) => {
 				}
 			: null,
 		lastSession: lastSession ?? null,
+		lastTrip: lastTrip ?? null,
 		// Values older than this are marked as stale.
 		staleAfterMs: vehicles.staleAfterMs,
 		geocoding: geocoder !== undefined,
