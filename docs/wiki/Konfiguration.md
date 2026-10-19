@@ -30,12 +30,13 @@ Die gesamte Konfiguration erfolgt über Umgebungsvariablen in der `.env`-Datei. 
 
 - **Ersteinrichtung:** Solange es kein Konto gibt, leitet die App auf `/setup` um. Das erste Konto wird Administrator.
 - **Weitere Konten** werden abgelehnt, solange `AUTH_ALLOW_SIGNUP` nicht `true` ist. Das gilt auch für die erste Anmeldung eines unbekannten Benutzers über GitHub, Google oder SSO.
-- Alle Seiten außer `/api/health`, `/api/auth/*`, `/login`, `/signup` und `/setup` erfordern eine Anmeldung.
+- **Einladungen:** Mit Mailversand kann ein Administrator auf der Seite **Konto** Adressen einladen. Der Link in der Mail ist 7 Tage gültig und erlaubt die Registrierung genau dieser Adresse, auch wenn `AUTH_ALLOW_SIGNUP` `false` ist. Die Adresse gilt damit als bestätigt.
+- Alle Seiten außer `/api/health`, `/api/auth/*`, `/login`, `/signup`, `/setup`, `/forgot-password` und `/reset-password` erfordern eine Anmeldung.
 - Die Anmelde-Endpunkte haben eine Ratenbegrenzung (z. B. 10 Anmeldeversuche pro Minute und Adresse).
 - Passwörter brauchen mindestens 8 Zeichen.
 - Meldet sich jemand über GitHub, Google oder SSO mit derselben E-Mail an wie ein bestehendes Konto, wird die Anmeldung mit diesem Konto verknüpft. Voraussetzung: Der Anbieter meldet die E-Mail als bestätigt. So lässt sich ein Konto auf mehreren Wegen nutzen, ohne dass Fremde mit einer unbestätigten Adresse hineinkommen.
 - Passkeys verwaltet jeder Benutzer auf der Seite **Konto** (Menü oben rechts).
-- E-Mail-Bestätigung und Passwort-Zurücksetzen per Mail gibt es noch nicht (kein SMTP).
+- E-Mail-Bestätigung, Passwort-Zurücksetzen und Einladungen brauchen den Mailversand, siehe [E-Mail](#e-mail). E-Mail-Adresse und Passwort ändert jeder Benutzer auf der Seite **Konto**.
 
 ### Callback-URLs
 
@@ -48,6 +49,25 @@ Beim jeweiligen Anbieter als Redirect- bzw. Callback-URL eintragen (`<APP_URL>` 
 | OIDC | `<APP_URL>/api/auth/callback/oidc` |
 
 Beim OIDC-Anbieter einen vertraulichen Client (Authorization Code mit PKCE) mit den Scopes `openid email profile` anlegen.
+
+## E-Mail
+
+Ohne `SMTP_HOST` verschickt die App keine Mails: Konten brauchen keine Bestätigung, „Passwort vergessen?“ und Einladungen gibt es dann nicht. Mit einem Mailserver kommen hinzu:
+
+- **Passwort vergessen?** auf der Anmeldeseite schickt einen Link (eine Stunde gültig). Nach dem Zurücksetzen werden alle Sitzungen des Kontos beendet.
+- **E-Mail-Bestätigung:** Neue Konten müssen ihre Adresse über einen Link (24 Stunden gültig) bestätigen, bevor sie sich anmelden können. Das erste Konto und eingeladene Adressen gelten als bestätigt. Konten, die vor dem Update auf diese Version bestanden, gelten ebenfalls als bestätigt.
+- **E-Mail-Adresse ändern** auf der Seite **Konto**: Die neue Adresse wird erst nach Bestätigung über einen Link an sie übernommen.
+- **Einladungen** und eine **Test-Mail** für Administratoren auf der Seite **Konto**.
+
+Die Mails sind auf Deutsch oder Englisch, je nach Browsersprache bei der Anfrage. Kann eine Mail nicht verschickt werden, steht der Fehler im Log (`[mail] …`); die Seite verrät aus Sicherheitsgründen nicht, ob eine Adresse existiert.
+
+| Variable | Pflicht | Standard | Beschreibung |
+|---|---|---|---|
+| `SMTP_HOST` | nein | | Mailserver. Gesetzt: Mailversand aktiv. |
+| `SMTP_PORT` | nein | `587` | Port des Mailservers. |
+| `SMTP_SECURE` | nein | `true` bei Port 465 | `true`: TLS von Anfang an (meist Port 465). `false`: STARTTLS, falls der Server es anbietet (meist Port 587). |
+| `SMTP_USER`, `SMTP_PASSWORD` | nein | | Zugangsdaten am Mailserver. Leer: ohne Anmeldung senden. |
+| `SMTP_FROM` | mit `SMTP_HOST` | | Absender, z. B. `EV Dashboard <ev@example.com>`. Die App startet nicht, wenn `SMTP_HOST` ohne `SMTP_FROM` gesetzt ist. |
 
 ## Fahrzeug-API
 

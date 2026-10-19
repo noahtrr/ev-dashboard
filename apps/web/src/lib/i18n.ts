@@ -27,6 +27,35 @@ const de = {
 		noAccount: 'Noch kein Konto?',
 		haveAccount: 'Schon ein Konto?',
 		noMethods: 'Keine Anmeldemethode ist aktiviert. Bitte prüfe die Konfiguration.',
+		forgot: 'Passwort vergessen?',
+		forgotTitle: 'Passwort vergessen',
+		forgotIntro:
+			'Gib deine E-Mail-Adresse ein. Wir schicken dir einen Link, mit dem du ein neues Passwort festlegst.',
+		sendLink: 'Link senden',
+		backToLogin: '← Zurück zur Anmeldung',
+		sentTitle: 'Prüfe dein Postfach',
+		sentText:
+			'Wenn es ein Konto mit {email} gibt, ist ein Link unterwegs. Er ist eine Stunde gültig.',
+		toLogin: 'Zur Anmeldung',
+		resetTitle: 'Neues Passwort',
+		newPassword: 'Neues Passwort',
+		repeatPassword: 'Wiederholen',
+		savePassword: 'Passwort speichern',
+		resetNote: 'Danach bist du überall abgemeldet und meldest dich mit dem neuen Passwort an.',
+		mismatch: 'Die Passwörter stimmen nicht überein.',
+		invalidTitle: 'Link nicht mehr gültig',
+		invalidText: 'Der Link ist abgelaufen oder wurde schon benutzt.',
+		requestNew: 'Neuen Link anfordern',
+		resetDone: 'Dein Passwort wurde geändert. Melde dich jetzt an.',
+		checkTitle: 'Bestätige deine E-Mail',
+		checkText:
+			'Wir haben einen Link an {email} geschickt. Sobald du ihn öffnest, bist du angemeldet.',
+		resend: 'Mail erneut senden',
+		resent: 'Die Mail wurde erneut gesendet.',
+		otherAddress: 'Andere Adresse verwenden',
+		invited: '{name} hat dich eingeladen. Die Einladung gilt bis {date}.',
+		inviteFixed: 'Aus der Einladung, nicht änderbar.',
+		inviteInvalid: 'Diese Einladung ist abgelaufen oder wurde schon benutzt.',
 		errors: {
 			invalidCredentials: 'E-Mail oder Passwort ist falsch.',
 			signupDisabled: 'Neue Registrierungen sind auf dieser Instanz deaktiviert.',
@@ -34,7 +63,10 @@ const de = {
 			passwordTooShort: 'Das Passwort ist zu kurz.',
 			rateLimited: 'Zu viele Versuche. Bitte warte einen Moment.',
 			passkey: 'Die Anmeldung mit Passkey hat nicht geklappt.',
-			oauth: 'Die Anmeldung beim externen Anbieter ist fehlgeschlagen.'
+			oauth: 'Die Anmeldung beim externen Anbieter ist fehlgeschlagen.',
+			emailNotVerified:
+				'Bitte bestätige zuerst deine E-Mail-Adresse. Wir haben dir den Link noch einmal geschickt.',
+			invalidLink: 'Der Link ist abgelaufen oder ungültig.'
 		}
 	},
 	home: {
@@ -81,6 +113,56 @@ const de = {
 		unnamedPasskey: 'Passkey',
 		addedOn: 'Hinzugefügt am {date}',
 		passkeyError: 'Der Passkey konnte nicht gespeichert werden.'
+	},
+	signin: {
+		title: 'Anmeldung',
+		email: 'E-Mail',
+		verified: 'bestätigt',
+		unverified: 'nicht bestätigt',
+		sendVerification: 'Bestätigungsmail senden',
+		verificationSent: 'Bestätigungsmail gesendet. Prüfe dein Postfach.',
+		changeEmail: 'E-Mail ändern',
+		newEmail: 'Neue E-Mail-Adresse',
+		changeEmailSent:
+			'Wir haben einen Link an {email} geschickt. Die neue Adresse gilt, sobald du ihn öffnest.',
+		changeEmailNote: 'Eine neue Adresse gilt erst, wenn du den Link an sie bestätigt hast.',
+		changePassword: 'Passwort ändern',
+		currentPassword: 'Aktuelles Passwort',
+		newPassword: 'Neues Passwort',
+		passwordChanged: 'Passwort geändert. Andere Geräte wurden abgemeldet.',
+		wrongPassword: 'Das aktuelle Passwort ist falsch.',
+		save: 'Speichern',
+		noMail: 'Ohne eingerichteten Mailversand lässt sich die E-Mail-Adresse nicht ändern.'
+	},
+	invites: {
+		title: 'Einladungen',
+		intro:
+			'Eingeladene bekommen eine Mail mit einem Link, der 7 Tage gilt. Damit können sie sich auch registrieren, wenn die Registrierung geschlossen ist.',
+		email: 'E-Mail',
+		invite: 'Einladen',
+		sent: 'Einladung an {email} gesendet.',
+		exists: 'Für diese Adresse gibt es schon ein Konto.',
+		invalid: 'Bitte eine gültige E-Mail-Adresse eingeben.',
+		failed: 'Die Mail konnte nicht gesendet werden. Prüfe die SMTP-Einstellungen.',
+		states: {
+			pending: 'Eingeladen am {date} · gültig bis {until}',
+			expired: 'Abgelaufen am {until}',
+			accepted: 'Registriert am {date}'
+		},
+		resend: 'Erneut senden',
+		revoke: 'Zurückziehen',
+		revokeLabel: 'Einladung an {email} zurückziehen',
+		resendLabel: 'Einladung an {email} erneut senden',
+		none: 'Noch keine Einladungen.'
+	},
+	mail: {
+		title: 'Mailversand',
+		server: 'Server',
+		from: 'Absender',
+		test: 'Test-Mail an mich senden',
+		testSent: 'Gesendet an {email}.',
+		testFailed: 'Senden fehlgeschlagen: {error}',
+		note: 'Eingestellt über SMTP_* in der .env. Passwörter erscheinen hier nie.'
 	},
 	vehicle: {
 		title: 'Fahrzeug-API',
@@ -585,6 +667,32 @@ const en: Messages = {
 		noAccount: 'No account yet?',
 		haveAccount: 'Already have an account?',
 		noMethods: 'No sign-in method is enabled. Please check the configuration.',
+		forgot: 'Forgot password?',
+		forgotTitle: 'Forgot password',
+		forgotIntro: 'Enter your email address. We will send you a link to set a new password.',
+		sendLink: 'Send link',
+		backToLogin: '← Back to sign in',
+		sentTitle: 'Check your inbox',
+		sentText: 'If there is an account for {email}, a link is on its way. It is valid for one hour.',
+		toLogin: 'To sign in',
+		resetTitle: 'New password',
+		newPassword: 'New password',
+		repeatPassword: 'Repeat',
+		savePassword: 'Save password',
+		resetNote: 'You will be signed out everywhere and sign in with the new password.',
+		mismatch: 'The passwords do not match.',
+		invalidTitle: 'Link no longer valid',
+		invalidText: 'The link has expired or was already used.',
+		requestNew: 'Request a new link',
+		resetDone: 'Your password was changed. Sign in now.',
+		checkTitle: 'Confirm your email',
+		checkText: 'We sent a link to {email}. Once you open it, you are signed in.',
+		resend: 'Send mail again',
+		resent: 'The mail was sent again.',
+		otherAddress: 'Use another address',
+		invited: '{name} invited you. The invitation is valid until {date}.',
+		inviteFixed: 'From the invitation, cannot be changed.',
+		inviteInvalid: 'This invitation has expired or was already used.',
 		errors: {
 			invalidCredentials: 'Email or password is incorrect.',
 			signupDisabled: 'New registrations are disabled on this instance.',
@@ -592,7 +700,9 @@ const en: Messages = {
 			passwordTooShort: 'The password is too short.',
 			rateLimited: 'Too many attempts. Please wait a moment.',
 			passkey: 'Signing in with a passkey did not work.',
-			oauth: 'Signing in with the external provider failed.'
+			oauth: 'Signing in with the external provider failed.',
+			emailNotVerified: 'Please confirm your email address first. We sent you the link again.',
+			invalidLink: 'The link has expired or is invalid.'
 		}
 	},
 	home: {
@@ -638,6 +748,55 @@ const en: Messages = {
 		unnamedPasskey: 'Passkey',
 		addedOn: 'Added on {date}',
 		passkeyError: 'The passkey could not be saved.'
+	},
+	signin: {
+		title: 'Sign-in',
+		email: 'Email',
+		verified: 'confirmed',
+		unverified: 'not confirmed',
+		sendVerification: 'Send confirmation mail',
+		verificationSent: 'Confirmation mail sent. Check your inbox.',
+		changeEmail: 'Change email',
+		newEmail: 'New email address',
+		changeEmailSent: 'We sent a link to {email}. The new address applies once you open it.',
+		changeEmailNote: 'A new address only applies once you confirmed the link sent to it.',
+		changePassword: 'Change password',
+		currentPassword: 'Current password',
+		newPassword: 'New password',
+		passwordChanged: 'Password changed. Other devices were signed out.',
+		wrongPassword: 'The current password is wrong.',
+		save: 'Save',
+		noMail: 'Without mail set up, the email address cannot be changed.'
+	},
+	invites: {
+		title: 'Invitations',
+		intro:
+			'Invited people get a mail with a link valid for 7 days. With it they can sign up even while registration is closed.',
+		email: 'Email',
+		invite: 'Invite',
+		sent: 'Invitation sent to {email}.',
+		exists: 'There already is an account for this address.',
+		invalid: 'Please enter a valid email address.',
+		failed: 'The mail could not be sent. Check the SMTP settings.',
+		states: {
+			pending: 'Invited on {date} · valid until {until}',
+			expired: 'Expired on {until}',
+			accepted: 'Signed up on {date}'
+		},
+		resend: 'Send again',
+		revoke: 'Revoke',
+		revokeLabel: 'Revoke the invitation to {email}',
+		resendLabel: 'Send the invitation to {email} again',
+		none: 'No invitations yet.'
+	},
+	mail: {
+		title: 'Mail',
+		server: 'Server',
+		from: 'Sender',
+		test: 'Send me a test mail',
+		testSent: 'Sent to {email}.',
+		testFailed: 'Sending failed: {error}',
+		note: 'Set with SMTP_* in the .env. Passwords never appear here.'
 	},
 	vehicle: {
 		title: 'Vehicle API',

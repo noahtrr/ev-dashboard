@@ -9,6 +9,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const redirectTo = safeRedirect(url.searchParams.get('redirectTo'));
 	if (locals.user) redirect(303, redirectTo);
 	if ((await countUsers(db)) === 0) redirect(303, '/setup');
-	// Set by Better Auth when an OAuth/SSO sign-in fails.
-	return { methods, redirectTo, errorCode: url.searchParams.get('error') };
+	// `error` comes from Better Auth after a failed OAuth/SSO sign-in or an invalid link.
+	return {
+		methods,
+		redirectTo,
+		errorCode: url.searchParams.get('error'),
+		passwordReset: url.searchParams.has('reset')
+	};
 };

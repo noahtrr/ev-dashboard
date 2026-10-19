@@ -19,5 +19,6 @@
 		{t}
 		redirectTo={data.redirectTo}
 		error={data.errorCode ? authErrorMessage(t, { code: data.errorCode }, t.auth.errors.oauth) : ''}
+		notice={data.passwordReset ? t.auth.resetDone : ''}
 	/>
 </main>

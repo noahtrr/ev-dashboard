@@ -3,10 +3,12 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import * as env from '$app/env/private';
 import { createAuth, OIDC_PROVIDER_ID, type Auth, type AuthSettings } from './auth/config.ts';
+import { createInvitations, type Invitations } from './auth/invitations.ts';
 import { deriveKey } from './crypto.ts';
 import { openDatabase, type Database } from './db/index.ts';
 import { createTemplateStore, type TemplateStore } from './export/templates.ts';
 import { createGeocoder, type Geocoder } from './geocode.ts';
+import { createMailer, type Mailer } from './mail/mailer.ts';
 import { createProviders } from './providers/index.ts';
 import { loadOrCreateSecret } from './secrets.ts';
 import { createCosts, type Costs } from './vehicles/costs.ts';
@@ -26,6 +28,11 @@ type App = {
 	templates: TemplateStore;
 	/** Absent when GEOCODING_ENABLED is false. */
 	geocoder?: Geocoder;
+	/** Absent when SMTP_HOST is not set. */
+	mailer?: Mailer;
+	invitations: Invitations;
+	/** Public origin, for links in mails. */
+	appUrl: string;
 };
 
 let app: App | undefined;
@@ -39,6 +46,18 @@ function create(): App {
 	mkdirSync(dataDir, { recursive: true });
 	const { db } = openDatabase(join(dataDir, 'ev-dashboard.db'));
 
+	if (env.SMTP_HOST && !env.SMTP_FROM) throw new Error('SMTP_FROM is required with SMTP_HOST');
+	const mailer = env.SMTP_HOST
+		? createMailer({
+				host: env.SMTP_HOST,
+				port: env.SMTP_PORT,
+				secure: env.SMTP_SECURE,
+				user: env.SMTP_USER,
+				password: env.SMTP_PASSWORD,
+				from: env.SMTP_FROM!
+			})
+		: undefined;
+
 	const oidcClient = client(env.OIDC_CLIENT_ID, env.OIDC_CLIENT_SECRET);
 	const settings: AuthSettings = {
 		baseURL: env.APP_URL,
@@ -51,7 +70,8 @@ function create(): App {
 		oidc:
 			oidcClient && env.OIDC_ISSUER
 				? { ...oidcClient, issuer: env.OIDC_ISSUER, name: env.OIDC_NAME }
-				: undefined
+				: undefined,
+		mailer
 	};
 
 	const social: LoginMethods['social'] = [];
@@ -85,11 +105,15 @@ function create(): App {
 					userAgent: `ev-dashboard/${env.APP_VERSION} (+${env.APP_URL})`
 				})
 			: undefined,
+		mailer,
+		invitations: createInvitations(db),
+		appUrl: env.APP_URL,
 		methods: {
 			emailPassword: settings.emailPassword,
 			passkey: settings.passkey,
 			social,
-			allowSignup: settings.allowSignup
+			allowSignup: settings.allowSignup,
+			mail: mailer !== undefined
 		}
 	};
 }

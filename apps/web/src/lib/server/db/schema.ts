@@ -296,3 +296,21 @@ export const exportTemplate = sqliteTable(
 	},
 	(t) => [index('export_template_user_idx').on(t.userId)]
 );
+
+/** Invitations an admin sent by mail (see auth/invitations.ts). Only a hash of the token is kept. */
+export const invitation = sqliteTable(
+	'invitation',
+	{
+		id: text('id').primaryKey(),
+		/** Lower case. */
+		email: text('email').notNull(),
+		tokenHash: text('token_hash').notNull().unique(),
+		invitedBy: text('invited_by')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
+		expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+		acceptedAt: integer('accepted_at', { mode: 'timestamp_ms' })
+	},
+	(t) => [index('invitation_email_idx').on(t.email)]
+);

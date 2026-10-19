@@ -5,6 +5,8 @@ import { user } from '#lib/server/db/schema.ts';
 import { DEFAULT_PROVIDER_ID } from '#lib/server/providers/index.ts';
 import type { VehicleProvider } from '#lib/server/providers/types.ts';
 import { getVehicleApiCredentials } from '#lib/server/vehicle-api.ts';
+import { createInvitations } from '#lib/server/auth/invitations.ts';
+import type { Mail, Mailer } from '#lib/server/mail/mailer.ts';
 import { createVehicleService, type VehicleService } from '#lib/server/vehicles/service.ts';
 
 const state = vi.hoisted(() => ({ app: undefined as unknown }));
@@ -193,5 +195,113 @@ describe('account page: vehicle connections', () => {
 		await expect(
 			actions.disconnect(event({}, formRequest({ connectionId: 'x', confirm: 'yes' })) as never)
 		).rejects.toMatchObject({ status: 401 });
+	});
+});
+
+describe('account page: invitations and mail', () => {
+	let sent: Mail[];
+	let mailer: Mailer;
+
+	beforeEach(() => {
+		sent = [];
+		mailer = {
+			info: { host: 'smtp.example.com', port: 587, from: 'ev@example.com' },
+			send: async (mail) => {
+				sent.push(mail);
+			}
+		};
+		state.app = {
+			...(state.app as object),
+			methods: { passkey: true, mail: true },
+			mailer,
+			invitations: createInvitations(db),
+			appUrl: 'https://ev.example.com'
+		};
+	});
+
+	const run = (name: keyof typeof actions, locals: Partial<App.Locals>, fields = {}) =>
+		actions[name](event(locals, formRequest(fields)) as never) as Promise<unknown>;
+
+	it('sends an invitation with a sign-up link', async () => {
+		const result = await run('invite', { user: alice }, { email: ' Carla@Example.com ' });
+		expect(result).toEqual({ inviteSent: 'carla@example.com' });
+		expect(sent).toHaveLength(1);
+		expect(sent[0].to).toBe('carla@example.com');
+		expect(sent[0].subject).toContain('Alice');
+		expect(sent[0].text).toMatch(/https:\/\/ev\.example\.com\/signup\?invite=[\w-]{43}/);
+
+		const data = await load(event({ user: alice }));
+		expect(data.invitations).toMatchObject([{ email: 'carla@example.com', state: 'pending' }]);
+		expect(data.mailInfo).toEqual(mailer.info);
+	});
+
+	it('validates the address and skips existing accounts', async () => {
+		expect(await run('invite', { user: alice }, { email: 'no-address' })).toMatchObject({
+			status: 400,
+			data: { inviteError: 'invalid' }
+		});
+		expect(await run('invite', { user: alice }, { email: 'BOB@example.com' })).toMatchObject({
+			status: 400,
+			data: { inviteError: 'exists' }
+		});
+		expect(sent).toEqual([]);
+	});
+
+	it('drops the invitation when the mail cannot be sent', async () => {
+		const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+		mailer.send = async () => {
+			throw new Error('connection refused');
+		};
+		expect(await run('invite', { user: alice }, { email: 'carla@example.com' })).toMatchObject({
+			status: 502,
+			data: { inviteError: 'failed' }
+		});
+		expect((await load(event({ user: alice }))).invitations).toEqual([]);
+		log.mockRestore();
+	});
+
+	it('resends with a new link and revokes', async () => {
+		await run('invite', { user: alice }, { email: 'carla@example.com' });
+		const [{ id }] = (await load(event({ user: alice }))).invitations!;
+		expect(await run('resendInvite', { user: alice }, { id })).toEqual({
+			inviteSent: 'carla@example.com'
+		});
+		expect(sent).toHaveLength(2);
+		expect(sent[1].text).not.toBe(sent[0].text);
+
+		await run('revokeInvite', { user: alice }, { id });
+		expect((await load(event({ user: alice }))).invitations).toEqual([]);
+		await expect(run('resendInvite', { user: alice }, { id })).rejects.toMatchObject({
+			status: 404
+		});
+	});
+
+	it('sends a test mail and reports the server answer', async () => {
+		expect(await run('testMail', { user: alice })).toEqual({ testSent: 'alice@example.com' });
+		expect(sent[0]).toMatchObject({ to: 'alice@example.com' });
+		mailer.send = async () => {
+			throw new Error('535 authentication failed');
+		};
+		expect(await run('testMail', { user: alice })).toMatchObject({
+			status: 502,
+			data: { testError: '535 authentication failed' }
+		});
+	});
+
+	it('is for admins only', async () => {
+		for (const name of ['invite', 'resendInvite', 'revokeInvite', 'testMail'] as const) {
+			await expect(
+				run(name, { user: bob }, { email: 'x@example.com', id: 'x' })
+			).rejects.toMatchObject({ status: 403 });
+		}
+		const data = await load(event({ user: bob }));
+		expect(data.mailInfo).toBeNull();
+		expect(data.invitations).toBeNull();
+		expect(data.mail).toBe(true);
+		expect(data.signin).toEqual({
+			email: 'bob@example.com',
+			emailVerified: false,
+			hasPassword: false
+		});
 	});
 });

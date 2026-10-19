@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { authClient } from '#lib/auth-client.ts';
+	import SigninCard from '#lib/components/SigninCard.svelte';
 	import TopBar from '#lib/components/TopBar.svelte';
 	import { format, messages } from '#lib/i18n.ts';
 	import type { PageProps } from './$types';
@@ -54,6 +55,42 @@
 			? t.vehicle.errors[form.vehicleError as keyof typeof t.vehicle.errors]
 			: ''
 	);
+
+	// --- Invitations and mail (admins) ---
+	const invites = $derived(t.invites);
+	const inviteResult = $derived.by(() => {
+		if (form && 'inviteError' in form && form.inviteError) {
+			return { ok: false, text: invites[form.inviteError as 'invalid' | 'exists' | 'failed'] };
+		}
+		if (form && 'inviteSent' in form && form.inviteSent) {
+			return { ok: true, text: format(invites.sent, { email: form.inviteSent }) };
+		}
+		return undefined;
+	});
+	const inviteState = (item: {
+		state: string;
+		createdAt: Date;
+		expiresAt: Date;
+		acceptedAt: Date | null;
+	}) =>
+		format(invites.states[item.state as 'pending' | 'expired' | 'accepted'], {
+			date: date(item.acceptedAt ?? item.createdAt),
+			until: date(item.expiresAt)
+		});
+	let inviteBusy = $state(false);
+	const submitInvite = () => {
+		inviteBusy = true;
+		return async ({
+			result,
+			update
+		}: {
+			result: { type: string };
+			update: (o?: { reset?: boolean }) => Promise<void>;
+		}) => {
+			await update({ reset: result.type === 'success' });
+			inviteBusy = false;
+		};
+	};
 
 	// --- Vehicle connections ---
 	type Results = typeof t.connections.results;
@@ -128,6 +165,8 @@
 
 <main>
 	<h1>{t.account.title}</h1>
+
+	<SigninCard signin={data.signin} mail={data.mail} {t} />
 
 	{#if data.passkeysEnabled}
 		<section class="card" aria-labelledby="passkeys">
@@ -395,6 +434,93 @@
 			{/if}
 		</form>
 	</section>
+	{#if data.invitations}
+		<section class="card" id="invitations" aria-labelledby="invitations-title">
+			<h2 id="invitations-title">{invites.title}</h2>
+			<p class="muted">{invites.intro}</p>
+			{#if inviteResult}
+				<p class="notice {inviteResult.ok ? 'notice-ok' : 'notice-error'}" role="status">
+					{inviteResult.text}
+				</p>
+			{/if}
+			<form class="row" method="POST" action="?/invite" use:enhance={submitInvite}>
+				<label class="field grow">
+					{invites.email}
+					<input name="email" type="email" autocomplete="off" required />
+				</label>
+				<button class="btn btn-primary" type="submit" disabled={inviteBusy}>
+					{invites.invite}
+				</button>
+			</form>
+			{#if data.invitations.length === 0}
+				<p class="muted small">{invites.none}</p>
+			{:else}
+				<ul class="list">
+					{#each data.invitations as item (item.id)}
+						<li class="invite">
+							<div>
+								<strong>{item.email}</strong>
+								<span class="muted small">{inviteState(item)}</span>
+							</div>
+							{#if item.state !== 'accepted'}
+								<span class="invite-actions">
+									<form method="POST" action="?/resendInvite" use:enhance={submitInvite}>
+										<input type="hidden" name="id" value={item.id} />
+										<button
+											class="btn btn-small"
+											type="submit"
+											disabled={inviteBusy}
+											aria-label={format(invites.resendLabel, { email: item.email })}
+											>{invites.resend}</button
+										>
+									</form>
+									<form method="POST" action="?/revokeInvite" use:enhance={submitInvite}>
+										<input type="hidden" name="id" value={item.id} />
+										<button
+											class="btn btn-small btn-danger"
+											type="submit"
+											disabled={inviteBusy}
+											aria-label={format(invites.revokeLabel, { email: item.email })}
+											>{invites.revoke}</button
+										>
+									</form>
+								</span>
+							{/if}
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</section>
+	{/if}
+
+	{#if data.mailInfo}
+		<section class="card" aria-labelledby="mail-title">
+			<h2 id="mail-title">{t.mail.title}</h2>
+			<dl class="mail-info">
+				<div>
+					<dt>{t.mail.server}</dt>
+					<dd class="mono">{data.mailInfo.host}:{data.mailInfo.port}</dd>
+				</div>
+				<div>
+					<dt>{t.mail.from}</dt>
+					<dd>{data.mailInfo.from}</dd>
+				</div>
+			</dl>
+			<form class="row" method="POST" action="?/testMail" use:enhance>
+				<button class="btn" type="submit">{t.mail.test}</button>
+			</form>
+			{#if form && 'testSent' in form && form.testSent}
+				<p class="notice notice-ok" role="status">
+					{format(t.mail.testSent, { email: form.testSent })}
+				</p>
+			{:else if form && 'testError' in form && form.testError}
+				<p class="notice notice-error" role="alert">
+					{format(t.mail.testFailed, { error: form.testError })}
+				</p>
+			{/if}
+			<p class="muted small">{t.mail.note}</p>
+		</section>
+	{/if}
 </main>
 
 <style>
@@ -451,6 +577,45 @@
 		display: flex;
 		flex-direction: column;
 		gap: 2px;
+	}
+
+	.list li.invite {
+		flex-wrap: wrap;
+	}
+
+	.list li.invite div {
+		flex: 1 1 180px;
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+
+	.invite-actions {
+		display: flex;
+		gap: 8px;
+	}
+
+	.mail-info {
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.mail-info div {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		font-size: 14px;
+	}
+
+	.mail-info dt {
+		color: var(--muted);
+	}
+
+	.mail-info dd {
+		margin: 0;
+		text-align: right;
+		overflow-wrap: anywhere;
 	}
 
 	.small {

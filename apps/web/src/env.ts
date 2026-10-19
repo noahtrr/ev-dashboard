@@ -95,6 +95,25 @@ export const variables = defineEnvVars({
 		description: 'Label of the SSO button.',
 		schema: (value) => value?.trim() || 'SSO'
 	},
+	SMTP_HOST: {
+		description:
+			'Mail server for password reset, email confirmation and invitations. Mail is off when unset.',
+		schema: optional
+	},
+	SMTP_PORT: {
+		description: 'Mail server port: 587 (STARTTLS) or 465 (TLS).',
+		schema: integer('SMTP_PORT', 587, 1)
+	},
+	SMTP_SECURE: {
+		description: 'Connect with TLS from the start. Defaults to true for port 465, else STARTTLS.',
+		schema: (value) => (value?.trim() ? flag('SMTP_SECURE', false)(value) : undefined)
+	},
+	SMTP_USER: { description: 'Mail server user name.', schema: optional },
+	SMTP_PASSWORD: { description: 'Mail server password.', schema: optional },
+	SMTP_FROM: {
+		description: 'Sender address, e.g. "EV Dashboard <ev@example.com>". Required with SMTP_HOST.',
+		schema: optional
+	},
 	POLL_INTERVAL_SECONDS: {
 		description:
 			'Seconds between two vehicle data fetches per connected vehicle (minimum 60). Polling too often can get the vehicle account locked.',

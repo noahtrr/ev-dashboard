@@ -1,7 +1,9 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { getApp } from '#lib/server/app.ts';
-import { passkey } from '#lib/server/db/schema.ts';
+import { normalizeEmail } from '#lib/server/auth/invitations.ts';
+import { account, passkey, user as userTable } from '#lib/server/db/schema.ts';
+import { renderMail } from '#lib/server/mail/templates.ts';
 import { DEFAULT_PROVIDER_ID } from '#lib/server/providers/index.ts';
 import {
 	deleteVehicleApiCredentials,
@@ -19,7 +21,7 @@ function requireUser(locals: App.Locals) {
 
 export const load = (async ({ locals }) => {
 	const user = requireUser(locals);
-	const { db, encryptionKey, methods } = getApp();
+	const { db, encryptionKey, methods, vehicles, mailer, invitations } = getApp();
 	const passkeys = methods.passkey
 		? await db
 				.select({ id: passkey.id, name: passkey.name, createdAt: passkey.createdAt })
@@ -27,8 +29,25 @@ export const load = (async ({ locals }) => {
 				.where(eq(passkey.userId, user.id))
 				.orderBy(asc(passkey.createdAt))
 		: [];
-	const { vehicles } = getApp();
+	const [profile] = await db
+		.select({ email: userTable.email, emailVerified: userTable.emailVerified })
+		.from(userTable)
+		.where(eq(userTable.id, user.id));
+	const [credential] = await db
+		.select({ id: account.id })
+		.from(account)
+		.where(and(eq(account.userId, user.id), eq(account.providerId, 'credential')));
+	const admin = user.role === 'admin';
 	return {
+		signin: {
+			email: profile?.email ?? user.email,
+			emailVerified: profile?.emailVerified ?? false,
+			hasPassword: credential !== undefined
+		},
+		mail: methods.mail,
+		// Only for admins, and never the credentials.
+		mailInfo: admin && mailer ? mailer.info : null,
+		invitations: admin && mailer ? await invitations.list() : null,
 		passkeysEnabled: methods.passkey,
 		passkeys,
 		// Only the client ID and the timestamp; the secret never reaches the browser.
@@ -44,7 +63,98 @@ function connectionId(form: FormData) {
 	return typeof id === 'string' && id.length <= 64 ? id : '';
 }
 
+function requireAdmin(locals: App.Locals) {
+	const user = requireUser(locals);
+	if (user.role !== 'admin') error(403, 'Forbidden');
+	return user;
+}
+
+/** Sends an invitation mail; false when the mail server refused it. */
+async function sendInvite(
+	locals: App.Locals,
+	inviter: string,
+	invite: { email: string; token: string }
+) {
+	const { mailer, appUrl } = getApp();
+	if (!mailer) return false;
+	const url = new URL('/signup', appUrl);
+	url.searchParams.set('invite', invite.token);
+	try {
+		await mailer.send(
+			renderMail({
+				kind: 'invite',
+				locale: locals.locale,
+				to: invite.email,
+				url: url.toString(),
+				appUrl,
+				inviter
+			})
+		);
+		return true;
+	} catch (e) {
+		console.error('[mail] sending the invite mail failed:', (e as Error)?.message);
+		return false;
+	}
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export const actions: Actions = {
+	invite: async ({ locals, request }) => {
+		const admin = requireAdmin(locals);
+		const { db, invitations, mailer } = getApp();
+		if (!mailer) return fail(400, { inviteError: 'failed' });
+		const value = (await request.formData()).get('email');
+		const email = typeof value === 'string' ? normalizeEmail(value) : '';
+		if (!EMAIL.test(email) || email.length > 254) return fail(400, { inviteError: 'invalid' });
+		const [existing] = await db
+			.select({ id: userTable.id })
+			.from(userTable)
+			.where(eq(sql`lower(${userTable.email})`, email));
+		if (existing) return fail(400, { inviteError: 'exists', inviteEmail: email });
+		const invite = await invitations.create(admin.id, email);
+		if (!(await sendInvite(locals, admin.name, invite))) {
+			await invitations.revoke(invite.id);
+			return fail(502, { inviteError: 'failed', inviteEmail: email });
+		}
+		return { inviteSent: email };
+	},
+	resendInvite: async ({ locals, request }) => {
+		const admin = requireAdmin(locals);
+		const id = (await request.formData()).get('id');
+		const invite = typeof id === 'string' ? await getApp().invitations.renew(id) : undefined;
+		if (!invite) error(404, 'Not found');
+		if (!(await sendInvite(locals, admin.name, invite))) {
+			return fail(502, { inviteError: 'failed', inviteEmail: invite.email });
+		}
+		return { inviteSent: invite.email };
+	},
+	revokeInvite: async ({ locals, request }) => {
+		requireAdmin(locals);
+		const id = (await request.formData()).get('id');
+		if (typeof id === 'string') await getApp().invitations.revoke(id);
+		return {};
+	},
+	testMail: async ({ locals }) => {
+		const admin = requireAdmin(locals);
+		const { mailer, appUrl } = getApp();
+		if (!mailer) return fail(400, { testError: 'SMTP_HOST is not set' });
+		try {
+			await mailer.send(
+				renderMail({
+					kind: 'test',
+					locale: locals.locale,
+					to: admin.email,
+					name: admin.name,
+					appUrl
+				})
+			);
+		} catch (e) {
+			// Admins see the server's answer to fix the settings; it holds no credentials.
+			return fail(502, { testError: String((e as Error)?.message ?? e).slice(0, 300) });
+		}
+		return { testSent: admin.email };
+	},
 	saveVehicleApi: async ({ locals, request }) => {
 		const user = requireUser(locals);
 		const form = await request.formData();

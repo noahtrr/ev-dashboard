@@ -29,7 +29,7 @@ Browser ──HTTPS──► Caddy (TLS, HTTP/3, Security-Header, Kompression)  
 
 - SQLite über das in Node eingebaute `node:sqlite` (kein natives Addon, daher keine ABI-Probleme zwischen Build- und Laufzeit-Node oder amd64/arm64), angebunden über Drizzle ORM (`drizzle-orm/sqlite-proxy`).
 - Schema in `apps/web/src/lib/server/db/schema.ts`, Migrationen mit drizzle-kit erzeugt und in den Build eingebettet. Sie laufen beim Start automatisch.
-- Better Auth nutzt den Drizzle-Adapter. Die Anmelderegel (erstes Konto = Administrator, danach nur mit `AUTH_ALLOW_SIGNUP`) greift in einem Datenbank-Hook für jedes neue Konto, unabhängig von der Methode.
+- Better Auth nutzt den Drizzle-Adapter. Die Anmelderegel (erstes Konto = Administrator, danach nur mit `AUTH_ALLOW_SIGNUP` oder einer Einladung) greift in einem Datenbank-Hook für jedes neue Konto, unabhängig von der Methode. Einladungen speichert die Tabelle `invitation` nur als SHA-256-Hash des Links; die Registrierung über eine Einladung läuft serverseitig, damit der Hook sie erkennt. Mails verschickt `nodemailer` über den Server aus `SMTP_*`.
 - Caddy setzt `X-Real-IP` (für die Ratenbegrenzung) und `X-Forwarded-Proto`/`-Host`, aus denen die App ihre öffentliche Herkunft ableitet.
 
 ## Modularität

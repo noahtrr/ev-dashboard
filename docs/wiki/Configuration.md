@@ -30,12 +30,13 @@ All configuration is done through environment variables in the `.env` file. Temp
 
 - **First start:** while no account exists, the app redirects to `/setup`. The first account becomes administrator.
 - **Further accounts** are refused unless `AUTH_ALLOW_SIGNUP` is `true`. This also applies to the first sign-in of an unknown user via GitHub, Google or SSO.
-- Every page except `/api/health`, `/api/auth/*`, `/login`, `/signup` and `/setup` requires sign-in.
+- **Invitations:** with mail set up, an administrator can invite addresses on the **Account** page. The link in the mail is valid for 7 days and allows exactly that address to sign up, even when `AUTH_ALLOW_SIGNUP` is `false`. The address then counts as confirmed.
+- Every page except `/api/health`, `/api/auth/*`, `/login`, `/signup`, `/setup`, `/forgot-password` and `/reset-password` requires sign-in.
 - The auth endpoints are rate limited (e.g. 10 sign-in attempts per minute and address).
 - Passwords need at least 8 characters.
 - Signing in via GitHub, Google or SSO with the same email as an existing account links that sign-in to the account, provided the provider reports the email as verified. One account can thus be used several ways without letting others in through an unverified address.
 - Each user manages their passkeys on the **Account** page (menu at the top right).
-- Email verification and password reset by mail are not available yet (no SMTP).
+- Email confirmation, password reset and invitations need mail, see [Email](#email). Every user changes their email address and password on the **Account** page.
 
 ### Callback URLs
 
@@ -48,6 +49,25 @@ Register these as redirect or callback URL at the provider (replace `<APP_URL>`)
 | OIDC | `<APP_URL>/api/auth/callback/oidc` |
 
 At the OIDC provider, create a confidential client (authorization code with PKCE) with the scopes `openid email profile`.
+
+## Email
+
+Without `SMTP_HOST` the app sends no mail: accounts need no confirmation, and "Forgot password?" and invitations are not available. With a mail server you get:
+
+- **Forgot password?** on the sign-in page sends a link (valid for one hour). Resetting the password ends all sessions of the account.
+- **Email confirmation:** new accounts have to confirm their address via a link (valid for 24 hours) before they can sign in. The first account and invited addresses count as confirmed. Accounts that existed before the update to this version count as confirmed as well.
+- **Change email address** on the **Account** page: the new address is only taken over once it is confirmed via a link sent to it.
+- **Invitations** and a **test mail** for administrators on the **Account** page.
+
+Mails are in German or English, depending on the browser language of the request. If a mail cannot be sent, the error is in the log (`[mail] …`); for security the page does not reveal whether an address exists.
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `SMTP_HOST` | no | | Mail server. When set, mail is enabled. |
+| `SMTP_PORT` | no | `587` | Port of the mail server. |
+| `SMTP_SECURE` | no | `true` on port 465 | `true`: TLS from the start (usually port 465). `false`: STARTTLS if the server offers it (usually port 587). |
+| `SMTP_USER`, `SMTP_PASSWORD` | no | | Credentials at the mail server. Empty: send without authentication. |
+| `SMTP_FROM` | with `SMTP_HOST` | | Sender, e.g. `EV Dashboard <ev@example.com>`. The app does not start if `SMTP_HOST` is set without `SMTP_FROM`. |
 
 ## Vehicle API
 

@@ -5,7 +5,14 @@ import { countUsers } from '#lib/server/auth/config.ts';
 import { pickLocale } from '#lib/i18n.ts';
 
 // Reachable without a session. Everything else requires login.
-const PUBLIC_PATHS = new Set(['/api/health', '/login', '/signup', '/setup']);
+const PUBLIC_PATHS = new Set([
+	'/api/health',
+	'/login',
+	'/signup',
+	'/setup',
+	'/forgot-password',
+	'/reset-password'
+]);
 
 // Open the database, run migrations and load secrets at startup instead of on the first
 // request, then start the vehicle data poller.

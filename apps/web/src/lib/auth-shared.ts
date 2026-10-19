@@ -7,6 +7,8 @@ export type LoginMethods = {
 	passkey: boolean;
 	social: { id: string; label: string }[];
 	allowSignup: boolean;
+	/** Mail is set up: password reset, email confirmation, invitations. */
+	mail: boolean;
 };
 
 /** Shortest accepted password, enforced by the server and hinted in the form. */
@@ -38,6 +40,11 @@ export function authErrorMessage(
 		case 'SIGNUP_DISABLED':
 		case 'SIGNUP_DISABLED_ERROR':
 			return t.auth.errors.signupDisabled;
+		case 'EMAIL_NOT_VERIFIED':
+			return t.auth.errors.emailNotVerified;
+		case 'INVALID_TOKEN':
+		case 'TOKEN_EXPIRED':
+			return t.auth.errors.invalidLink;
 		default:
 			return fallback;
 	}
