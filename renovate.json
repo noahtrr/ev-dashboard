@@ -33,6 +33,20 @@
         "patch"
       ],
       "groupName": "npm minor and patch"
+    },
+    {
+      "description": "compose.yaml follows the app's own :latest tag on purpose; a pinned digest would freeze installs on one release.",
+      "matchPackageNames": [
+        "ghcr.io/noahtrr/ev-dashboard"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "TypeScript 7 has no JavaScript API yet, which svelte-kit sync and svelte-check need. Lift once they support it.",
+      "matchPackageNames": [
+        "typescript"
+      ],
+      "allowedVersions": "<7"
     }
   ],
   "vulnerabilityAlerts": {
