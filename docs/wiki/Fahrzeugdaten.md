@@ -50,12 +50,17 @@ Nicht jedes Modell liefert jeden Wert; fehlende Werte zeigt das Dashboard als �
 
 ## Startseite
 
-Die Startseite zeigt für das gewählte Fahrzeug vier Module:
+Die Startseite zeigt für das gewählte Fahrzeug diese Module:
 
 - **Standort:** Karte mit der Fahrzeugposition, die Straßenadresse und wann die Position ermittelt wurde. Die Adresse lässt sich abschalten, Kachel- und Adressdienst sind austauschbar (siehe [Konfiguration](Konfiguration)).
 - **Reichweite:** Reichweite in km, Ladestand als Ring und der Ladestatus, beim Laden mit der Restzeit bis voll.
 - **Laden:** die laufende oder letzte Ladung mit geladener Menge und Dauer. Von dort führt **Ladehistorie** zu einer Seite mit dem Ladestand-Verlauf (7, 30 oder 90 Tage, Ladezeiten hervorgehoben) und allen Ladungen des Zeitraums. Ein Klick auf eine Ladung öffnet ihre Detailseite: Ladeort mit Karte und Adresse, Beginn und Ende, Ladestand und Reichweite vorher und nachher, durchschnittliche Ladegeschwindigkeit und Ladeleistung, Kilometerstand, Außentemperatur, den Ladestatus des Fahrzeugs den Verlauf während der Ladung und ihre Kosten. Angezeigt wird nur, was das Fahrzeug gemeldet hat. **Kosten** führt zur Kostenübersicht (siehe [Kosten](#kosten)).
 - **Fahrten:** die laufende oder letzte Fahrt mit Strecke, Uhrzeit, Dauer und Verbrauch. Von dort führt **Fahrtenbuch** zu einer Seite mit der Strecke pro Tag (7, 30 oder 90 Tage), Summen für Fahrten, Strecke, Fahrzeit und Durchschnittsverbrauch sowie allen Fahrten des Zeitraums. Ein Klick auf eine Fahrt öffnet ihre Detailseite: Karte mit der Route, Start- und Zieladresse, Beginn und Ende, Strecke, Verbrauch, Ladestand, Reichweite und Kilometerstand vorher und nachher, Durchschnittsgeschwindigkeit und Außentemperatur.
+- **Zustand:** Gesamtbewertung und bis zu vier gemeldete Werte (siehe unten).
+- **Kosten im Monat** (zunächst ausgeblendet): Stromkosten seit Monatsbeginn mit geladener Energie und Kosten pro 100 km (siehe [Kosten](#kosten)).
+- **Verbrauch** (zunächst ausgeblendet): Durchschnittsverbrauch und Strecke der letzten 30 Tage.
+
+Unter **Startseite anpassen** ganz unten ändert jeder Nutzer die Reihenfolge der Module und blendet sie ein oder aus. Die Anordnung wird sofort gespeichert und gilt für alle eigenen Fahrzeuge. Am Desktop steht die Karte immer links, die übrigen Module rechts daneben in der gewählten Reihenfolge.
 
 Ladungen werden aus den gespeicherten Abrufen abgeleitet: Aufeinanderfolgende Abrufe mit dem Status „lädt“ bilden eine Ladung. Meldet das Fahrzeug keinen Ladestatus, zählt ein steigender Ladestand bei eingestecktem Kabel. Liegen zwischen zwei Abrufen mehr als das Dreifache von `POLL_INTERVAL_SECONDS` (mindestens 30 Minuten), beginnt eine neue Ladung. Die Schnittstelle meldet die Akkugröße nicht, daher wird die geladene Menge zunächst in Prozentpunkten angegeben. Trägst du auf der Detailseite des Fahrzeugs (Konto → Fahrzeug) unter **Akku** die nutzbare Kapazität ein (5 bis 250 kWh), zeigt das Dashboard die geladene Energie und die Ladeleistung in kWh bzw. kW. Diese Werte sind aus Prozentpunkten und Kapazität geschätzt; Ladeverluste sind nicht enthalten.
 

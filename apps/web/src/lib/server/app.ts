@@ -11,6 +11,7 @@ import { createTemplateStore, type TemplateStore } from './export/templates.ts';
 import { createGeocoder, type Geocoder } from './geocode.ts';
 import { createMailer, type Mailer } from './mail/mailer.ts';
 import { createProviders } from './providers/index.ts';
+import { createPreferences, type Preferences } from './preferences.ts';
 import { loadOrCreateSecret } from './secrets.ts';
 import { createCosts, type Costs } from './vehicles/costs.ts';
 import { createLogbook, type Logbook } from './vehicles/logbook.ts';
@@ -33,6 +34,7 @@ type App = {
 	mailer?: Mailer;
 	invitations: Invitations;
 	users: UserAdmin;
+	preferences: Preferences;
 	/** Public origin, for links in mails. */
 	appUrl: string;
 };
@@ -110,6 +112,7 @@ function create(): App {
 		mailer,
 		invitations: createInvitations(db),
 		users: createUserAdmin(db),
+		preferences: createPreferences(db),
 		appUrl: env.APP_URL,
 		methods: {
 			emailPassword: settings.emailPassword,

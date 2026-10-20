@@ -25,6 +25,8 @@ export const user = sqliteTable('user', {
 	lockedAt: integer('locked_at', { mode: 'timestamp_ms' }),
 	/** Admin's note on why the account is locked; only admins see it. */
 	lockReason: text('lock_reason'),
+	/** Order and visibility of the home page modules as JSON; null means the default. */
+	homeLayout: text('home_layout'),
 	createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
 	updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)
 });

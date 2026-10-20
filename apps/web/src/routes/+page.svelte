@@ -1,5 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import HomeLayoutEditor from '#lib/components/HomeLayoutEditor.svelte';
 	import TopBar from '#lib/components/TopBar.svelte';
 	import VehicleMap from '#lib/components/VehicleMap.svelte';
 	import {
@@ -7,12 +10,16 @@
 		DASH,
 		duration,
 		energy,
+		euro,
 		kilometres,
 		minutesBetween,
 		oneDecimal,
 		wholeNumber
 	} from '#lib/format.ts';
 	import { capitalize, headline, partsText } from '#lib/condition.ts';
+	import { consumptionStats } from '#lib/consumption.ts';
+	import { costStats } from '#lib/costs.ts';
+	import type { HomeLayout } from '#lib/home-layout.ts';
 	import { format, messages, relativeTime } from '#lib/i18n.ts';
 	import type { PageProps } from './$types';
 
@@ -147,6 +154,72 @@
 		return items.slice(0, 4);
 	});
 
+	// Order and visibility of the modules; changed in place while arranging, saved on every change.
+	let layout = $derived(data.layout);
+	const visible = $derived(layout.filter((m) => m.on));
+	const others = $derived(visible.filter((m) => m.id !== 'location').length);
+	let editing = $state(false);
+	let saveFailed = $state(false);
+
+	async function saveLayout(next: HomeLayout) {
+		const before = layout;
+		layout = next;
+		saveFailed = false;
+		try {
+			const res = await fetch('/api/preferences/home-layout', {
+				method: 'PUT',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ layout: next })
+			});
+			if (!res.ok) throw new Error(String(res.status));
+		} catch {
+			layout = before;
+			saveFailed = true;
+		}
+	}
+
+	async function finishEditing() {
+		editing = false;
+		saveFailed = false;
+		// Modules switched on may need data the page did not load.
+		await invalidateAll();
+	}
+
+	// Months and the last 30 days follow the browser's time zone, so these appear after hydration.
+	let mounted = $state(false);
+	onMount(() => (mounted = true));
+	const capacity = $derived(vehicle?.batteryCapacityKwh ?? null);
+	const costs = $derived(data.costs);
+	const costsPriced = $derived(
+		!!costs &&
+			(costs.prices.length > 0 ||
+				costs.sessions.some((s) => s.costEur !== null || s.priceCt !== null))
+	);
+	const costsMonth = $derived(
+		mounted && costs
+			? costStats(costs.sessions, costs.trips, costs.prices, capacity, costs.lossPct, 'month')
+			: null
+	);
+	const costsLine = $derived.by(() => {
+		if (!costsMonth) return '';
+		const month = new Date(costsMonth.from).toLocaleDateString(
+			data.locale === 'de' ? 'de-DE' : 'en-GB',
+			{ month: 'long' }
+		);
+		return [
+			format(h.costsSince, { month }),
+			costsMonth.gridKwh > 0 ? `${energy(costsMonth.gridKwh, data.locale)} kWh` : '',
+			costsMonth.per100 === null ? '' : `${euro(costsMonth.per100, data.locale)} €/100 km`
+		]
+			.filter(Boolean)
+			.join(' · ');
+	});
+	const consumption30 = $derived(
+		mounted && data.consumption
+			? consumptionStats(data.consumption, 'month', capacity === null ? 1 : capacity / 100).totals
+			: null
+	);
+
 	const sessionLevels = $derived(
 		session?.startSocPct !== undefined && session.endSocPct !== undefined
 			? `${number(session.startSocPct)} → ${number(session.endSocPct)} %`
@@ -162,8 +235,16 @@
 	<TopBar user={data.user} {t} />
 {/if}
 
-<main>
-	{#if !vehicle}
+<main class:with-map={!editing && visible.some((m) => m.id === 'location')}>
+	{#if editing}
+		<HomeLayoutEditor
+			{layout}
+			{t}
+			error={saveFailed}
+			onchange={saveLayout}
+			ondone={finishEditing}
+		/>
+	{:else if !vehicle}
 		<section class="card empty">
 			<h1>{h.noVehicleTitle}</h1>
 			<p class="muted">{h.noVehicleText}</p>
@@ -192,196 +273,252 @@
 		{#if !values}
 			<p class="card muted">{h.noData}</p>
 		{:else}
-			<section class="module location" aria-labelledby="location-title">
-				<div class="map-wrap">
-					{#if hasPosition}
-						<VehicleMap
-							latitude={values.latitude!}
-							longitude={values.longitude!}
-							sources={data.map}
-							label={h.mapLabel}
-							strings={h.map}
-						/>
-					{:else}
-						<p class="muted no-position">{h.noPosition}</p>
-					{/if}
-				</div>
-				<div class="module-body">
-					<h2 id="location-title" class="title">{h.location}</h2>
-					{#if hasPosition}
-						<p class="address">
-							{address ?? `${values.latitude!.toFixed(5)}, ${values.longitude!.toFixed(5)}`}
-						</p>
-					{/if}
-					{#if values.positionAt}
-						<p class="stamp" class:stale={isStale(values.positionAt)}>
-							{format(h.positionTime, { time: ago(values.positionAt) })}
-							{#if isStale(values.positionAt)}<span class="badge">{h.stale}</span>{/if}
-						</p>
-					{/if}
-				</div>
-			</section>
-
-			<section class="module range" aria-labelledby="range-title">
-				<div class="module-body range-body">
-					<div class="range-text">
-						<h2 id="range-title" class="title">{h.range}</h2>
-						<p class="big">
-							{#if values.rangeKm !== undefined}
-								{number(values.rangeKm)}<span class="unit">km</span>
+			{#each visible as m (m.id)}
+				{#if m.id === 'location'}
+					<section
+						class="module location"
+						style:--others={Math.max(others, 1)}
+						aria-labelledby="location-title"
+					>
+						<div class="map-wrap">
+							{#if hasPosition}
+								<VehicleMap
+									latitude={values.latitude!}
+									longitude={values.longitude!}
+									sources={data.map}
+									label={h.mapLabel}
+									strings={h.map}
+								/>
 							{:else}
-								{DASH}
+								<p class="muted no-position">{h.noPosition}</p>
 							{/if}
-						</p>
-						{#if chargingLine}
-							<p class="context" class:charging={values.chargingState === 'charging'}>
-								{chargingLine}
+						</div>
+						<div class="module-body">
+							<h2 id="location-title" class="title">{h.location}</h2>
+							{#if hasPosition}
+								<p class="address">
+									{address ?? `${values.latitude!.toFixed(5)}, ${values.longitude!.toFixed(5)}`}
+								</p>
+							{/if}
+							{#if values.positionAt}
+								<p class="stamp" class:stale={isStale(values.positionAt)}>
+									{format(h.positionTime, { time: ago(values.positionAt) })}
+									{#if isStale(values.positionAt)}<span class="badge">{h.stale}</span>{/if}
+								</p>
+							{/if}
+						</div>
+					</section>
+				{:else if m.id === 'range'}
+					<section class="module range" aria-labelledby="range-title">
+						<div class="module-body range-body">
+							<div class="range-text">
+								<h2 id="range-title" class="title">{h.range}</h2>
+								<p class="big">
+									{#if values.rangeKm !== undefined}
+										{number(values.rangeKm)}<span class="unit">km</span>
+									{:else}
+										{DASH}
+									{/if}
+								</p>
+								{#if chargingLine}
+									<p class="context" class:charging={values.chargingState === 'charging'}>
+										{chargingLine}
+									</p>
+								{/if}
+							</div>
+							<figure
+								class="ring"
+								aria-label={`${h.soc}: ${socPct === undefined ? DASH : `${number(socPct)} %`}`}
+							>
+								<svg viewBox="0 0 120 120" aria-hidden="true">
+									<circle class="track" cx="60" cy="60" r={RADIUS} />
+									{#if socPct !== undefined}
+										<circle
+											class="fill"
+											cx="60"
+											cy="60"
+											r={RADIUS}
+											stroke-dasharray={CIRCUMFERENCE}
+											stroke-dashoffset={ringOffset}
+										/>
+									{/if}
+								</svg>
+								<figcaption>
+									<span class="soc"
+										>{socPct === undefined ? DASH : number(socPct)}<small>%</small></span
+									>
+									<span class="soc-label">{h.soc}</span>
+								</figcaption>
+							</figure>
+						</div>
+						{#if reportedAt}
+							<p class="stamp module-foot" class:stale={isStale(reportedAt)}>
+								{format(h.updated, { time: ago(reportedAt) })}
+								{#if isStale(reportedAt)}<span class="badge">{h.stale}</span>{/if}
 							</p>
 						{/if}
-					</div>
-					<figure
-						class="ring"
-						aria-label={`${h.soc}: ${socPct === undefined ? DASH : `${number(socPct)} %`}`}
-					>
-						<svg viewBox="0 0 120 120" aria-hidden="true">
-							<circle class="track" cx="60" cy="60" r={RADIUS} />
-							{#if socPct !== undefined}
-								<circle
-									class="fill"
-									cx="60"
-									cy="60"
-									r={RADIUS}
-									stroke-dasharray={CIRCUMFERENCE}
-									stroke-dashoffset={ringOffset}
-								/>
-							{/if}
-						</svg>
-						<figcaption>
-							<span class="soc">{socPct === undefined ? DASH : number(socPct)}<small>%</small></span
-							>
-							<span class="soc-label">{h.soc}</span>
-						</figcaption>
-					</figure>
-				</div>
-				{#if reportedAt}
-					<p class="stamp module-foot" class:stale={isStale(reportedAt)}>
-						{format(h.updated, { time: ago(reportedAt) })}
-						{#if isStale(reportedAt)}<span class="badge">{h.stale}</span>{/if}
-					</p>
-				{/if}
-			</section>
-
-			<section class="module charging-module" aria-labelledby="charging-title">
-				<div class="module-body">
-					<h2 id="charging-title" class="title">{c.title}</h2>
-					{#if session}
-						<p class="big small-big" class:live={session.ongoing}>
-							{#if session.addedKwh !== undefined}
-								+{energy(session.addedKwh, data.locale)}<span class="unit">kWh</span>
+					</section>
+				{:else if m.id === 'charging'}
+					<section class="module charging-module" aria-labelledby="charging-title">
+						<div class="module-body">
+							<h2 id="charging-title" class="title">{c.title}</h2>
+							{#if session}
+								<p class="big small-big" class:live={session.ongoing}>
+									{#if session.addedKwh !== undefined}
+										+{energy(session.addedKwh, data.locale)}<span class="unit">kWh</span>
+									{:else}
+										{session.addedPct === undefined ? DASH : `+${number(session.addedPct)}`}<span
+											class="unit">%</span
+										>
+									{/if}
+								</p>
+								<p class="context" class:charging={session.ongoing}>
+									{[
+										session.ongoing
+											? format(c.since, { time: clockTime(session.start, data.locale) })
+											: sessionLevels,
+										duration(minutesBetween(session.start, session.end))
+									]
+										.filter(Boolean)
+										.join(' · ')}
+								</p>
 							{:else}
-								{session.addedPct === undefined ? DASH : `+${number(session.addedPct)}`}<span
-									class="unit">%</span
-								>
+								<p class="muted">{c.none}</p>
 							{/if}
-						</p>
-						<p class="context" class:charging={session.ongoing}>
-							{[
-								session.ongoing
-									? format(c.since, { time: clockTime(session.start, data.locale) })
-									: sessionLevels,
-								duration(minutesBetween(session.start, session.end))
-							]
-								.filter(Boolean)
-								.join(' · ')}
-						</p>
-					{:else}
-						<p class="muted">{c.none}</p>
-					{/if}
-				</div>
-				<p class="stamp module-foot foot-row">
-					{#if session && !session.ongoing}
-						<span>{format(c.last, { time: ago(session.end) })}</span>
-					{/if}
-					<span class="links">
-						<a class="details" href={resolve('/vehicles/[id]/charging', { id: vehicle.id })}
-							>{c.history} →</a
-						>
-						<a class="details" href={resolve('/vehicles/[id]/costs', { id: vehicle.id })}
-							>{t.costs.link} →</a
-						>
-					</span>
-				</p>
-			</section>
-
-			<section class="module trips-module" aria-labelledby="trips-title">
-				<div class="module-body">
-					<h2 id="trips-title" class="title">{tr.title}</h2>
-					{#if trip}
-						<p class="big small-big" class:live={trip.ongoing}>
-							{kilometres(trip.distanceKm, data.locale)}<span class="unit">km</span>
-						</p>
-						<p class="context" class:charging={trip.ongoing}>
-							{[
-								trip.ongoing
-									? format(tr.since, { time: clockTime(trip.start, data.locale) })
-									: `${clockTime(trip.start, data.locale)} – ${clockTime(trip.end, data.locale)}`,
-								duration(minutesBetween(trip.start, trip.end)),
-								tripUsage
-							]
-								.filter(Boolean)
-								.join(' · ')}
-						</p>
-					{:else}
-						<p class="muted">{tr.none}</p>
-					{/if}
-				</div>
-				<p class="stamp module-foot foot-row">
-					{#if trip && !trip.ongoing}
-						<span>{format(tr.last, { time: ago(trip.end) })}</span>
-					{/if}
-					<span class="links">
-						<a class="details" href={resolve('/vehicles/[id]/trips', { id: vehicle.id })}
-							>{tr.history} →</a
-						>
-						<a class="details" href={resolve('/vehicles/[id]/consumption', { id: vehicle.id })}
-							>{t.consumption.link} →</a
-						>
-					</span>
-				</p>
-			</section>
-			<section class="module condition-module" aria-labelledby="condition-title">
-				<div class="module-body">
-					<div class="condition-head">
-						<h2 id="condition-title" class="title">{t.condition.title}</h2>
-						{#if vehicle.condition.known}
-							<span class="pill" class:warn={vehicle.condition.issues.length > 0}>
-								<span class="pill-dot" aria-hidden="true"></span>{headline(
-									vehicle.condition,
-									t.condition
-								)}
+						</div>
+						<p class="stamp module-foot foot-row">
+							{#if session && !session.ongoing}
+								<span>{format(c.last, { time: ago(session.end) })}</span>
+							{/if}
+							<span class="links">
+								<a class="details" href={resolve('/vehicles/[id]/charging', { id: vehicle.id })}
+									>{c.history} →</a
+								>
+								<a class="details" href={resolve('/vehicles/[id]/costs', { id: vehicle.id })}
+									>{t.costs.link} →</a
+								>
 							</span>
-						{/if}
-					</div>
-					{#if conditionItems.length > 0}
-						<dl class="condition-grid">
-							{#each conditionItems as item (item.label)}
-								<div>
-									<dt>{item.label}</dt>
-									<dd class:warn={item.warn}>{item.value}</dd>
-								</div>
-							{/each}
-						</dl>
-					{:else}
-						<p class="muted">{t.condition.noData}</p>
-					{/if}
-				</div>
-				<p class="stamp module-foot foot-row">
-					<a class="details" href={resolve('/vehicles/[id]/condition', { id: vehicle.id })}
-						>{t.condition.link} →</a
-					>
-				</p>
-			</section>
+						</p>
+					</section>
+				{:else if m.id === 'trips'}
+					<section class="module trips-module" aria-labelledby="trips-title">
+						<div class="module-body">
+							<h2 id="trips-title" class="title">{tr.title}</h2>
+							{#if trip}
+								<p class="big small-big" class:live={trip.ongoing}>
+									{kilometres(trip.distanceKm, data.locale)}<span class="unit">km</span>
+								</p>
+								<p class="context" class:charging={trip.ongoing}>
+									{[
+										trip.ongoing
+											? format(tr.since, { time: clockTime(trip.start, data.locale) })
+											: `${clockTime(trip.start, data.locale)} – ${clockTime(trip.end, data.locale)}`,
+										duration(minutesBetween(trip.start, trip.end)),
+										tripUsage
+									]
+										.filter(Boolean)
+										.join(' · ')}
+								</p>
+							{:else}
+								<p class="muted">{tr.none}</p>
+							{/if}
+						</div>
+						<p class="stamp module-foot foot-row">
+							{#if trip && !trip.ongoing}
+								<span>{format(tr.last, { time: ago(trip.end) })}</span>
+							{/if}
+							<span class="links">
+								<a class="details" href={resolve('/vehicles/[id]/trips', { id: vehicle.id })}
+									>{tr.history} →</a
+								>
+								<a class="details" href={resolve('/vehicles/[id]/consumption', { id: vehicle.id })}
+									>{t.consumption.link} →</a
+								>
+							</span>
+						</p>
+					</section>
+				{:else if m.id === 'condition'}
+					<section class="module condition-module" aria-labelledby="condition-title">
+						<div class="module-body">
+							<div class="condition-head">
+								<h2 id="condition-title" class="title">{t.condition.title}</h2>
+								{#if vehicle.condition.known}
+									<span class="pill" class:warn={vehicle.condition.issues.length > 0}>
+										<span class="pill-dot" aria-hidden="true"></span>{headline(
+											vehicle.condition,
+											t.condition
+										)}
+									</span>
+								{/if}
+							</div>
+							{#if conditionItems.length > 0}
+								<dl class="condition-grid">
+									{#each conditionItems as item (item.label)}
+										<div>
+											<dt>{item.label}</dt>
+											<dd class:warn={item.warn}>{item.value}</dd>
+										</div>
+									{/each}
+								</dl>
+							{:else}
+								<p class="muted">{t.condition.noData}</p>
+							{/if}
+						</div>
+						<p class="stamp module-foot foot-row">
+							<a class="details" href={resolve('/vehicles/[id]/condition', { id: vehicle.id })}
+								>{t.condition.link} →</a
+							>
+						</p>
+					</section>
+				{:else if m.id === 'costs'}
+					<section class="module costs-module" aria-labelledby="costs-title">
+						<div class="module-body">
+							<h2 id="costs-title" class="title">{h.modules.costs.title}</h2>
+							{#if !costsPriced}
+								<p class="muted">{t.costs.setup}</p>
+							{:else if costsMonth}
+								<p class="big small-big">
+									{euro(costsMonth.eur, data.locale)}<span class="unit">€</span>
+								</p>
+								<p class="context">{costsLine}</p>
+							{/if}
+						</div>
+						<p class="stamp module-foot foot-row">
+							<a class="details" href={resolve('/vehicles/[id]/costs', { id: vehicle.id })}
+								>{t.costs.link} →</a
+							>
+						</p>
+					</section>
+				{:else if m.id === 'consumption'}
+					<section class="module consumption-module" aria-labelledby="consumption-title">
+						<div class="module-body">
+							<h2 id="consumption-title" class="title">{h.modules.consumption.title}</h2>
+							{#if consumption30}
+								<p class="big small-big">
+									{oneDecimal(consumption30.per100, data.locale)}<span class="unit"
+										>{capacity === null ? '%/100 km' : 'kWh/100 km'}</span
+									>
+								</p>
+								<p class="context">
+									{format(h.consumptionKm, { km: kilometres(consumption30.km, data.locale) })}
+								</p>
+							{:else if mounted}
+								<p class="muted">{h.consumptionNone}</p>
+							{/if}
+						</div>
+						<p class="stamp module-foot foot-row">
+							<a class="details" href={resolve('/vehicles/[id]/consumption', { id: vehicle.id })}
+								>{t.consumption.link} →</a
+							>
+						</p>
+					</section>
+				{/if}
+			{/each}
+			{#if visible.length === 0}
+				<p class="card muted all-hidden">{h.allHidden}</p>
+			{/if}
 		{/if}
+		<button class="customize" type="button" onclick={() => (editing = true)}>{h.customize}</button>
 	{/if}
 </main>
 
@@ -709,15 +846,54 @@
 		color: var(--muted);
 	}
 
+	.customize {
+		justify-self: center;
+		min-height: 40px;
+		padding: 0 16px;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: var(--text);
+		font: inherit;
+		font-size: 14px;
+		cursor: pointer;
+	}
+
+	.customize:hover,
+	.customize:focus-visible {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+
+	.all-hidden {
+		text-align: center;
+	}
+
 	@media (min-width: 800px) {
 		main {
+			grid-template-columns: 1fr 1fr;
+		}
+
+		main.with-map {
 			grid-template-columns: 3fr 2fr;
 		}
 
 		.head,
 		.notice,
+		.customize,
 		main > .card {
 			grid-column: 1 / -1;
+		}
+
+		/* Header and notices first, then the map; the chosen order applies to the other modules. */
+		.head,
+		.notice,
+		main > .card {
+			order: -2;
+		}
+
+		.customize {
+			order: 1;
 		}
 
 		.map-wrap {
@@ -725,7 +901,13 @@
 		}
 
 		.location {
-			grid-row: span 4;
+			order: -1;
+			grid-column: 1;
+			grid-row: span var(--others);
+		}
+
+		.with-map .module:not(.location) {
+			grid-column: 2;
 		}
 
 		/* The map grows with the modules beside it. */
@@ -734,10 +916,7 @@
 			min-height: 360px;
 		}
 
-		.range,
-		.charging-module,
-		.trips-module,
-		.condition-module {
+		.module:not(.location) {
 			align-self: start;
 		}
 	}

@@ -50,12 +50,17 @@ Not every model reports every value; missing values are shown as "–". Further 
 
 ## Home page
 
-The home page shows four modules for the selected vehicle:
+The home page shows these modules for the selected vehicle:
 
 - **Location:** a map with the vehicle position, the street address and when the position was determined. The address can be switched off; tile and address services are replaceable (see [Configuration](Configuration)).
 - **Range:** range in km, state of charge as a ring and the charging status, with the time until full while charging.
 - **Charging:** the ongoing or last charging session with the amount added and its duration. **Charging history** leads to a page with the state of charge over time (7, 30 or 90 days, charging times highlighted) and every session in the period. Selecting a session opens its detail page: location with map and address, start and end, state of charge and range before and after, average charging speed and power, odometer, outside temperature, the vehicle's charging status the state of charge during the session and its costs. Only values the vehicle reported are shown. **Costs** leads to the cost overview (see [Costs](#costs)).
 - **Trips:** the ongoing or last trip with distance, time, duration and consumption. **Trip log** leads to a page with the distance per day (7, 30 or 90 days), totals for trips, distance, driving time and average consumption, and every trip in the period. Selecting a trip opens its detail page: map with the route, start and destination address, start and end, distance, consumption, state of charge, range and odometer before and after, average speed and outside temperature.
+- **Condition:** an overall assessment and up to four reported values (see below).
+- **Costs this month** (hidden at first): electricity costs since the 1st with the energy charged and the cost per 100 km (see [Costs](#costs)).
+- **Consumption** (hidden at first): average consumption and distance of the last 30 days.
+
+**Customize home** at the bottom lets each user change the order of the modules and show or hide them. The layout is saved right away and applies to all of the user's vehicles. On desktop the map always sits on the left, with the other modules beside it in the chosen order.
 
 Sessions are derived from the stored fetches: consecutive fetches with the status "charging" form a session. If the vehicle reports no charging status, a rising state of charge with the cable plugged in counts. More than three times `POLL_INTERVAL_SECONDS` (at least 30 minutes) between two fetches starts a new session. The API does not report the battery size, so the charged amount is given in percentage points at first. If you enter the usable capacity under **Battery** on the vehicle's detail page (Account → vehicle; 5 to 250 kWh), the dashboard shows charged energy and charging power in kWh and kW. These values are estimated from the percentage points and the capacity; charging losses are not included.
 
