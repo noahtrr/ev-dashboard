@@ -3,6 +3,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import HomeLayoutEditor from '#lib/components/HomeLayoutEditor.svelte';
+	import InstallHint from '#lib/components/InstallHint.svelte';
 	import TopBar from '#lib/components/TopBar.svelte';
 	import VehicleMap from '#lib/components/VehicleMap.svelte';
 	import {
@@ -234,6 +235,8 @@
 {#if data.user}
 	<TopBar user={data.user} {t} />
 {/if}
+
+<InstallHint {t} />
 
 <main class:with-map={!editing && visible.some((m) => m.id === 'location')}>
 	{#if editing}

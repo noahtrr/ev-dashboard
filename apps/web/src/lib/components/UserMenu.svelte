@@ -15,6 +15,8 @@
 		busy = true;
 		try {
 			await authClient.signOut();
+			// Pages kept for offline use belong to this account (see the service worker).
+			await globalThis.caches?.delete('pages').catch(() => {});
 		} finally {
 			busy = false;
 		}

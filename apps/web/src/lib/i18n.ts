@@ -116,6 +116,20 @@ const de = {
 			'AttributionControl.ToggleAttribution': 'Quellenangaben ein- oder ausblenden'
 		}
 	},
+	app: {
+		offline: 'Offline · Du siehst die zuletzt geladenen Daten.',
+		installTitle: 'Als App installieren',
+		installText: 'Startet direkt vom Homescreen, ohne Browserleiste.',
+		install: 'Installieren',
+		later: 'Nicht jetzt',
+		iosTitle: 'Als App auf den Home-Bildschirm',
+		iosShare: 'Unten in Safari auf {share} tippen.',
+		share: 'Teilen',
+		iosAdd: '{add} wählen.',
+		add: 'Zum Home-Bildschirm',
+		iosOpen: 'Danach die App vom Home-Bildschirm öffnen.',
+		close: 'Schließen'
+	},
 	menu: {
 		open: 'Benutzermenü',
 		account: 'Konto',
@@ -854,6 +868,20 @@ const en: Messages = {
 			'CooperativeGesturesHandler.MobileHelpText': 'Use two fingers to move the map',
 			'AttributionControl.ToggleAttribution': 'Toggle attribution'
 		}
+	},
+	app: {
+		offline: 'Offline · You are seeing the data loaded last.',
+		installTitle: 'Install as an app',
+		installText: 'Opens straight from the home screen, without the browser bar.',
+		install: 'Install',
+		later: 'Not now',
+		iosTitle: 'Add to the Home Screen',
+		iosShare: 'Tap {share} at the bottom of Safari.',
+		share: 'Share',
+		iosAdd: 'Choose {add}.',
+		add: 'Add to Home Screen',
+		iosOpen: 'Then open the app from the Home Screen.',
+		close: 'Close'
 	},
 	menu: {
 		open: 'User menu',
