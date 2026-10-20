@@ -11,9 +11,24 @@
 
 	const initial = $derived((user.name || user.email).trim().charAt(0).toUpperCase());
 
+	/** The next person on this device must not get this account's messages. */
+	async function stopPush() {
+		if (!('serviceWorker' in navigator)) return;
+		const registration = await navigator.serviceWorker.getRegistration();
+		const subscription = await registration?.pushManager?.getSubscription();
+		if (!subscription) return;
+		await fetch('/api/notifications/subscription', {
+			method: 'DELETE',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ endpoint: subscription.endpoint })
+		});
+		await subscription.unsubscribe();
+	}
+
 	async function signOut() {
 		busy = true;
 		try {
+			await stopPush().catch(() => {});
 			await authClient.signOut();
 			// Pages kept for offline use belong to this account (see the service worker).
 			await globalThis.caches?.delete('pages').catch(() => {});

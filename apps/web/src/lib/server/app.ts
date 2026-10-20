@@ -12,6 +12,8 @@ import { createGeocoder, type Geocoder } from './geocode.ts';
 import { createMailer, type Mailer } from './mail/mailer.ts';
 import { createProviders } from './providers/index.ts';
 import { createPreferences, type Preferences } from './preferences.ts';
+import { createNotifier, type Notifier } from './push/notifier.ts';
+import { vapidKeys } from './push/webpush.ts';
 import { loadOrCreateSecret } from './secrets.ts';
 import { createCosts, type Costs } from './vehicles/costs.ts';
 import { createLogbook, type Logbook } from './vehicles/logbook.ts';
@@ -35,6 +37,7 @@ type App = {
 	invitations: Invitations;
 	users: UserAdmin;
 	preferences: Preferences;
+	notifier: Notifier;
 	/** Public origin, for links in mails. */
 	appUrl: string;
 };
@@ -113,6 +116,12 @@ function create(): App {
 		invitations: createInvitations(db),
 		users: createUserAdmin(db),
 		preferences: createPreferences(db),
+		// The push key identifies this instance to the browsers' push services (VAPID).
+		notifier: createNotifier({
+			db,
+			keys: vapidKeys(loadOrCreateSecret(dataDir, 'push-key')),
+			subject: env.APP_URL
+		}),
 		appUrl: env.APP_URL,
 		methods: {
 			emailPassword: settings.emailPassword,
@@ -141,13 +150,17 @@ type PollerGlobal = typeof globalThis & { [POLLER_KEY]?: Poller };
 export function startVehiclePoller() {
 	const g = globalThis as PollerGlobal;
 	if (g[POLLER_KEY]) return;
-	const { vehicles, logbook } = getApp();
+	const { vehicles, logbook, notifier } = getApp();
 	let lastPrune = 0;
 	const poller = createPoller({
 		periodMs: POLLER_PERIOD_MS,
 		initialDelayMs: 5_000,
 		tick: async () => {
 			await vehicles.pollDue();
+			// A failed delivery must not hold up the logbook.
+			await notifier
+				.check()
+				.catch((error) => console.error('[push] check failed:', (error as Error)?.name));
 			// Finished trips and charging sessions are copied before pruning can remove them.
 			await logbook.recordAll();
 			if (Date.now() - lastPrune >= PRUNE_EVERY_MS) {

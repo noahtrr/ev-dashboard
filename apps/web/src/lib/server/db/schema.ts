@@ -27,6 +27,8 @@ export const user = sqliteTable('user', {
 	lockReason: text('lock_reason'),
 	/** Order and visibility of the home page modules as JSON; null means the default. */
 	homeLayout: text('home_layout'),
+	/** Which events send push notifications, as JSON; null means the default. */
+	notificationPrefs: text('notification_prefs'),
 	createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
 	updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)
 });
@@ -320,3 +322,35 @@ export const invitation = sqliteTable(
 	},
 	(t) => [index('invitation_email_idx').on(t.email)]
 );
+
+/** Browsers that receive push notifications for an account, one row per device. */
+export const pushSubscription = sqliteTable(
+	'push_subscription',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		/** URL of the browser vendor's push service; unique per browser installation. */
+		endpoint: text('endpoint').notNull().unique(),
+		/** The browser's public key and auth secret (base64url) for encrypting messages. */
+		p256dh: text('p256dh').notNull(),
+		auth: text('auth').notNull(),
+		/** Browser and system, e.g. "Safari · iPhone", for the device list. */
+		device: text('device'),
+		/** Language of the messages sent to this device. */
+		locale: text('locale').notNull().default('de'),
+		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
+		lastSuccessAt: integer('last_success_at', { mode: 'timestamp_ms' })
+	},
+	(t) => [index('push_subscription_user_id_idx').on(t.userId)]
+);
+
+/** What the notifier last saw of a vehicle, to send each event once (JSON, see push/events.ts). */
+export const notificationState = sqliteTable('notification_state', {
+	connectionId: text('connection_id')
+		.primaryKey()
+		.references(() => vehicleConnection.id, { onDelete: 'cascade' }),
+	state: text('state').notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)
+});

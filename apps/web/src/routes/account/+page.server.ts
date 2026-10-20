@@ -1,4 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
+import * as env from '$app/env/private';
 import { and, asc, eq } from 'drizzle-orm';
 import { getApp } from '#lib/server/app.ts';
 import { account, passkey, user as userTable } from '#lib/server/db/schema.ts';
@@ -19,7 +20,7 @@ function requireUser(locals: App.Locals) {
 
 export const load = (async ({ locals }) => {
 	const user = requireUser(locals);
-	const { db, encryptionKey, methods, vehicles } = getApp();
+	const { db, encryptionKey, methods, notifier, vehicles } = getApp();
 	const passkeys = methods.passkey
 		? await db
 				.select({ id: passkey.id, name: passkey.name, createdAt: passkey.createdAt })
@@ -48,7 +49,13 @@ export const load = (async ({ locals }) => {
 		vehicleApi: await getVehicleApiStatus(db, encryptionKey, user.id),
 		redirectUri: vehicles.redirectUri(DEFAULT_PROVIDER_ID),
 		// Status fields only; tokens stay on the server.
-		connections: await vehicles.listConnections(user.id)
+		connections: await vehicles.listConnections(user.id),
+		notifications: {
+			publicKey: notifier.publicKey,
+			prefs: await notifier.prefs(user.id),
+			devices: await notifier.devices(user.id),
+			pollMinutes: Math.round(env.POLL_INTERVAL_SECONDS / 60)
+		}
 	};
 }) satisfies PageServerLoad;
 

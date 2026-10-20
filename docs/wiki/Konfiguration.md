@@ -99,4 +99,4 @@ Der Browser lädt die Kartenkacheln direkt vom Kachelserver. Dieser erfährt dab
 
 ## Daten
 
-Unter `/data` liegen die SQLite-Datenbank `ev-dashboard.db`, die erzeugten Schlüssel `auth-secret` und `encryption-key` sowie die Caddy-Zertifikate. Datenbank-Migrationen laufen beim Start automatisch. Für ein Backup den Container stoppen und das Verzeichnis sichern; die Schlüsseldateien gehören dazu.
+Unter `/data` liegen die SQLite-Datenbank `ev-dashboard.db`, die erzeugten Schlüssel `auth-secret`, `encryption-key` und `push-key` sowie die Caddy-Zertifikate. Datenbank-Migrationen laufen beim Start automatisch. Für ein Backup den Container stoppen und das Verzeichnis sichern; die Schlüsseldateien gehören dazu.

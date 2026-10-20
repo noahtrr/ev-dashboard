@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { authClient } from '#lib/auth-client.ts';
+	import NotificationsCard from '#lib/components/NotificationsCard.svelte';
 	import SigninCard from '#lib/components/SigninCard.svelte';
 	import TopBar from '#lib/components/TopBar.svelte';
 	import { format, messages } from '#lib/i18n.ts';
@@ -398,6 +399,12 @@
 			{/if}
 		</form>
 	</section>
+
+	<NotificationsCard
+		{t}
+		{...data.notifications}
+		date={(value) => value.toLocaleDateString(localeTag)}
+	/>
 </main>
 
 <style>

@@ -91,3 +91,44 @@ self.addEventListener('fetch', (event) => {
 		event.respondWith(networkFirst(request, url));
 	}
 });
+
+type PushMessage = { title: string; body: string; url: string; tag: string };
+
+self.addEventListener('push', (event) => {
+	let message: PushMessage;
+	try {
+		message = event.data?.json() as PushMessage;
+	} catch {
+		return;
+	}
+	if (!message?.title) return;
+	event.waitUntil(
+		self.registration.showNotification(message.title, {
+			body: message.body,
+			tag: message.tag,
+			icon: '/icons/icon-192.png',
+			badge: '/icons/icon-192.png',
+			data: { url: message.url }
+		})
+	);
+});
+
+self.addEventListener('notificationclick', (event) => {
+	event.notification.close();
+	const path = (event.notification.data as { url?: string } | null)?.url ?? '/';
+	// Only paths of this app; a message can never send the user elsewhere.
+	const target = new URL(
+		path.startsWith('/') && !path.startsWith('//') ? path : '/',
+		self.location.origin
+	);
+	event.waitUntil(
+		self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (windows) => {
+			const open = windows.find((w) => new URL(w.url).origin === target.origin);
+			if (open) {
+				await open.focus();
+				return open.navigate(target.href);
+			}
+			return self.clients.openWindow(target.href);
+		})
+	);
+});

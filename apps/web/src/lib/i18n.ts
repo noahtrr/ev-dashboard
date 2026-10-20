@@ -231,6 +231,57 @@ const de = {
 		addedOn: 'Hinzugefügt am {date}',
 		passkeyError: 'Der Passkey konnte nicht gespeichert werden.'
 	},
+	notifications: {
+		title: 'Benachrichtigungen',
+		intro: 'Push-Nachrichten auf diesem Gerät, auch wenn die App geschlossen ist.',
+		enable: 'Auf diesem Gerät aktivieren',
+		disable: 'Ausschalten',
+		remove: 'Entfernen',
+		thisDevice: 'Dieses Gerät',
+		unknownDevice: 'Unbekanntes Gerät',
+		since: 'aktiv seit {date}',
+		test: 'Testnachricht senden',
+		testSent: 'Testnachricht gesendet.',
+		testFailed: 'Die Testnachricht konnte nicht zugestellt werden.',
+		expired:
+			'Dieses Gerät ist beim Push-Dienst nicht mehr angemeldet. Schalte die Benachrichtigungen neu ein.',
+		unsupported: 'Dieser Browser unterstützt keine Push-Nachrichten.',
+		installFirst:
+			'Auf dem iPhone und iPad gehen Push-Nachrichten nur in der installierten App. Lege sie über Teilen → Zum Home-Bildschirm an und öffne sie von dort.',
+		denied:
+			'Benachrichtigungen sind für diese Seite blockiert. Erlaube sie in den Einstellungen des Browsers.',
+		failed: 'Die Benachrichtigungen konnten nicht eingeschaltet werden.',
+		when: 'Benachrichtige mich, wenn',
+		saved: 'Gespeichert.',
+		note: 'Gilt für alle deine Fahrzeuge. Neue Werte kommen mit jedem Abruf, also höchstens alle {minutes} Minuten.',
+		events: {
+			chargingDone: { title: 'Laden beendet', text: 'Mit Ladestand und Reichweite' },
+			chargingStopped: {
+				title: 'Laden unterbrochen',
+				text: 'Wenn der Ladevorgang bei eingestecktem Kabel endet'
+			},
+			lowCharge: { title: 'Ladestand niedrig', text: 'Einmal, wenn er unter die Schwelle fällt' },
+			alert: { title: 'Warnung vom Fahrzeug', text: 'Neue Warnmeldungen aus der Zustandsanzeige' },
+			unlocked: { title: 'Nicht verriegelt', text: 'Steht seit 10 Minuten unverriegelt' },
+			reauth: { title: 'Verbindung unterbrochen', text: 'Wenn du das Fahrzeug neu verbinden musst' }
+		},
+		level: 'Schwelle {pct} %',
+		messages: {
+			chargingDone: { title: '{vehicle}: Laden beendet', body: '{soc} · {range} Reichweite' },
+			chargingStopped: { title: '{vehicle}: Laden unterbrochen', body: 'Ladestand {soc}' },
+			lowCharge: { title: '{vehicle}: Ladestand niedrig', body: 'Noch {soc} · {range} Reichweite' },
+			alert: { title: '{vehicle}: Warnung', body: '{alert}' },
+			unlocked: {
+				title: '{vehicle}: nicht verriegelt',
+				body: 'Seit {minutes} Minuten unverriegelt.'
+			},
+			reauth: {
+				title: '{vehicle}: Verbindung unterbrochen',
+				body: 'Verbinde das Fahrzeug im Konto neu, damit wieder Daten kommen.'
+			},
+			test: { title: 'Testnachricht', body: 'Benachrichtigungen funktionieren auf diesem Gerät.' }
+		}
+	},
 	signin: {
 		title: 'Anmeldung',
 		email: 'E-Mail',
@@ -981,6 +1032,53 @@ const en: Messages = {
 		unnamedPasskey: 'Passkey',
 		addedOn: 'Added on {date}',
 		passkeyError: 'The passkey could not be saved.'
+	},
+	notifications: {
+		title: 'Notifications',
+		intro: 'Push messages on this device, even while the app is closed.',
+		enable: 'Turn on for this device',
+		disable: 'Turn off',
+		remove: 'Remove',
+		thisDevice: 'This device',
+		unknownDevice: 'Unknown device',
+		since: 'active since {date}',
+		test: 'Send a test message',
+		testSent: 'Test message sent.',
+		testFailed: 'The test message could not be delivered.',
+		expired:
+			'This device is no longer registered with its push service. Turn notifications on again.',
+		unsupported: 'This browser does not support push messages.',
+		installFirst:
+			'On iPhone and iPad, push messages only work in the installed app. Add it via Share → Add to Home Screen and open it from there.',
+		denied: 'Notifications are blocked for this site. Allow them in the browser settings.',
+		failed: 'Notifications could not be turned on.',
+		when: 'Notify me when',
+		saved: 'Saved.',
+		note: 'Applies to all your vehicles. New values arrive with each fetch, so at most every {minutes} minutes.',
+		events: {
+			chargingDone: { title: 'Charging ended', text: 'With state of charge and range' },
+			chargingStopped: {
+				title: 'Charging interrupted',
+				text: 'When charging ends with the cable still plugged in'
+			},
+			lowCharge: { title: 'Low charge', text: 'Once, when it drops below the threshold' },
+			alert: { title: 'Vehicle warning', text: 'New warnings from the condition page' },
+			unlocked: { title: 'Left unlocked', text: 'Parked unlocked for 10 minutes' },
+			reauth: { title: 'Connection lost', text: 'When the vehicle needs to be connected again' }
+		},
+		level: 'Threshold {pct} %',
+		messages: {
+			chargingDone: { title: '{vehicle}: charging ended', body: '{soc} · {range} range' },
+			chargingStopped: { title: '{vehicle}: charging interrupted', body: 'State of charge {soc}' },
+			lowCharge: { title: '{vehicle}: low charge', body: '{soc} left · {range} range' },
+			alert: { title: '{vehicle}: warning', body: '{alert}' },
+			unlocked: { title: '{vehicle}: left unlocked', body: 'Unlocked for {minutes} minutes.' },
+			reauth: {
+				title: '{vehicle}: connection lost',
+				body: 'Connect the vehicle again on the account page so data keeps coming.'
+			},
+			test: { title: 'Test message', body: 'Notifications work on this device.' }
+		}
 	},
 	signin: {
 		title: 'Sign-in',

@@ -99,4 +99,4 @@ The browser loads map tiles directly from the tile server, which therefore learn
 
 ## Data
 
-`/data` holds the SQLite database `ev-dashboard.db`, the generated keys `auth-secret` and `encryption-key`, and the Caddy certificates. Database migrations run automatically at startup. For a backup, stop the container and copy the directory, including the key files.
+`/data` holds the SQLite database `ev-dashboard.db`, the generated keys `auth-secret`, `encryption-key` and `push-key`, and the Caddy certificates. Database migrations run automatically at startup. For a backup, stop the container and copy the directory, including the key files.

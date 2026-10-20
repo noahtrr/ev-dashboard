@@ -2,12 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { deriveKey } from '#lib/server/crypto.ts';
 import { openDatabase } from '#lib/server/db/index.ts';
 import { user } from '#lib/server/db/schema.ts';
+import { createNotifier } from '#lib/server/push/notifier.ts';
+import { newVapidScalar, vapidKeys } from '#lib/server/push/webpush.ts';
 import { DEFAULT_PROVIDER_ID } from '#lib/server/providers/index.ts';
 import type { VehicleProvider } from '#lib/server/providers/types.ts';
 import { getVehicleApiCredentials } from '#lib/server/vehicle-api.ts';
 import { createVehicleService, type VehicleService } from '#lib/server/vehicles/service.ts';
 
 const state = vi.hoisted(() => ({ app: undefined as unknown }));
+vi.mock('$app/env/private', () => ({ POLL_INTERVAL_SECONDS: 300 }));
 vi.mock('#lib/server/app.ts', () => ({ getApp: () => state.app }));
 
 const { actions, load } = await import('./+page.server.ts');
@@ -58,7 +61,12 @@ beforeEach(async () => {
 		pollIntervalMs: 300_000,
 		log: () => {}
 	});
-	state.app = { db, encryptionKey: key, methods: { passkey: true }, vehicles };
+	const notifier = createNotifier({
+		db,
+		keys: vapidKeys(newVapidScalar()),
+		subject: 'https://ev.example.com'
+	});
+	state.app = { db, encryptionKey: key, methods: { passkey: true }, notifier, vehicles };
 	const now = new Date();
 	await db.insert(user).values([
 		{ ...alice, emailVerified: false, createdAt: now, updatedAt: now },
@@ -205,5 +213,15 @@ describe('account page: sign-in card', () => {
 			hasPassword: false
 		});
 		expect(data).not.toHaveProperty('invitations');
+	});
+});
+
+describe('account page: notifications', () => {
+	it('shows the public push key, the choice and the devices', async () => {
+		const data = await load(event({ user: alice }));
+		expect(data.notifications.publicKey).toMatch(/^B[A-Za-z0-9_-]{86}$/);
+		expect(data.notifications.devices).toEqual([]);
+		expect(data.notifications.prefs.lowChargePct).toBe(20);
+		expect(data.notifications.pollMinutes).toBe(5);
 	});
 });
