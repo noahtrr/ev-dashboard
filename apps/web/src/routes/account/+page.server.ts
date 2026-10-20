@@ -20,7 +20,7 @@ function requireUser(locals: App.Locals) {
 
 export const load = (async ({ locals }) => {
 	const user = requireUser(locals);
-	const { db, encryptionKey, methods, notifier, vehicles } = getApp();
+	const { backups, db, encryptionKey, methods, notifier, vehicles } = getApp();
 	const passkeys = methods.passkey
 		? await db
 				.select({ id: passkey.id, name: passkey.name, createdAt: passkey.createdAt })
@@ -55,6 +55,10 @@ export const load = (async ({ locals }) => {
 			prefs: await notifier.prefs(user.id),
 			devices: await notifier.devices(user.id),
 			pollMinutes: Math.round(env.POLL_INTERVAL_SECONDS / 60)
+		},
+		backup: {
+			summary: await backups.summary(user.id),
+			targets: await backups.targets(user.id)
 		}
 	};
 }) satisfies PageServerLoad;
@@ -84,6 +88,14 @@ export const actions: Actions = {
 		const result = await getApp().vehicles.startAuthorization(user.id, DEFAULT_PROVIDER_ID);
 		if (!result.ok) return fail(400, { connectError: result.error });
 		// Built by the provider module from its own constants, never from user input.
+		redirect(303, result.url, { external: true });
+	},
+	reconnectVehicle: async ({ locals, request }) => {
+		const user = requireUser(locals);
+		const id = connectionId(await request.formData());
+		const result = await getApp().vehicles.startAuthorization(user.id, DEFAULT_PROVIDER_ID, id);
+		if (!result.ok && result.error === 'not_found') error(404, 'Not found');
+		if (!result.ok) return fail(400, { connectError: result.error });
 		redirect(303, result.url, { external: true });
 	},
 	fetchNow: async ({ locals, request }) => {

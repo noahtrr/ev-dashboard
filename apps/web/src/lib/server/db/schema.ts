@@ -130,6 +130,10 @@ export const providerOAuthState = sqliteTable(
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' }),
 		providerId: text('provider_id').notNull(),
+		/** Set when an existing vehicle is connected again; its history stays attached. */
+		connectionId: text('connection_id').references(() => vehicleConnection.id, {
+			onDelete: 'cascade'
+		}),
 		expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
 		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now)
 	},

@@ -282,6 +282,50 @@ const de = {
 			test: { title: 'Testnachricht', body: 'Benachrichtigungen funktionieren auf diesem Gerät.' }
 		}
 	},
+	backup: {
+		title: 'Datensicherung',
+		intro:
+			'Lädt alle deine Daten als eine Datei herunter. Damit kannst du sie aufbewahren oder in eine andere Installation übernehmen.',
+		contents: {
+			vehicles: 'Fahrzeuge',
+			trips: 'Fahrten im Fahrtenbuch',
+			chargeSessions: 'Ladevorgänge',
+			prices: 'Strompreise und Zuhause',
+			templates: 'Excel-Vorlagen',
+			settings: 'Startseite und Benachrichtigungen'
+		},
+		yes: 'ja',
+		no: 'nein',
+		excluded:
+			'Nicht enthalten sind Passwort, Passkeys und die Zugangsdaten der Fahrzeug-API. Nach einem Import in eine andere Installation verbindest du das Fahrzeug dort neu.',
+		download: 'Sicherung herunterladen',
+		importTitle: 'Sicherung einspielen',
+		importIntro:
+			'Übernimmt Fahrten, Ladevorgänge und Einstellungen aus einer Sicherung. Was schon vorhanden ist, bleibt unverändert.',
+		choose: 'Datei auswählen',
+		invalid: 'Diese Datei ist keine Sicherung des EV Dashboards.',
+		newer:
+			'Diese Sicherung stammt aus einer neueren Version. Aktualisiere zuerst diese Installation.',
+		from: 'Sicherung vom {date}',
+		vehicles: { none: 'keine Fahrzeuge', one: '1 Fahrzeug', many: '{count} Fahrzeuge' },
+		trips: { none: 'keine Fahrten', one: '1 Fahrt', many: '{count} Fahrten' },
+		charges: { none: 'keine Ladevorgänge', one: '1 Ladevorgang', many: '{count} Ladevorgänge' },
+		addTo: 'Zu „{vehicle}“ hinzufügen',
+		createNew: 'Als neues Fahrzeug anlegen',
+		skip: 'Nicht übernehmen',
+		target: 'Ziel für {vehicle}',
+		run: 'Einspielen',
+		running: 'Wird eingespielt … {pct} %',
+		done: 'Eingespielt: {trips} und {charges}.',
+		existing: '{trips} und {charges} waren schon vorhanden.',
+		created:
+			'„{vehicle}“ wurde neu angelegt. Verbinde es oben unter Fahrzeuge neu, damit wieder Daten kommen.',
+		templatesFull:
+			'Nicht alle Excel-Vorlagen wurden übernommen, weil schon die höchstmögliche Zahl vorhanden ist.',
+		failed:
+			'Das Einspielen wurde unterbrochen. Starte es noch einmal; was schon übernommen ist, wird übersprungen.',
+		again: 'Weitere Sicherung einspielen'
+	},
 	signin: {
 		title: 'Anmeldung',
 		email: 'E-Mail',
@@ -364,7 +408,9 @@ const de = {
 		unnamed: 'Fahrzeug',
 		statusActive: 'Verbunden',
 		statusReauth: 'Neu autorisieren',
-		reauthHint: 'Der Zugriff ist abgelaufen oder wurde widerrufen. Verbinde das Fahrzeug erneut.',
+		reauthHint:
+			'Der Zugriff ist abgelaufen, wurde widerrufen oder das Fahrzeug stammt aus einer Sicherung. Verbinde es neu; Fahrten und Ladevorgänge bleiben erhalten.',
+		reconnect: 'Neu verbinden',
 		lastSuccess: 'Letzter Abruf',
 		lastError: 'Letzter Fehler',
 		never: 'noch nie',
@@ -383,7 +429,8 @@ const de = {
 			missing_credentials: 'Es sind keine Zugangsdaten der Fahrzeug-API gespeichert.',
 			exchange:
 				'Der Anbieter hat die Anmeldung nicht bestätigt. Prüfe Client ID, Client Secret und Redirect-URI.',
-			unknown_provider: 'Unbekannter Anbieter.'
+			unknown_provider: 'Unbekannter Anbieter.',
+			not_found: 'Das Fahrzeug gibt es nicht mehr.'
 		},
 		errors: {
 			auth: 'Zugriff abgelehnt',
@@ -397,7 +444,8 @@ const de = {
 			not_found: 'Verbindung nicht gefunden',
 			reauth: 'Neu autorisieren nötig',
 			too_soon: 'Bitte warte eine Minute zwischen zwei Abrufen.',
-			busy: 'Ein Abruf läuft bereits.'
+			busy: 'Ein Abruf läuft bereits.',
+			imported: 'Aus einer Sicherung übernommen, noch nicht verbunden'
 		}
 	},
 	charging: {
@@ -1080,6 +1128,50 @@ const en: Messages = {
 			test: { title: 'Test message', body: 'Notifications work on this device.' }
 		}
 	},
+	backup: {
+		title: 'Backup',
+		intro: 'Downloads all your data as one file, to keep it or to move it to another installation.',
+		contents: {
+			vehicles: 'Vehicles',
+			trips: 'Trips in the log',
+			chargeSessions: 'Charging sessions',
+			prices: 'Electricity prices and home',
+			templates: 'Excel templates',
+			settings: 'Home page and notifications'
+		},
+		yes: 'yes',
+		no: 'no',
+		excluded:
+			'Not included are your password, passkeys and the vehicle API credentials. After importing into another installation, connect the vehicle again there.',
+		download: 'Download backup',
+		importTitle: 'Restore a backup',
+		importIntro:
+			'Adds trips, charging sessions and settings from a backup. Whatever already exists stays as it is.',
+		choose: 'Choose file',
+		invalid: 'This file is not an EV Dashboard backup.',
+		newer: 'This backup comes from a newer version. Update this installation first.',
+		from: 'Backup from {date}',
+		vehicles: { none: 'no vehicles', one: '1 vehicle', many: '{count} vehicles' },
+		trips: { none: 'no trips', one: '1 trip', many: '{count} trips' },
+		charges: {
+			none: 'no charging sessions',
+			one: '1 charging session',
+			many: '{count} charging sessions'
+		},
+		addTo: 'Add to “{vehicle}”',
+		createNew: 'Create as a new vehicle',
+		skip: 'Do not import',
+		target: 'Target for {vehicle}',
+		run: 'Restore',
+		running: 'Restoring … {pct} %',
+		done: 'Restored: {trips} and {charges}.',
+		existing: '{trips} and {charges} already existed.',
+		created: '“{vehicle}” was created. Connect it again under Vehicles above so new data arrives.',
+		templatesFull: 'Not all Excel templates were added because the maximum number already exists.',
+		failed:
+			'The restore was interrupted. Simply start it again; whatever was already added is skipped.',
+		again: 'Restore another backup'
+	},
 	signin: {
 		title: 'Sign-in',
 		email: 'Email',
@@ -1161,7 +1253,9 @@ const en: Messages = {
 		unnamed: 'Vehicle',
 		statusActive: 'Connected',
 		statusReauth: 'Needs re-authorization',
-		reauthHint: 'Access expired or was revoked. Connect the vehicle again.',
+		reauthHint:
+			'Access expired, was revoked, or the vehicle comes from a backup. Connect it again; trips and charging sessions are kept.',
+		reconnect: 'Connect again',
 		lastSuccess: 'Last fetch',
 		lastError: 'Last error',
 		never: 'never',
@@ -1180,7 +1274,8 @@ const en: Messages = {
 			missing_credentials: 'No vehicle API credentials are saved.',
 			exchange:
 				'The provider did not confirm the sign-in. Check client ID, client secret and redirect URI.',
-			unknown_provider: 'Unknown provider.'
+			unknown_provider: 'Unknown provider.',
+			not_found: 'The vehicle no longer exists.'
 		},
 		errors: {
 			auth: 'Access denied',
@@ -1194,7 +1289,8 @@ const en: Messages = {
 			not_found: 'Connection not found',
 			reauth: 'Re-authorization needed',
 			too_soon: 'Please wait a minute between two fetches.',
-			busy: 'A fetch is already running.'
+			busy: 'A fetch is already running.',
+			imported: 'Imported from a backup, not connected yet'
 		}
 	},
 	charging: {
