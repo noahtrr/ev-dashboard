@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import * as env from '$app/env/private';
 import { createAuth, OIDC_PROVIDER_ID, type Auth, type AuthSettings } from './auth/config.ts';
 import { createUserAdmin, type UserAdmin } from './admin/users.ts';
+import { createBackups, type Backups } from './backup.ts';
 import { createInvitations, type Invitations } from './auth/invitations.ts';
 import { deriveKey } from './crypto.ts';
 import { openDatabase, type Database } from './db/index.ts';
@@ -38,6 +39,7 @@ type App = {
 	users: UserAdmin;
 	preferences: Preferences;
 	notifier: Notifier;
+	backups: Backups;
 	/** Public origin, for links in mails. */
 	appUrl: string;
 };
@@ -122,6 +124,7 @@ function create(): App {
 			keys: vapidKeys(loadOrCreateSecret(dataDir, 'push-key')),
 			subject: env.APP_URL
 		}),
+		backups: createBackups(db),
 		appUrl: env.APP_URL,
 		methods: {
 			emailPassword: settings.emailPassword,

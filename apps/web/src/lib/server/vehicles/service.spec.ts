@@ -280,6 +280,58 @@ describe('tokens', () => {
 	});
 });
 
+describe('reconnecting a vehicle', () => {
+	async function reconnect(id: string, userId = 'alice') {
+		const started = await service.startAuthorization(userId, PROVIDER, id);
+		if (!started.ok) return started;
+		const state = new URL(started.url).searchParams.get('state')!;
+		return service.completeAuthorization(userId, PROVIDER, { state, code: 'code-2', error: null });
+	}
+
+	it('replaces the tokens of the same connection and resumes polling', async () => {
+		const id = await connect();
+		clock.t += 3600_000;
+		provider.refresh.mockRejectedValueOnce(new ProviderError('auth', 400));
+		await service.pollConnection(id);
+		expect((await row(id)).status).toBe('reauth');
+
+		provider.exchangeCode.mockResolvedValueOnce({
+			accessToken: 'access-new',
+			expiresAt: new Date(clock.t + 3600_000)
+		});
+		expect(await reconnect(id)).toEqual({ ok: true, connectionId: id });
+		const stored = await row(id);
+		expect(stored).toMatchObject({ status: 'active', lastError: null, failureCount: 0 });
+		expect(decrypt(stored.accessToken, key, `${id}:access_token`)).toBe('access-new');
+		// The old refresh token belonged to the revoked consent.
+		expect(stored.refreshToken).toBeNull();
+		expect(await db.select().from(vehicleConnection)).toHaveLength(1);
+		expect(await service.pollDue()).toBe(1);
+	});
+
+	it('only reconnects own vehicles', async () => {
+		const id = await connect();
+		await saveVehicleApiCredentials(db, key, 'bob', { clientId: 'b', clientSecret: 'b' });
+		expect(await reconnect(id, 'bob')).toEqual({ ok: false, error: 'not_found' });
+		expect(await reconnect('missing')).toEqual({ ok: false, error: 'not_found' });
+	});
+
+	it('drops a pending sign-in when the vehicle is removed meanwhile', async () => {
+		const id = await connect();
+		const started = await service.startAuthorization('alice', PROVIDER, id);
+		if (!started.ok) throw new Error(started.error);
+		const state = new URL(started.url).searchParams.get('state')!;
+		await service.disconnect('alice', id);
+		const result = await service.completeAuthorization('alice', PROVIDER, {
+			state,
+			code: 'c',
+			error: null
+		});
+		expect(result).toEqual({ ok: false, error: 'state' });
+		expect(await db.select().from(vehicleConnection)).toHaveLength(0);
+	});
+});
+
 describe('polling', () => {
 	it('stores a snapshot and updates the connection', async () => {
 		const id = await connect();

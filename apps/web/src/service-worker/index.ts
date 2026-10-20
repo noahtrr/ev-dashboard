@@ -9,8 +9,8 @@ const SHELL = `shell-${version}`;
 /** Shared with the sign-out code in the app, which deletes it. */
 const PAGES = 'pages';
 
-/** Never stored: sign-in, provider callbacks and everything that changes data. */
-const PRIVATE = ['/api/auth/', '/api/providers/', '/api/preferences/'];
+/** Never stored: sign-in, provider callbacks, backups and everything that changes data. */
+const PRIVATE = ['/api/auth/', '/api/providers/', '/api/preferences/', '/api/backup'];
 
 /** Pages only shown without a session. */
 const SIGNED_OUT = ['/login', '/setup', '/signup'];

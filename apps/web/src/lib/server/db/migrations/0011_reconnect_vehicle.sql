@@ -1,0 +1,1 @@
+ALTER TABLE `provider_oauth_state` ADD `connection_id` text REFERENCES vehicle_connection(id) ON DELETE cascade;

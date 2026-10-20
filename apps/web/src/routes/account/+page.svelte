@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { authClient } from '#lib/auth-client.ts';
+	import BackupCard from '#lib/components/BackupCard.svelte';
 	import NotificationsCard from '#lib/components/NotificationsCard.svelte';
 	import SigninCard from '#lib/components/SigninCard.svelte';
 	import TopBar from '#lib/components/TopBar.svelte';
@@ -319,6 +320,17 @@
 						</dl>
 						{#if connection.status === 'reauth'}
 							<p class="muted small">{t.connections.reauthHint}</p>
+							<!-- No use:enhance: the response is a redirect to the provider's sign-in page. -->
+							<form method="POST" action="?/reconnectVehicle">
+								<input type="hidden" name="connectionId" value={connection.id} />
+								<button
+									class="btn btn-primary"
+									type="submit"
+									disabled={!data.vehicleApi.configured}
+								>
+									{t.connections.reconnect}
+								</button>
+							</form>
 						{/if}
 						{#if fetchResult && fetchResult.id === connection.id}
 							<p
@@ -405,6 +417,8 @@
 		{...data.notifications}
 		date={(value) => value.toLocaleDateString(localeTag)}
 	/>
+
+	<BackupCard {t} {...data.backup} {localeTag} />
 </main>
 
 <style>

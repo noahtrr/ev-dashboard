@@ -15,6 +15,7 @@
 | [Design-Philosophie](Design-Philosophie) | [Design philosophy](Design-Philosophy) |
 | [Fahrzeugdaten](Fahrzeugdaten) | [Vehicle data](Vehicle-Data) |
 | [App](App) | [App](App-EN) |
+| [Datensicherung](Datensicherung) | [Backup](Backup) |
 | [Sicherheit und CI](Sicherheit-und-CI) | [Security and CI](Security-and-CI) |
 | [Entwicklung](Entwicklung) | [Development](Development) |
 

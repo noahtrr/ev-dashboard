@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { deriveKey } from '#lib/server/crypto.ts';
 import { openDatabase } from '#lib/server/db/index.ts';
 import { user } from '#lib/server/db/schema.ts';
+import { createBackups } from '#lib/server/backup.ts';
 import { createNotifier } from '#lib/server/push/notifier.ts';
 import { newVapidScalar, vapidKeys } from '#lib/server/push/webpush.ts';
 import { DEFAULT_PROVIDER_ID } from '#lib/server/providers/index.ts';
@@ -66,7 +67,14 @@ beforeEach(async () => {
 		keys: vapidKeys(newVapidScalar()),
 		subject: 'https://ev.example.com'
 	});
-	state.app = { db, encryptionKey: key, methods: { passkey: true }, notifier, vehicles };
+	state.app = {
+		backups: createBackups(db),
+		db,
+		encryptionKey: key,
+		methods: { passkey: true },
+		notifier,
+		vehicles
+	};
 	const now = new Date();
 	await db.insert(user).values([
 		{ ...alice, emailVerified: false, createdAt: now, updatedAt: now },
@@ -158,6 +166,19 @@ describe('account page: vehicle connections', () => {
 		await expect(actions.connectVehicle(event({ user: alice }) as never)).rejects.toMatchObject({
 			status: 303,
 			location: expect.stringMatching(/^https:\/\/provider\.example\/authorize\?state=[\w-]{43}$/)
+		});
+	});
+
+	it('connects an own vehicle again', async () => {
+		const id = await connectAlice();
+		await expect(
+			actions.reconnectVehicle(event({ user: bob }, formRequest({ connectionId: id })) as never)
+		).rejects.toMatchObject({ status: 404 });
+		await expect(
+			actions.reconnectVehicle(event({ user: alice }, formRequest({ connectionId: id })) as never)
+		).rejects.toMatchObject({
+			status: 303,
+			location: expect.stringMatching(/^https:\/\/provider\.example\/authorize\?state=/)
 		});
 	});
 
