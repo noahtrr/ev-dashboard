@@ -30,12 +30,13 @@ Die gesamte Konfiguration erfolgt über Umgebungsvariablen in der `.env`-Datei. 
 
 - **Ersteinrichtung:** Solange es kein Konto gibt, leitet die App auf `/setup` um. Das erste Konto wird Administrator.
 - **Weitere Konten** werden abgelehnt, solange `AUTH_ALLOW_SIGNUP` nicht `true` ist. Das gilt auch für die erste Anmeldung eines unbekannten Benutzers über GitHub, Google oder SSO.
-- **Einladungen:** Mit Mailversand kann ein Administrator auf der Seite **Konto** Adressen einladen. Der Link in der Mail ist 7 Tage gültig und erlaubt die Registrierung genau dieser Adresse, auch wenn `AUTH_ALLOW_SIGNUP` `false` ist. Die Adresse gilt damit als bestätigt.
+- **Einladungen:** Mit Mailversand kann ein Administrator auf der Seite **Verwaltung** Adressen einladen. Der Link in der Mail ist 7 Tage gültig und erlaubt die Registrierung genau dieser Adresse, auch wenn `AUTH_ALLOW_SIGNUP` `false` ist. Die Adresse gilt damit als bestätigt.
 - Alle Seiten außer `/api/health`, `/api/auth/*`, `/login`, `/signup`, `/setup`, `/forgot-password` und `/reset-password` erfordern eine Anmeldung.
 - Die Anmelde-Endpunkte haben eine Ratenbegrenzung (z. B. 10 Anmeldeversuche pro Minute und Adresse).
 - Passwörter brauchen mindestens 8 Zeichen.
 - Meldet sich jemand über GitHub, Google oder SSO mit derselben E-Mail an wie ein bestehendes Konto, wird die Anmeldung mit diesem Konto verknüpft. Voraussetzung: Der Anbieter meldet die E-Mail als bestätigt. So lässt sich ein Konto auf mehreren Wegen nutzen, ohne dass Fremde mit einer unbestätigten Adresse hineinkommen.
 - Passkeys verwaltet jeder Benutzer auf der Seite **Konto** (Menü oben rechts).
+- **Verwaltung** (nur für Administratoren, Menü oben rechts): Liste aller Konten mit Registrierungsdatum, Anmeldemethoden, Anzahl der Fahrzeuge, letzter Aktivität und offenen Sitzungen. Administratoren können die Rolle ändern, ein Konto überall abmelden, sperren oder löschen. Gesperrte Konten werden sofort abgemeldet, können sich mit keiner Methode mehr anmelden, und ihre Fahrzeuge werden nicht mehr abgerufen; die Daten bleiben erhalten. Löschen entfernt das Konto mit allen Fahrzeugen, Fahrten, Ladungen und Kosten; zur Bestätigung muss die E-Mail-Adresse eingegeben werden. Das eigene Konto lässt sich dort nicht ändern, und das letzte Administratorkonto bleibt immer erhalten. Fahrzeugdaten anderer Benutzer sieht auch ein Administrator nicht.
 - E-Mail-Bestätigung, Passwort-Zurücksetzen und Einladungen brauchen den Mailversand, siehe [E-Mail](#e-mail). E-Mail-Adresse und Passwort ändert jeder Benutzer auf der Seite **Konto**.
 
 ### Callback-URLs
@@ -57,7 +58,7 @@ Ohne `SMTP_HOST` verschickt die App keine Mails: Konten brauchen keine Bestätig
 - **Passwort vergessen?** auf der Anmeldeseite schickt einen Link (eine Stunde gültig). Nach dem Zurücksetzen werden alle Sitzungen des Kontos beendet.
 - **E-Mail-Bestätigung:** Neue Konten müssen ihre Adresse über einen Link (24 Stunden gültig) bestätigen, bevor sie sich anmelden können. Das erste Konto und eingeladene Adressen gelten als bestätigt. Konten, die vor dem Update auf diese Version bestanden, gelten ebenfalls als bestätigt.
 - **E-Mail-Adresse ändern** auf der Seite **Konto**: Die neue Adresse wird erst nach Bestätigung über einen Link an sie übernommen.
-- **Einladungen** und eine **Test-Mail** für Administratoren auf der Seite **Konto**.
+- **Einladungen** und eine **Test-Mail** für Administratoren auf der Seite **Verwaltung**.
 
 Die Mails sind auf Deutsch oder Englisch, je nach Browsersprache bei der Anfrage. Kann eine Mail nicht verschickt werden, steht der Fehler im Log (`[mail] …`); die Seite verrät aus Sicherheitsgründen nicht, ob eine Adresse existiert.
 

@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import * as env from '$app/env/private';
 import { createAuth, OIDC_PROVIDER_ID, type Auth, type AuthSettings } from './auth/config.ts';
+import { createUserAdmin, type UserAdmin } from './admin/users.ts';
 import { createInvitations, type Invitations } from './auth/invitations.ts';
 import { deriveKey } from './crypto.ts';
 import { openDatabase, type Database } from './db/index.ts';
@@ -31,6 +32,7 @@ type App = {
 	/** Absent when SMTP_HOST is not set. */
 	mailer?: Mailer;
 	invitations: Invitations;
+	users: UserAdmin;
 	/** Public origin, for links in mails. */
 	appUrl: string;
 };
@@ -107,6 +109,7 @@ function create(): App {
 			: undefined,
 		mailer,
 		invitations: createInvitations(db),
+		users: createUserAdmin(db),
 		appUrl: env.APP_URL,
 		methods: {
 			emailPassword: settings.emailPassword,

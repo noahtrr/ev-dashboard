@@ -21,6 +21,10 @@ export const user = sqliteTable('user', {
 	emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
 	image: text('image'),
 	role: text('role').notNull().default('user'),
+	/** Set by an admin: no sign-in and no polling while set; the data is kept. */
+	lockedAt: integer('locked_at', { mode: 'timestamp_ms' }),
+	/** Admin's note on why the account is locked; only admins see it. */
+	lockReason: text('lock_reason'),
 	createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
 	updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)
 });

@@ -57,6 +57,13 @@
       "when": 1792439652080,
       "tag": "0007_invitations",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792491759558,
+      "tag": "0008_user_lock",
+      "breakpoints": true
     }
   ]
 }

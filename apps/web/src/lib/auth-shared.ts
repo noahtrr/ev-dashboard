@@ -42,6 +42,9 @@ export function authErrorMessage(
 			return t.auth.errors.signupDisabled;
 		case 'EMAIL_NOT_VERIFIED':
 			return t.auth.errors.emailNotVerified;
+		case 'ACCOUNT_LOCKED':
+		case 'ACCOUNT_LOCKED_ERROR':
+			return t.auth.errors.accountLocked;
 		case 'INVALID_TOKEN':
 		case 'TOKEN_EXPIRED':
 			return t.auth.errors.invalidLink;

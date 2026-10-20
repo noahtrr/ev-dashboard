@@ -5,7 +5,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { and, asc, count, desc, eq, gte, isNull, lt, lte, ne, or } from 'drizzle-orm';
 import { decrypt, encrypt } from '../crypto.ts';
 import type { Database } from '../db/index.ts';
-import { providerOAuthState, snapshot, vehicleConnection } from '../db/schema.ts';
+import { providerOAuthState, snapshot, user, vehicleConnection } from '../db/schema.ts';
 import { callbackPath } from '../providers/index.ts';
 import { vehicleLabel } from '../providers/normalize.ts';
 import {
@@ -495,9 +495,12 @@ export function createVehicleService(options: VehicleServiceOptions) {
 		const due = await db
 			.select({ id: vehicleConnection.id })
 			.from(vehicleConnection)
+			// Locked accounts keep their data but are not polled.
+			.innerJoin(user, eq(user.id, vehicleConnection.userId))
 			.where(
 				and(
 					eq(vehicleConnection.status, 'active'),
+					isNull(user.lockedAt),
 					or(
 						isNull(vehicleConnection.nextPollAt),
 						lte(vehicleConnection.nextPollAt, new Date(now()))

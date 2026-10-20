@@ -162,6 +162,23 @@ export function createAuth(settings: AuthSettings, db: Database) {
 						return { data: { ...user, emailVerified: verified, role: decision.role } };
 					}
 				}
+			},
+			session: {
+				create: {
+					// Every sign-in creates a session, so this blocks all methods for locked accounts.
+					before: async (session) => {
+						const [row] = await db
+							.select({ lockedAt: schema.user.lockedAt })
+							.from(schema.user)
+							.where(eq(schema.user.id, session.userId));
+						if (row?.lockedAt) {
+							throw new APIError('FORBIDDEN', {
+								code: 'ACCOUNT_LOCKED',
+								message: 'This account is locked'
+							});
+						}
+					}
+				}
 			}
 		},
 		rateLimit: {

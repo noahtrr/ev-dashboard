@@ -66,7 +66,8 @@ const de = {
 			oauth: 'Die Anmeldung beim externen Anbieter ist fehlgeschlagen.',
 			emailNotVerified:
 				'Bitte bestätige zuerst deine E-Mail-Adresse. Wir haben dir den Link noch einmal geschickt.',
-			invalidLink: 'Der Link ist abgelaufen oder ungültig.'
+			invalidLink: 'Der Link ist abgelaufen oder ungültig.',
+			accountLocked: 'Dieses Konto ist gesperrt. Wende dich an den Administrator.'
 		}
 	},
 	home: {
@@ -97,8 +98,89 @@ const de = {
 	menu: {
 		open: 'Benutzermenü',
 		account: 'Konto',
+		manage: 'Verwaltung',
 		signOut: 'Abmelden',
 		admin: 'Administrator'
+	},
+	admin: {
+		title: 'Verwaltung',
+		signup: 'Registrierung',
+		signupOpen: 'offen',
+		signupClosed: 'geschlossen',
+		signupOpenText: 'Jeder kann ein Konto anlegen{confirm}. Schließen über {variable} in der .env.',
+		signupClosedText:
+			'Neue Konten nur über Einladungen{invites}. Öffnen über {variable} in der .env.',
+		withoutConfirm: ', ohne Bestätigung der E-Mail-Adresse',
+		withConfirm: ' mit bestätigter E-Mail-Adresse',
+		noInvites: ' (brauchen Mailversand)',
+		accounts: 'Konten',
+		recent: 'neu in 7 Tagen',
+		locked: 'gesperrt',
+		users: 'Benutzer',
+		search: 'Name oder E-Mail suchen',
+		filters: { all: 'Alle', admins: 'Admins', recent: 'Neu', locked: 'Gesperrt' },
+		none: 'Keine passenden Konten.',
+		badges: { admin: 'Admin', locked: 'gesperrt', unverified: 'nicht bestätigt', you: 'du' },
+		since: 'Seit {date}',
+		activeAt: 'aktiv {when}',
+		neverActive: 'nie angemeldet',
+		lockedOn: 'gesperrt am {date}',
+		vehicles: { none: 'keine Fahrzeuge', one: '1 Fahrzeug', many: '{count} Fahrzeuge' },
+		methods: {
+			password: 'Passwort',
+			passkey: 'Passkey',
+			github: 'GitHub',
+			google: 'Google',
+			oidc: 'SSO'
+		},
+		deleted: 'Das Konto wurde gelöscht.',
+		mailOff:
+			'Einladungen und Mailversand sind mit SMTP_* in der .env verfügbar. Ohne Mailserver ist beides aus.',
+		back: 'Verwaltung',
+		overview: 'Überblick',
+		registered: 'Registriert',
+		email: 'E-Mail',
+		emailVerified: 'bestätigt',
+		emailUnverified: 'nicht bestätigt',
+		emailUnverifiedNoMail: 'nicht bestätigt (ohne Mailversand)',
+		signInWith: 'Anmeldung mit',
+		vehiclesLabel: 'Fahrzeuge',
+		lastActive: 'Zuletzt aktiv',
+		never: 'nie',
+		privacy: 'Fahrzeugdaten, Fahrten und Kosten anderer Benutzer sieht auch der Admin nicht.',
+		sessions: 'Sitzungen',
+		signOutAll: 'Überall abmelden',
+		signedOut: 'Alle Sitzungen wurden beendet.',
+		noSessions: 'Keine aktiven Sitzungen.',
+		unknownDevice: 'Unbekanntes Gerät',
+		role: 'Rolle',
+		roles: { user: 'Benutzer', admin: 'Admin' },
+		roleHint:
+			'Admins sehen diese Seite und können andere Konten verwalten. Das letzte Admin-Konto lässt sich nicht herabstufen.',
+		roleSaved: 'Rolle gespeichert.',
+		access: 'Zugang',
+		lockedSince: 'Gesperrt seit {date}.',
+		lockedReason: 'Grund: {reason}',
+		reason: 'Grund (optional, nur für Admins sichtbar)',
+		lock: 'Sperren',
+		unlock: 'Entsperren',
+		deleteAccount: 'Konto löschen',
+		accessHint:
+			'Gesperrte Konten werden sofort abgemeldet und können sich nicht mehr anmelden; ihre Daten bleiben, Fahrzeuge werden nicht mehr abgerufen. Löschen entfernt das Konto mit allen Fahrzeugen, Fahrten und Kosten.',
+		lockedDone: 'Konto gesperrt.',
+		unlockedDone: 'Konto entsperrt.',
+		selfHint: 'Das ist dein eigenes Konto. Rolle, Sperre und Löschen gehen nur für andere Konten.',
+		deleteTitle: 'Konto von {name} löschen?',
+		deleteText:
+			'Das Konto, {vehicles}, {trips} Fahrten und {charges} Ladungen werden endgültig gelöscht. Zur Bestätigung die E-Mail-Adresse eingeben.',
+		deleteConfirm: 'Endgültig löschen',
+		cancel: 'Abbrechen',
+		errors: {
+			self: 'Das geht nicht mit deinem eigenen Konto.',
+			last_admin: 'Das ist das letzte Admin-Konto.',
+			confirm: 'Die E-Mail-Adresse stimmt nicht.',
+			invalid: 'Ungültige Eingabe.'
+		}
 	},
 	account: {
 		title: 'Konto',
@@ -702,7 +784,8 @@ const en: Messages = {
 			passkey: 'Signing in with a passkey did not work.',
 			oauth: 'Signing in with the external provider failed.',
 			emailNotVerified: 'Please confirm your email address first. We sent you the link again.',
-			invalidLink: 'The link has expired or is invalid.'
+			invalidLink: 'The link has expired or is invalid.',
+			accountLocked: 'This account is locked. Please contact the administrator.'
 		}
 	},
 	home: {
@@ -733,8 +816,88 @@ const en: Messages = {
 	menu: {
 		open: 'User menu',
 		account: 'Account',
+		manage: 'Administration',
 		signOut: 'Sign out',
 		admin: 'Administrator'
+	},
+	admin: {
+		title: 'Administration',
+		signup: 'Registration',
+		signupOpen: 'open',
+		signupClosed: 'closed',
+		signupOpenText: 'Anyone can create an account{confirm}. Close it with {variable} in .env.',
+		signupClosedText: 'New accounts only by invitation{invites}. Open it with {variable} in .env.',
+		withoutConfirm: ', without confirming their email address',
+		withConfirm: ' with a confirmed email address',
+		noInvites: ' (needs mail)',
+		accounts: 'accounts',
+		recent: 'new in 7 days',
+		locked: 'locked',
+		users: 'Users',
+		search: 'Search name or email',
+		filters: { all: 'All', admins: 'Admins', recent: 'New', locked: 'Locked' },
+		none: 'No matching accounts.',
+		badges: { admin: 'Admin', locked: 'locked', unverified: 'unconfirmed', you: 'you' },
+		since: 'Since {date}',
+		activeAt: 'active {when}',
+		neverActive: 'never signed in',
+		lockedOn: 'locked on {date}',
+		vehicles: { none: 'no vehicles', one: '1 vehicle', many: '{count} vehicles' },
+		methods: {
+			password: 'Password',
+			passkey: 'Passkey',
+			github: 'GitHub',
+			google: 'Google',
+			oidc: 'SSO'
+		},
+		deleted: 'The account was deleted.',
+		mailOff:
+			'Invitations and mail are available with SMTP_* in .env. Without a mail server both are off.',
+		back: 'Administration',
+		overview: 'Overview',
+		registered: 'Registered',
+		email: 'Email',
+		emailVerified: 'confirmed',
+		emailUnverified: 'unconfirmed',
+		emailUnverifiedNoMail: 'unconfirmed (no mail)',
+		signInWith: 'Signs in with',
+		vehiclesLabel: 'Vehicles',
+		lastActive: 'Last active',
+		never: 'never',
+		privacy: "Not even admins see other users' vehicle data, trips or costs.",
+		sessions: 'Sessions',
+		signOutAll: 'Sign out everywhere',
+		signedOut: 'All sessions were ended.',
+		noSessions: 'No active sessions.',
+		unknownDevice: 'Unknown device',
+		role: 'Role',
+		roles: { user: 'User', admin: 'Admin' },
+		roleHint:
+			'Admins see this page and can manage other accounts. The last admin account cannot be demoted.',
+		roleSaved: 'Role saved.',
+		access: 'Access',
+		lockedSince: 'Locked since {date}.',
+		lockedReason: 'Reason: {reason}',
+		reason: 'Reason (optional, only admins see it)',
+		lock: 'Lock',
+		unlock: 'Unlock',
+		deleteAccount: 'Delete account',
+		accessHint:
+			'Locked accounts are signed out at once and cannot sign in; their data is kept and vehicles are no longer fetched. Deleting removes the account with all vehicles, trips and costs.',
+		lockedDone: 'Account locked.',
+		unlockedDone: 'Account unlocked.',
+		selfHint: 'This is your own account. Role, lock and delete only work for other accounts.',
+		deleteTitle: 'Delete the account of {name}?',
+		deleteText:
+			'The account, {vehicles}, {trips} trips and {charges} charging sessions are deleted for good. Type the email address to confirm.',
+		deleteConfirm: 'Delete for good',
+		cancel: 'Cancel',
+		errors: {
+			self: 'This does not work for your own account.',
+			last_admin: 'This is the last admin account.',
+			confirm: 'The email address does not match.',
+			invalid: 'Invalid input.'
+		}
 	},
 	account: {
 		title: 'Account',

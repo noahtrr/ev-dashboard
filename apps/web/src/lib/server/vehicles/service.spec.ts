@@ -302,6 +302,17 @@ describe('polling', () => {
 		expect(await service.pollDue()).toBe(1);
 	});
 
+	it('skips connections of locked accounts', async () => {
+		await connect();
+		await db
+			.update(user)
+			.set({ lockedAt: new Date(clock.t) })
+			.where(eq(user.id, 'alice'));
+		expect(await service.pollDue()).toBe(0);
+		await db.update(user).set({ lockedAt: null }).where(eq(user.id, 'alice'));
+		expect(await service.pollDue()).toBe(1);
+	});
+
 	it('stores raw responses only when they changed', async () => {
 		const id = await connect();
 		const garage = { status: 200, body: { vin: 'VIN1' } };

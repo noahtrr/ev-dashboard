@@ -33,6 +33,9 @@
 			{#if user.role === 'admin'}<span class="label">{t.menu.admin}</span>{/if}
 		</div>
 		<a class="btn" href={resolve('/account')}>{t.menu.account}</a>
+		{#if user.role === 'admin'}
+			<a class="btn" href={resolve('/admin')}>{t.menu.manage}</a>
+		{/if}
 		<button class="btn" type="button" onclick={signOut} disabled={busy}>{t.menu.signOut}</button>
 	</div>
 </details>
