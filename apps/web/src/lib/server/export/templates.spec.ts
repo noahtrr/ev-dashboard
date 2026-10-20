@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { openDatabase } from '../db/index.ts';
 import { user } from '../db/schema.ts';
-import { entry } from './fixtures.ts';
+import { annualTemplate, entry } from './fixtures.ts';
 import {
 	createTemplateStore,
 	fillTemplate,
@@ -13,42 +13,6 @@ import {
 import { readZip, writeZip } from './zip.ts';
 
 const TZ = 'Europe/Berlin';
-
-/** A workbook with the cells of the annual mileage layout (no form text). */
-function annualTemplate(extra = '') {
-	const rows: string[] = [
-		'<row r="11"><c r="D11" s="5"/><c r="F11" s="6"><f>EOMONTH(D11,0)</f><v>46053</v></c></row>',
-		'<row r="12"><c r="D12" s="5"/></row>'
-	];
-	for (let r = 17; r <= 34; r++) {
-		const e =
-			r === 17
-				? '<c r="E17" s="9"/>'
-				: r === 18
-					? '<c r="E18" s="21" t="str"><f>IF(F17="","",F17)</f><v/></c>'
-					: r === 19
-						? '<c r="E19" s="21" t="str"><f t="shared" ref="E19:E34" si="5">IF(F18="","",F18)</f><v/></c>'
-						: `<c r="E${r}" s="21" t="str"><f t="shared" si="5"/><v/></c>`;
-		rows.push(
-			`<row r="${r}">${e}<c r="F${r}" s="9"/><c r="G${r}" s="9"/><c r="H${r}"><f>F${r}-E${r}-G${r}</f><v>0</v></c><c r="I${r}" s="9"/></row>`
-		);
-	}
-	const sheet = `<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${rows.join('')}${extra}</sheetData></worksheet>`;
-	return writeZip(
-		[
-			[
-				'xl/workbook.xml',
-				'<workbook xmlns:r="r"><sheets><sheet name="S" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="191029"/></workbook>'
-			],
-			[
-				'xl/_rels/workbook.xml.rels',
-				'<Relationships><Relationship Id="rId1" Type="worksheet" Target="worksheets/sheet1.xml"/></Relationships>'
-			],
-			['xl/worksheets/sheet1.xml', sheet],
-			['xl/media/image1.png', 'png-bytes']
-		].map(([name, text]) => ({ name, data: Buffer.from(text) }))
-	);
-}
 
 const cell = (sheet: string, ref: string) =>
 	new RegExp(`<c r="${ref}"[^>]*?(?:/>|>([\\s\\S]*?)</c>)`).exec(sheet)?.[0];

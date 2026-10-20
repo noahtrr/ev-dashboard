@@ -44,7 +44,8 @@ export type ConnectionView = {
 	status: ConnectionStatus;
 	lastSuccessAt: Date | null;
 	lastErrorAt: Date | null;
-	lastError: ProviderErrorCode | null;
+	/** `imported`: created from a backup and not connected yet. */
+	lastError: ProviderErrorCode | 'imported' | null;
 	createdAt: Date;
 	snapshotCount: number;
 	/** Usable battery capacity in kWh, when the owner entered it. */
@@ -54,7 +55,8 @@ export type ConnectionView = {
 export type SnapshotView = { fetchedAt: Date; data: VehicleData; raw: RawResponses };
 
 export type StartResult =
-	{ ok: true; url: string } | { ok: false; error: 'unknown_provider' | 'missing_credentials' };
+	| { ok: true; url: string }
+	| { ok: false; error: 'unknown_provider' | 'missing_credentials' | 'not_found' };
 
 export type CallbackResult =
 	| { ok: true; connectionId: string }
@@ -133,9 +135,21 @@ export function createVehicleService(options: VehicleServiceOptions) {
 		};
 	}
 
-	async function startAuthorization(userId: string, providerId: string): Promise<StartResult> {
+	/**
+	 * Starts the provider sign-in. With `connectionId`, the tokens replace those of that
+	 * vehicle (after a lost connection or an import), so its history stays attached.
+	 */
+	async function startAuthorization(
+		userId: string,
+		providerId: string,
+		connectionId?: string
+	): Promise<StartResult> {
 		const provider = providers.get(providerId);
 		if (!provider) return { ok: false, error: 'unknown_provider' };
+		if (connectionId) {
+			const row = await ownedConnection(userId, connectionId);
+			if (!row || row.providerId !== providerId) return { ok: false, error: 'not_found' };
+		}
 		const credentials = await getVehicleApiCredentials(db, key, userId);
 		if (!credentials) return { ok: false, error: 'missing_credentials' };
 
@@ -146,6 +160,7 @@ export function createVehicleService(options: VehicleServiceOptions) {
 			stateHash: hashState(state),
 			userId,
 			providerId,
+			connectionId: connectionId ?? null,
 			expiresAt: new Date(t + STATE_TTL_MS),
 			createdAt: new Date(t)
 		});
@@ -160,23 +175,23 @@ export function createVehicleService(options: VehicleServiceOptions) {
 	}
 
 	/**
-	 * Checks and deletes the state. Returns undefined when it belongs to this user and provider
-	 * and is within the TTL, otherwise the reason it was rejected (logged, never shown).
+	 * Checks and deletes the state. Returns the stored row when it belongs to this user and
+	 * provider and is within the TTL, otherwise the reason it was rejected (logged, never shown).
 	 */
 	async function consumeState(userId: string, providerId: string, state: string) {
-		if (!state) return 'missing';
-		if (state.length > 200) return 'too_long';
+		if (!state) return 'missing' as const;
+		if (state.length > 200) return 'too_long' as const;
 		const stateHash = hashState(state);
 		const row = await db.query.providerOAuthState.findFirst({
 			where: eq(providerOAuthState.stateHash, stateHash)
 		});
-		if (!row) return 'unknown';
+		if (!row) return 'unknown' as const;
 		// Single use: gone whether it matches or not.
 		await db.delete(providerOAuthState).where(eq(providerOAuthState.stateHash, stateHash));
-		if (row.userId !== userId) return 'other_user';
-		if (row.providerId !== providerId) return 'other_provider';
-		if (row.expiresAt.getTime() <= now()) return 'expired';
-		return undefined;
+		if (row.userId !== userId) return 'other_user' as const;
+		if (row.providerId !== providerId) return 'other_provider' as const;
+		if (row.expiresAt.getTime() <= now()) return 'expired' as const;
+		return row;
 	}
 
 	async function completeAuthorization(
@@ -193,7 +208,8 @@ export function createVehicleService(options: VehicleServiceOptions) {
 	): Promise<CallbackResult> {
 		const provider = providers.get(providerId);
 		if (!provider) return { ok: false, error: 'state' };
-		const rejected = await consumeState(userId, providerId, params.state ?? '');
+		const checked = await consumeState(userId, providerId, params.state ?? '');
+		const rejected = typeof checked === 'string' ? checked : undefined;
 		if (params.error) {
 			// Providers may redirect errors without echoing the state; report the error itself.
 			log(
@@ -225,8 +241,27 @@ export function createVehicleService(options: VehicleServiceOptions) {
 			return { ok: false, error: 'exchange' };
 		}
 
-		const id = randomUUID();
 		const t = new Date(now());
+		const target = typeof checked === 'object' ? checked.connectionId : null;
+		if (target && (await ownedConnection(userId, target))) {
+			await db
+				.update(vehicleConnection)
+				.set({
+					...encryptTokens(target, tokens),
+					// A missing refresh token must not leave the old one in place.
+					...(!tokens.refreshToken && { refreshToken: null }),
+					status: 'active',
+					lastError: null,
+					lastErrorAt: null,
+					failureCount: 0,
+					nextPollAt: t,
+					updatedAt: t
+				})
+				.where(eq(vehicleConnection.id, target));
+			return { ok: true, connectionId: target };
+		}
+
+		const id = randomUUID();
 		await db.insert(vehicleConnection).values({
 			id,
 			userId,
@@ -260,9 +295,11 @@ export function createVehicleService(options: VehicleServiceOptions) {
 			lastErrorAt: row.lastErrorAt,
 			lastError: ERROR_CODES.includes(row.lastError as ProviderErrorCode)
 				? (row.lastError as ProviderErrorCode)
-				: row.lastError
-					? 'internal'
-					: null,
+				: row.lastError === 'imported'
+					? 'imported'
+					: row.lastError
+						? 'internal'
+						: null,
 			createdAt: row.createdAt,
 			snapshotCount
 		};
