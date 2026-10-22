@@ -517,7 +517,48 @@ const de = {
 			'Zeitraum entfernen? Bereits eingeordnete Fahrten behalten ihre Fahrtart, neue Fahrten werden nicht mehr automatisch zugeordnet.',
 		error: 'Bitte gib einen gültigen Zeitraum an (höchstens 3 Jahre).',
 		purposeError: 'Bitte wähle privat oder geschäftlich.',
-		future: 'liegt in der Zukunft'
+		future: 'liegt in der Zukunft',
+		mode: 'Art des Zeitraums',
+		modes: { range: 'Durchgehend', daily: 'Tägliches Zeitfenster' },
+		modeHints: {
+			range:
+				'Vom ersten Tag (optional ab einer Uhrzeit) bis zum letzten Tag (optional bis zu einer Uhrzeit).',
+			daily:
+				'An jedem Tag des Zeitraums nur zwischen den beiden Uhrzeiten, auch über Mitternacht (z. B. 22–6 Uhr).'
+		},
+		fromTime: 'Ab Uhrzeit (optional)',
+		toTime: 'Bis Uhrzeit (optional)',
+		timeHint:
+			'Ohne Uhrzeit gilt der ganze Tag. Eine Fahrt zählt zum Zeitraum, wenn sie darin beginnt.',
+		timesError:
+			'Bitte prüfe die Uhrzeiten: Ein tägliches Zeitfenster braucht zwei verschiedene Uhrzeiten, an einem einzelnen Tag muss die Bis-Uhrzeit nach der Ab-Uhrzeit liegen.',
+		daily: 'täglich {from}–{to}',
+		overlap: 'Überschneidet sich mit: {list}. Im gemeinsamen Teil gilt dann dieser neue Zeitraum.',
+		overlapConfirm:
+			'Der Zeitraum überschneidet sich mit {n} gespeicherten Zeiträumen. Soll er diese im gemeinsamen Teil überschreiben?',
+		overlapConfirmOne:
+			'Der Zeitraum überschneidet sich mit einem gespeicherten Zeitraum. Soll er diesen im gemeinsamen Teil überschreiben?'
+	},
+	privateQuota: {
+		title: 'Privates Kontingent',
+		intro:
+			'Wie viele Kilometer du mit diesem Fahrzeug pro Kalenderjahr privat fahren darfst, z. B. bei einem Dienstwagen. Es zählen nur Fahrten, die als privat eingeordnet sind.',
+		kmLabel: 'Private km pro Jahr',
+		warnLabel: 'Hinweis ab',
+		save: 'Speichern',
+		saved: 'Gespeichert.',
+		hint: 'Leer lassen schaltet das Kontingent aus. Ab dem Prozentsatz zeigt das Dashboard einen Hinweis.',
+		errors: {
+			km: 'Bitte gib eine Zahl zwischen 1 und 1.000.000 km an oder lass das Feld leer.',
+			warn: 'Bitte gib eine ganze Zahl zwischen 1 und 99 % an.'
+		},
+		bar: 'Privates Kontingent {year}',
+		used: '{used} von {quota} km',
+		left: 'noch {left} km',
+		over: '{km} km über dem Kontingent',
+		warnBanner: 'Privates Kontingent fast erreicht: {used} von {quota} km ({pct} %) in {year}.',
+		overBanner: 'Privates Kontingent für {year} überschritten: {used} von {quota} km ({pct} %).',
+		toLog: 'Zum Fahrtenbuch'
 	},
 	manualTrips: {
 		link: 'Fahrt nachtragen',
@@ -599,7 +640,10 @@ const de = {
 		percentNote: 'Verbrauch in Prozentpunkten des Akkus.',
 		accuracyNote:
 			'Beginn und Ende sind auf das Abrufintervall genau, die Route verbindet die abgerufenen Positionen.',
-		gapNote: 'Während dieser Fahrt fehlen Abrufe, Zeiten und Geschwindigkeit sind deshalb ungenau.'
+		gapNote: 'Während dieser Fahrt fehlen Abrufe, Zeiten und Geschwindigkeit sind deshalb ungenau.',
+		year: 'Jahr',
+		previousYear: 'Vorheriges Jahr',
+		nextYear: 'Nächstes Jahr'
 	},
 	consumption: {
 		title: 'Verbrauch',
@@ -1430,7 +1474,48 @@ const en: Messages = {
 			'Remove this period? Trips keep the purpose they have; new trips are no longer assigned automatically.',
 		error: 'Please enter a valid period (at most 3 years).',
 		purposeError: 'Please choose private or business.',
-		future: 'in the future'
+		future: 'in the future',
+		mode: 'Kind of period',
+		modes: { range: 'Continuous', daily: 'Daily time window' },
+		modeHints: {
+			range:
+				'From the first day (optionally from a time) to the last day (optionally until a time).',
+			daily:
+				'On every day of the period only between the two times, also past midnight (e.g. 22–6).'
+		},
+		fromTime: 'From time (optional)',
+		toTime: 'Until time (optional)',
+		timeHint:
+			'Without a time the whole day counts. A trip belongs to the period if it starts in it.',
+		timesError:
+			'Please check the times: a daily window needs two different times, and on a single day the end time must be after the start time.',
+		daily: 'daily {from}–{to}',
+		overlap: 'Overlaps with: {list}. Where they overlap, this new period applies.',
+		overlapConfirm:
+			'The period overlaps {n} saved periods. Should it overwrite them where they overlap?',
+		overlapConfirmOne:
+			'The period overlaps a saved period. Should it overwrite it where they overlap?'
+	},
+	privateQuota: {
+		title: 'Private allowance',
+		intro:
+			'How many kilometres you may drive this vehicle privately per calendar year, e.g. a company car. Only trips classified as private count.',
+		kmLabel: 'Private km per year',
+		warnLabel: 'Notice from',
+		save: 'Save',
+		saved: 'Saved.',
+		hint: 'Leave it empty to turn the allowance off. From the percentage on, the dashboard shows a notice.',
+		errors: {
+			km: 'Please enter a number between 1 and 1,000,000 km or leave the field empty.',
+			warn: 'Please enter a whole number between 1 and 99 %.'
+		},
+		bar: 'Private allowance {year}',
+		used: '{used} of {quota} km',
+		left: '{left} km left',
+		over: '{km} km over the allowance',
+		warnBanner: 'Private allowance almost used up: {used} of {quota} km ({pct} %) in {year}.',
+		overBanner: 'Private allowance for {year} exceeded: {used} of {quota} km ({pct} %).',
+		toLog: 'Open the trip log'
 	},
 	manualTrips: {
 		link: 'Add a trip',
@@ -1512,7 +1597,10 @@ const en: Messages = {
 		percentNote: 'Energy used in percentage points of the battery.',
 		accuracyNote:
 			'Start and end are accurate to one polling interval; the route connects the fetched positions.',
-		gapNote: 'Fetches are missing during this trip, so times and speed are approximate.'
+		gapNote: 'Fetches are missing during this trip, so times and speed are approximate.',
+		year: 'Year',
+		previousYear: 'Previous year',
+		nextYear: 'Next year'
 	},
 	consumption: {
 		title: 'Consumption',

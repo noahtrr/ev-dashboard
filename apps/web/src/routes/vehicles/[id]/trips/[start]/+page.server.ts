@@ -1,7 +1,7 @@
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import * as env from '$app/env/private';
 import { getApp } from '#lib/server/app.ts';
-import { isPurpose, NOTE_MAX_LENGTH } from '#lib/server/vehicles/logbook.ts';
+import { entryTrip, isPurpose, NOTE_MAX_LENGTH } from '#lib/server/vehicles/logbook.ts';
 import { deriveTrips, tripDetails, withTripEnergy } from '#lib/server/vehicles/trips.ts';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -25,10 +25,16 @@ export const load = (async ({ locals, params }) => {
 		new Date(start - gap),
 		new Date(start + MAX_TRIP_MS)
 	);
-	const trip = withTripEnergy(deriveTrips(points, gap), connection.batteryCapacityKwh).find(
+	let trip = withTripEnergy(deriveTrips(points, gap), connection.batteryCapacityKwh).find(
 		(t) => t.start.getTime() <= start && start <= t.end.getTime()
 	);
-	if (!trip) error(404, 'Not found');
+	if (!trip) {
+		// Trips entered by hand have their own page; logged ones whose snapshots are gone show the log.
+		const logged = await logbook.find(locals.user.id, params.id, new Date(start));
+		if (logged?.manual) redirect(303, `/vehicles/${params.id}/trips/manual/${logged.id}`);
+		if (!logged) error(404, 'Not found');
+		[trip] = withTripEnergy([entryTrip(logged)], connection.batteryCapacityKwh);
+	}
 
 	const entry = await logbook.find(locals.user.id, params.id, trip.start);
 	const lookup = (lat: number | undefined, lon: number | undefined) =>

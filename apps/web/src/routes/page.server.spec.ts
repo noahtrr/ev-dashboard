@@ -68,4 +68,26 @@ describe('home page', () => {
 		});
 		expect(data.consumption).toEqual([{ t: T0, km: 30, usedPct: 6, tempC: null }]);
 	});
+
+	it('sends the private trips of the year for a vehicle with an allowance', async () => {
+		state.layout = defaultHomeLayout();
+		const vehicles = (state.app as { vehicles: { listConnections: ReturnType<typeof vi.fn> } })
+			.vehicles;
+		vehicles.listConnections.mockResolvedValueOnce([
+			{
+				id: 'c1',
+				label: 'Car',
+				status: 'active',
+				batteryCapacityKwh: 77,
+				privateQuotaKm: 5000,
+				privateQuotaWarnPct: null
+			}
+		]);
+		logbook.list.mockResolvedValueOnce([
+			entry,
+			{ ...entry, startAt: new Date(T0 - 60_000), purpose: 'business' }
+		]);
+		const data = await call();
+		expect(data.quota).toEqual({ km: 5000, warnPct: null, trips: [{ t: T0, km: 30 }] });
+	});
 });

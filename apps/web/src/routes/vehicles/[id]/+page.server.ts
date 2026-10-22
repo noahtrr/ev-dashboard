@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import { getApp } from '#lib/server/app.ts';
 import { parseCapacity } from '#lib/server/vehicles/charging.ts';
 import { DEFAULT_LOSS_PCT, parseDecimal } from '#lib/costs.ts';
+import { parseQuota } from '#lib/private-quota.ts';
 import {
 	isDay,
 	isPriceKind,
@@ -63,6 +64,15 @@ export const actions: Actions = {
 		);
 		if (!saved) error(404, 'Not found');
 		return { capacitySaved: true };
+	},
+	quota: async ({ locals, params, request }) => {
+		if (!locals.user) error(401, 'Unauthorized');
+		const form = await request.formData();
+		const parsed = parseQuota(form.get('quotaKm'), form.get('warnPct'));
+		if (typeof parsed === 'string') return fail(400, { quotaError: parsed });
+		const saved = await getApp().vehicles.setPrivateQuota(locals.user.id, params.id, parsed);
+		if (!saved) error(404, 'Not found');
+		return { quotaSaved: true };
 	},
 	price: async ({ locals, params, request }) => {
 		if (!locals.user) error(401, 'Unauthorized');

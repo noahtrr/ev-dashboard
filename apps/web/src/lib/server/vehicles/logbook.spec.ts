@@ -208,11 +208,53 @@ describe('logbook', () => {
 			fromAt: new Date(0),
 			toAt: new Date(100),
 			purpose,
+			mode: 'range',
+			fromMinute: null,
+			toMinute: null,
+			timeZone: null,
 			createdAt: new Date(created)
 		});
 		expect(periodPurpose([row('business', 2), row('private', 1)], new Date(50))).toBe('business');
 		expect(periodPurpose([row('business', 1), row('private', 2)], new Date(50))).toBe('private');
 		expect(periodPurpose([row('business', 1)], new Date(100))).toBeNull();
+	});
+
+	it('applies a daily window only between its times, also to trips recorded later', async () => {
+		// Two trips on 2026-10-18 (UTC): from 07:00 and from 07:15.
+		await fetched(0, parked(100, 52.5));
+		await fetched(5, moving(104, 52.53));
+		await fetched(10, parked(110, 52.56));
+		await fetched(15, parked(110, 52.56));
+		await fetched(20, moving(114, 52.6));
+		await fetched(30, parked(120, 52.65));
+		await fetched(40, parked(120, 52.65));
+		const window = {
+			fromDay: '2026-10-18',
+			toDay: '2026-10-18',
+			fromAt: new Date(T0 + 15 * MIN),
+			toAt: new Date(T0 + 60 * MIN),
+			purpose: 'business' as const,
+			mode: 'daily' as const,
+			fromMinute: 7 * 60 + 15,
+			toMinute: 8 * 60,
+			timeZone: 'UTC'
+		};
+		await logbook.addPeriod('alice', 'c1', window, false);
+		await logbook.record('c1', new Date(0));
+		const purposes = async () =>
+			(await db.select().from(trip).orderBy(trip.startAt)).map((t) => t.purpose);
+		expect(await purposes()).toEqual([null, 'business']);
+
+		await db.update(trip).set({ purpose: null });
+		expect(
+			await logbook.addPeriod(
+				'alice',
+				'c1',
+				{ ...window, fromMinute: 0, toMinute: 7 * 60 + 15, fromAt: new Date(T0 - 60 * MIN) },
+				true
+			)
+		).toBe(1);
+		expect(await purposes()).toEqual(['business', null]);
 	});
 
 	it('adds, changes and removes trips entered by hand', async () => {

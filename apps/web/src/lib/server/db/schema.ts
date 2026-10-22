@@ -174,6 +174,10 @@ export const vehicleConnection = sqliteTable(
 		homeLongitude: real('home_longitude'),
 		/** Share lost between grid and battery, in percent; null means the default. */
 		chargingLossPct: real('charging_loss_pct'),
+		/** Private kilometres allowed per calendar year, entered by the owner; null means none. */
+		privateQuotaKm: real('private_quota_km'),
+		/** Share of the quota at which the dashboard warns, in percent; null means the default. */
+		privateQuotaWarnPct: integer('private_quota_warn_pct'),
 		nextPollAt: integer('next_poll_at', { mode: 'timestamp_ms' }),
 		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
 		updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)
@@ -261,6 +265,16 @@ export const tripPeriod = sqliteTable(
 		toAt: integer('to_at', { mode: 'timestamp_ms' }).notNull(),
 		/** `private` or `business`. */
 		purpose: text('purpose').notNull(),
+		/**
+		 * `range`: from `fromAt` to `toAt` (whole days, or from and until a time). `daily`: only
+		 * between the two times on every day, past midnight when `toMinute` < `fromMinute`.
+		 */
+		mode: text('mode').notNull().default('range'),
+		/** Minutes after midnight as entered; null for whole days. */
+		fromMinute: integer('from_minute'),
+		toMinute: integer('to_minute'),
+		/** Time zone the times were entered in; daily windows are judged by its wall clock. */
+		timeZone: text('time_zone'),
 		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now)
 	},
 	(t) => [index('trip_period_connection_idx').on(t.connectionId, t.fromAt)]

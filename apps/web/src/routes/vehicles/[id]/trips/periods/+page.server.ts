@@ -1,11 +1,9 @@
 import { error, fail } from '@sveltejs/kit';
 import { getApp } from '#lib/server/app.ts';
-import { isTimeZone, parseDay, zonedMidnight } from '#lib/server/export/time.ts';
+import { isTimeZone, parseDay, zonedTime } from '#lib/server/export/time.ts';
 import { isPurpose } from '#lib/server/vehicles/logbook.ts';
+import { parseMinute, periodBounds } from '#lib/trip-period.ts';
 import type { Actions, PageServerLoad } from './$types';
-
-/** Longest period one entry covers. */
-const MAX_DAYS = 3 * 366;
 
 async function owned(locals: App.Locals, id: string) {
 	if (!locals.user) error(401, 'Unauthorized');
@@ -27,7 +25,10 @@ export const load = (async ({ locals, params }) => {
 			id: p.id,
 			fromDay: p.fromDay,
 			toDay: p.toDay,
-			purpose: p.purpose
+			purpose: p.purpose,
+			mode: p.mode === 'daily' ? ('daily' as const) : ('range' as const),
+			fromMinute: p.fromMinute,
+			toMinute: p.toMinute
 		}))
 	};
 }) satisfies PageServerLoad;
@@ -40,27 +41,29 @@ export const actions: Actions = {
 		if (!isPurpose(purpose)) return fail(400, { periodError: 'purpose' as const });
 		const tz = form.get('tz');
 		const timeZone = isTimeZone(tz) ? tz : 'UTC';
-		const fromDay = String(form.get('from') ?? '');
-		const toDay = String(form.get('to') ?? '');
-		const first = parseDay(fromDay);
-		const last = parseDay(toDay);
-		if (!first || !last) return fail(400, { periodError: 'range' as const });
-		const fromAt = zonedMidnight(first.year, first.month, first.day, timeZone);
-		// The end is the start of the day after the last day.
-		const next = new Date(Date.UTC(last.year, last.month - 1, last.day + 1));
-		const toAt = zonedMidnight(
-			next.getUTCFullYear(),
-			next.getUTCMonth() + 1,
-			next.getUTCDate(),
-			timeZone
-		);
-		if (toAt <= fromAt || toAt.getTime() - fromAt.getTime() > MAX_DAYS * 86_400_000) {
-			return fail(400, { periodError: 'range' as const });
-		}
+		const mode = form.get('mode') === 'daily' ? 'daily' : 'range';
+		const input = {
+			mode,
+			fromDay: String(form.get('from') ?? ''),
+			toDay: String(form.get('to') ?? ''),
+			fromMinute: parseMinute(form.get('fromTime')),
+			toMinute: parseMinute(form.get('toTime'))
+		} as const;
+		const bounds = periodBounds(input, (day, minute) => {
+			const d = parseDay(day)!;
+			return zonedTime({ ...d, hour: 0, minute }, timeZone).getTime();
+		});
+		if (typeof bounds === 'string') return fail(400, { periodError: bounds });
 		const changed = await getApp().logbook.addPeriod(
 			user.id,
 			connection.id,
-			{ fromDay, toDay, fromAt, toAt, purpose },
+			{
+				...input,
+				fromAt: new Date(bounds.fromAt),
+				toAt: new Date(bounds.toAt),
+				purpose,
+				timeZone: input.fromMinute === null && input.toMinute === null ? null : timeZone
+			},
 			form.get('overwrite') === 'on'
 		);
 		if (changed === undefined) error(404, 'Not found');
