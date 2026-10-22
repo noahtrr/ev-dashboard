@@ -1,4 +1,11 @@
-import { createDecipheriv, createECDH, createHmac, createPublicKey, verify } from 'node:crypto';
+import {
+	ECDH,
+	createDecipheriv,
+	createECDH,
+	createHmac,
+	createPublicKey,
+	verify
+} from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import {
 	encryptPayload,
@@ -102,6 +109,21 @@ describe('web push', () => {
 			Buffer.from(s, 'base64url')
 		);
 		expect(ok).toBe(true);
+	});
+
+	it('always generates a 32-byte push key', () => {
+		// Node returns private keys without leading zero bytes; this one starts with 0x00.
+		const short = Buffer.alloc(32, 9);
+		short[0] = 0;
+		const spy = vi
+			.spyOn(ECDH.prototype, 'getPrivateKey')
+			.mockImplementation(((encoding?: BufferEncoding) =>
+				encoding ? short.subarray(1).toString(encoding) : short.subarray(1)) as never);
+		try {
+			expect(Buffer.from(newVapidScalar(), 'base64url')).toEqual(short);
+		} finally {
+			spy.mockRestore();
+		}
 	});
 
 	it('rejects a push key of the wrong size', () => {

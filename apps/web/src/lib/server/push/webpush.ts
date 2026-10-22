@@ -46,7 +46,8 @@ export function vapidKeys(privateScalar: string): VapidKeys {
 export function newVapidScalar(): string {
 	const ecdh = createECDH('prime256v1');
 	ecdh.generateKeys();
-	return b64(ecdh.getPrivateKey());
+	// Node drops leading zero bytes, so about one key in 256 comes back shorter.
+	return b64(Buffer.from(ecdh.getPrivateKey('hex').padStart(64, '0'), 'hex'));
 }
 
 /** `Authorization` header value for one push service origin (RFC 8292). */
