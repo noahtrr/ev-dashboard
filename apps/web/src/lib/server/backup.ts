@@ -26,6 +26,9 @@ import {
 } from './export/templates.ts';
 import { COST_MAX_EUR, LOSS_MAX_PCT, PRICE_MAX_CT } from './vehicles/costs.ts';
 import { NOTE_MAX_LENGTH } from './vehicles/logbook.ts';
+import { QUOTA_MAX_KM } from '../private-quota.ts';
+import { isTimeZone } from './export/time.ts';
+import type { PeriodMode } from '../trip-period.ts';
 
 export { BACKUP_FORMAT, BACKUP_VERSION, IMPORT_BATCH };
 
@@ -37,6 +40,11 @@ export type BackupPeriod = {
 	fromAt: string;
 	toAt: string;
 	purpose: 'private' | 'business';
+	/** Missing in backups of earlier versions: whole days. */
+	mode: PeriodMode;
+	fromMinute: number | null;
+	toMinute: number | null;
+	timeZone: string | null;
 };
 
 export type BackupTrip = {
@@ -83,6 +91,9 @@ export type BackupVehicleInfo = {
 	homeLatitude: number | null;
 	homeLongitude: number | null;
 	chargingLossPct: number | null;
+	/** Private kilometres per year and warning threshold; missing in earlier backups. */
+	privateQuotaKm: number | null;
+	privateQuotaWarnPct: number | null;
 	prices: BackupPrice[];
 	/** Private or business periods; missing in backups of earlier versions. */
 	periods: BackupPeriod[];
@@ -154,6 +165,12 @@ function str(value: unknown, field: string, max: number): string {
 	return value;
 }
 
+function optInt(value: unknown, field: string, min: number, max: number): number | null {
+	const n = optNum(value, field, min, max);
+	if (n !== null && !Number.isInteger(n)) throw new BackupError(field);
+	return n;
+}
+
 function optStr(value: unknown, field: string, max: number): string | null {
 	return value === null || value === undefined ? null : str(value, field, max);
 }
@@ -199,12 +216,32 @@ export function parseVehicleInfo(value: unknown): BackupVehicleInfo {
 		const fromAt = time(o.fromAt, 'period.fromAt');
 		const toAt = time(o.toAt, 'period.toAt');
 		if (toAt <= fromAt) throw new BackupError('period.toAt');
+		const mode = o.mode ?? 'range';
+		if (mode !== 'range' && mode !== 'daily') throw new BackupError('period.mode');
+		const minute = (value: unknown, field: string) => {
+			if (value === null || value === undefined) return null;
+			if (!Number.isInteger(value)) throw new BackupError(field);
+			return num(value, field, 0, 1439);
+		};
+		const fromMinute = minute(o.fromMinute, 'period.fromMinute');
+		const toMinute = minute(o.toMinute, 'period.toMinute');
+		const timeZone = o.timeZone ?? null;
+		if (timeZone !== null && !isTimeZone(timeZone)) throw new BackupError('period.timeZone');
+		// A daily window is judged by its time zone, so it needs one and both times.
+		if (mode === 'daily' && (fromMinute === null) !== (toMinute === null)) {
+			throw new BackupError('period.toMinute');
+		}
+		if (fromMinute !== null && timeZone === null) throw new BackupError('period.timeZone');
 		const period: BackupPeriod = {
 			fromDay: day(o.fromDay, 'period.fromDay'),
 			toDay: day(o.toDay, 'period.toDay'),
 			fromAt: fromAt.toISOString(),
 			toAt: toAt.toISOString(),
-			purpose
+			purpose,
+			mode,
+			fromMinute,
+			toMinute,
+			timeZone
 		};
 		return period;
 	});
@@ -217,6 +254,8 @@ export function parseVehicleInfo(value: unknown): BackupVehicleInfo {
 		homeLatitude: lat(v.homeLatitude, 'vehicle.homeLatitude'),
 		homeLongitude: lon(v.homeLongitude, 'vehicle.homeLongitude'),
 		chargingLossPct: optNum(v.chargingLossPct, 'vehicle.chargingLossPct', 0, LOSS_MAX_PCT),
+		privateQuotaKm: optNum(v.privateQuotaKm, 'vehicle.privateQuotaKm', 1, QUOTA_MAX_KM),
+		privateQuotaWarnPct: optInt(v.privateQuotaWarnPct, 'vehicle.privateQuotaWarnPct', 1, 99),
 		prices,
 		periods
 	};
@@ -359,6 +398,8 @@ export function createBackups(db: Database) {
 				homeLatitude: c.homeLatitude,
 				homeLongitude: c.homeLongitude,
 				chargingLossPct: c.chargingLossPct,
+				privateQuotaKm: c.privateQuotaKm,
+				privateQuotaWarnPct: c.privateQuotaWarnPct,
 				prices: prices.map((p) => ({
 					kind: p.kind as BackupPrice['kind'],
 					validFrom: p.validFrom,
@@ -370,7 +411,11 @@ export function createBackups(db: Database) {
 					toDay: p.toDay,
 					fromAt: p.fromAt.toISOString(),
 					toAt: p.toAt.toISOString(),
-					purpose: p.purpose as BackupPeriod['purpose']
+					purpose: p.purpose as BackupPeriod['purpose'],
+					mode: p.mode as BackupPeriod['mode'],
+					fromMinute: p.fromMinute,
+					toMinute: p.toMinute,
+					timeZone: p.timeZone
 				})),
 				trips: trips.map((t) => ({
 					startAt: t.startAt.toISOString(),
@@ -451,7 +496,9 @@ export function createBackups(db: Database) {
 			batteryCapacityKwh: v.batteryCapacityKwh,
 			homeLatitude: v.homeLatitude,
 			homeLongitude: v.homeLongitude,
-			chargingLossPct: v.chargingLossPct
+			chargingLossPct: v.chargingLossPct,
+			privateQuotaKm: v.privateQuotaKm,
+			privateQuotaWarnPct: v.privateQuotaWarnPct
 		};
 		let connectionId: string;
 		let created = false;
@@ -469,6 +516,8 @@ export function createBackups(db: Database) {
 				delete fill.homeLatitude;
 				delete fill.homeLongitude;
 			}
+			// The threshold belongs to the allowance: an allowance set here keeps its own.
+			if (row.privateQuotaKm !== null) delete fill.privateQuotaWarnPct;
 			if (Object.keys(fill).length > 0) {
 				await db
 					.update(vehicleConnection)
@@ -513,7 +562,10 @@ export function createBackups(db: Database) {
 				(e) =>
 					e.fromAt.getTime() === fromAt.getTime() &&
 					e.toAt.getTime() === toAt.getTime() &&
-					e.purpose === p.purpose
+					e.purpose === p.purpose &&
+					e.mode === p.mode &&
+					e.fromMinute === p.fromMinute &&
+					e.toMinute === p.toMinute
 			);
 			if (same) continue;
 			// Spaced by a millisecond, so the order (newest wins) survives the import.

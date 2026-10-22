@@ -22,11 +22,17 @@
 	import { costStats } from '#lib/costs.ts';
 	import type { HomeLayout } from '#lib/home-layout.ts';
 	import { format, messages, relativeTime } from '#lib/i18n.ts';
+	import { quotaStatus } from '#lib/private-quota.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
 	const t = $derived(messages[data.locale]);
 	const h = $derived(t.home);
+	// The allowance notice counts this year in the browser's time zone.
+	const quotaYear = new Date().getFullYear();
+	const quota = $derived(
+		data.quota && quotaStatus(data.quota.trips, data.quota.km, data.quota.warnPct, quotaYear)
+	);
 	const d = $derived(t.vehicleDetail);
 	const c = $derived(t.charging);
 	const tr = $derived(t.trips);
@@ -271,6 +277,19 @@
 
 		{#if vehicle.status === 'reauth'}
 			<p class="notice notice-error">{h.reauth}</p>
+		{/if}
+		{#if data.quota && quota && quota.level !== 'ok'}
+			<p class="notice notice-{quota.level === 'over' ? 'error' : 'warn'}" role="status">
+				{format(quota.level === 'over' ? t.privateQuota.overBanner : t.privateQuota.warnBanner, {
+					used: kilometres(quota.usedKm, data.locale),
+					quota: kilometres(data.quota.km, data.locale),
+					pct: String(Math.floor(quota.pct)),
+					year: String(quotaYear)
+				})}
+				<a class="quota-link" href={resolve('/vehicles/[id]/trips', { id: vehicle.id })}
+					>{t.privateQuota.toLog}</a
+				>
+			</p>
 		{/if}
 
 		{#if !values}
@@ -526,6 +545,11 @@
 </main>
 
 <style>
+	.quota-link {
+		color: inherit;
+		font-weight: 600;
+	}
+
 	main {
 		max-width: 960px;
 		margin: 0 auto;

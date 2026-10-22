@@ -6,6 +6,7 @@
 	import { localDay, PRICE_KINDS } from '#lib/costs.ts';
 	import { oneDecimal } from '#lib/format.ts';
 	import { format, messages } from '#lib/i18n.ts';
+	import { DEFAULT_QUOTA_WARN_PCT } from '#lib/private-quota.ts';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -25,6 +26,7 @@
 			: DASH;
 
 	const k = $derived(t.costs);
+	const q = $derived(t.privateQuota);
 	// "Valid from" defaults to today in the viewer's time zone.
 	let today = $state('');
 	onMount(() => (today = localDay(Date.now())));
@@ -158,6 +160,57 @@
 			<p class="notice notice-error" role="alert">{d.capacityInvalid}</p>
 		{:else if form?.capacitySaved}
 			<p class="notice notice-ok" role="status">{d.capacitySaved}</p>
+		{/if}
+	</section>
+
+	<section class="card" id="quota" aria-labelledby="quota-title">
+		<h2 id="quota-title">{q.title}</h2>
+		<p class="muted small">{q.intro}</p>
+		<form
+			class="capacity"
+			method="POST"
+			action="?/quota"
+			use:enhance={() =>
+				({ update }) =>
+					update({ reset: false })}
+		>
+			<label class="field">
+				{q.kmLabel}
+				<span class="with-unit">
+					<input
+						name="quotaKm"
+						inputmode="decimal"
+						autocomplete="off"
+						placeholder="5000"
+						value={data.connection.privateQuotaKm?.toLocaleString(localeTag, {
+							useGrouping: false
+						}) ?? ''}
+						aria-invalid={form?.quotaError === 'km' ? 'true' : undefined}
+					/>
+					<span class="unit">km</span>
+				</span>
+			</label>
+			<label class="field">
+				{q.warnLabel}
+				<span class="with-unit">
+					<input
+						name="warnPct"
+						inputmode="numeric"
+						autocomplete="off"
+						placeholder={String(DEFAULT_QUOTA_WARN_PCT)}
+						value={String(data.connection.privateQuotaWarnPct ?? DEFAULT_QUOTA_WARN_PCT)}
+						aria-invalid={form?.quotaError === 'warn' ? 'true' : undefined}
+					/>
+					<span class="unit">%</span>
+				</span>
+			</label>
+			<button class="btn" type="submit">{q.save}</button>
+		</form>
+		<p class="muted small">{q.hint}</p>
+		{#if form?.quotaError}
+			<p class="notice notice-error" role="alert">{q.errors[form.quotaError]}</p>
+		{:else if form?.quotaSaved}
+			<p class="notice notice-ok" role="status">{q.saved}</p>
 		{/if}
 	</section>
 

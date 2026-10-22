@@ -92,6 +92,20 @@
       "when": 1792702016252,
       "tag": "0012_trip_periods",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1792710875022,
+      "tag": "0013_trip_period_times",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1792711717111,
+      "tag": "0014_private_quota",
+      "breakpoints": true
     }
   ]
 }

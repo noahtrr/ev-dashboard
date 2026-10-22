@@ -50,6 +50,10 @@ export type ConnectionView = {
 	snapshotCount: number;
 	/** Usable battery capacity in kWh, when the owner entered it. */
 	batteryCapacityKwh: number | null;
+	/** Private kilometres per calendar year, when the owner set a quota. */
+	privateQuotaKm: number | null;
+	/** Warning threshold in percent of the quota; null means the default. */
+	privateQuotaWarnPct: number | null;
 };
 
 export type SnapshotView = { fetchedAt: Date; data: VehicleData; raw: RawResponses };
@@ -292,6 +296,8 @@ export function createVehicleService(options: VehicleServiceOptions) {
 			status: row.status === 'reauth' ? 'reauth' : 'active',
 			lastSuccessAt: row.lastSuccessAt,
 			batteryCapacityKwh: row.batteryCapacityKwh,
+			privateQuotaKm: row.privateQuotaKm,
+			privateQuotaWarnPct: row.privateQuotaWarnPct,
 			lastErrorAt: row.lastErrorAt,
 			lastError: ERROR_CODES.includes(row.lastError as ProviderErrorCode)
 				? (row.lastError as ProviderErrorCode)
@@ -575,6 +581,24 @@ export function createVehicleService(options: VehicleServiceOptions) {
 		return true;
 	}
 
+	/** Stores the private kilometres per year and the warning threshold, or clears them with `null`. */
+	async function setPrivateQuota(
+		userId: string,
+		id: string,
+		quota: { km: number | null; warnPct: number | null }
+	) {
+		if (!(await ownedConnection(userId, id))) return false;
+		await db
+			.update(vehicleConnection)
+			.set({
+				privateQuotaKm: quota.km,
+				privateQuotaWarnPct: quota.warnPct,
+				updatedAt: new Date(now())
+			})
+			.where(and(eq(vehicleConnection.id, id), eq(vehicleConnection.userId, userId)));
+		return true;
+	}
+
 	/** Deletes the connection, its tokens and (by cascade) its snapshots. */
 	async function disconnect(userId: string, id: string): Promise<boolean> {
 		if (!(await ownedConnection(userId, id))) return false;
@@ -636,6 +660,7 @@ export function createVehicleService(options: VehicleServiceOptions) {
 		fetchNow,
 		disconnect,
 		setBatteryCapacity,
+		setPrivateQuota,
 		prune,
 		/** Aborts outstanding provider requests (shutdown). */
 		stop: () => abort.abort()
