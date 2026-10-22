@@ -7,7 +7,7 @@ Jedes Konto kann seine Daten selbst sichern und in diese oder eine andere Instal
 Unter **Konto → Datensicherung** zeigt die Karte, was in der Sicherung steckt, und **Sicherung herunterladen** lädt eine JSON-Datei (`ev-dashboard-sicherung-JJJJ-MM-TT.json`). Enthalten sind:
 
 - Fahrzeuge mit Name, nutzbarer Akkukapazität, Zuhause und Ladeverlusten
-- alle Fahrten im Fahrtenbuch mit Zweck und Notiz
+- alle Fahrten im Fahrtenbuch mit Zweck und Notiz, auch nachgetragene, und die Zeiträume für privat oder geschäftlich
 - alle Ladevorgänge mit eingetragenem Preis oder Betrag
 - Strompreise zu Hause und unterwegs
 - hochgeladene Excel-Vorlagen

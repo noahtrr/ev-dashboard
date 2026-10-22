@@ -27,21 +27,35 @@ export const load = (async ({ locals, params, url }) => {
 		connection.batteryCapacityKwh
 	);
 	// Purpose and note come from the trip log; trips still under way are not logged yet.
-	const logged = new Map(
-		(await logbook.list(locals.user.id, params.id, new Date(from), new Date(to))).map((e) => [
-			e.startAt.getTime(),
-			e
-		])
-	);
-	const all = derived.map((trip) => {
+	const entries = await logbook.list(locals.user.id, params.id, new Date(from), new Date(to));
+	const logged = new Map(entries.map((e) => [e.startAt.getTime(), e]));
+	const recorded = derived.map((trip) => {
 		const entry = logged.get(trip.start.getTime());
 		return {
 			...trip,
 			logged: entry !== undefined,
 			purpose: (entry && isPurpose(entry.purpose) ? entry.purpose : 'open') as Filter,
-			note: entry?.note ?? null
+			note: entry?.note ?? null,
+			manualId: null as string | null
 		};
 	});
+	// Trips entered by hand have no snapshots; they come from the log alone.
+	const manual = entries
+		.filter((e) => e.manual)
+		.map((e) => ({
+			start: e.startAt,
+			end: e.endAt,
+			distanceKm: e.distanceKm,
+			ongoing: false,
+			gap: false,
+			usedPct: undefined,
+			usedKwh: undefined,
+			logged: true,
+			purpose: (isPurpose(e.purpose) ? e.purpose : 'open') as Filter,
+			note: e.note,
+			manualId: e.id as string | null
+		}));
+	const all = [...recorded, ...manual].sort((a, b) => b.start.getTime() - a.start.getTime());
 	const byPurpose = FILTERS.map((purpose) => ({
 		purpose,
 		distanceKm: all

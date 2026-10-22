@@ -7,6 +7,7 @@ import {
 	electricityPrice,
 	exportTemplate,
 	trip,
+	tripPeriod,
 	user,
 	vehicleApiCredential,
 	vehicleConnection
@@ -143,6 +144,48 @@ describe('backup import', () => {
 	async function exported() {
 		return (await backups.exportBackup('alice', '1', new Date(T0))).vehicles[0];
 	}
+
+	it('carries periods and trips entered by hand', async () => {
+		await db.insert(tripPeriod).values({
+			id: 'pp1',
+			connectionId: 'c1',
+			fromDay: '2026-08-01',
+			toDay: '2026-08-14',
+			fromAt: new Date('2026-07-31T22:00:00Z'),
+			toAt: new Date('2026-08-14T22:00:00Z'),
+			purpose: 'private'
+		});
+		await db.insert(trip).values(tripRow('c1', -1000, { manual: true, startLatitude: null }));
+		const { trips, chargeSessions, ...info } = await exported();
+		expect(info.periods).toEqual([
+			{
+				fromDay: '2026-08-01',
+				toDay: '2026-08-14',
+				fromAt: '2026-07-31T22:00:00.000Z',
+				toAt: '2026-08-14T22:00:00.000Z',
+				purpose: 'private'
+			}
+		]);
+		expect(trips.map((t) => t.manual)).toEqual([true, false, false]);
+
+		const result = await backups.importVehicle('bob', info, { create: true });
+		const id = result!.connectionId;
+		await backups.importTrips('bob', id, trips);
+		expect(
+			(await db.select().from(tripPeriod).where(eq(tripPeriod.connectionId, id))).map(
+				(p) => p.purpose
+			)
+		).toEqual(['private']);
+		expect(
+			(await db.select().from(trip).where(eq(trip.connectionId, id))).filter((t) => t.manual)
+		).toHaveLength(1);
+		// A second import of the same vehicle adds no period twice.
+		await backups.importVehicle('bob', info, { connectionId: id });
+		expect(await db.select().from(tripPeriod).where(eq(tripPeriod.connectionId, id))).toHaveLength(
+			1
+		);
+		expect(chargeSessions).toHaveLength(1);
+	});
 
 	it('adds to an existing vehicle, skips duplicates and keeps existing settings', async () => {
 		const v = await exported();

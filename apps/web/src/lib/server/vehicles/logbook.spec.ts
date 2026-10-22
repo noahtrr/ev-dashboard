@@ -1,8 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { openDatabase } from '../db/index.ts';
-import { chargeSession, snapshot, trip, user, vehicleConnection } from '../db/schema.ts';
+import {
+	chargeSession,
+	snapshot,
+	trip,
+	tripPeriod,
+	user,
+	vehicleConnection
+} from '../db/schema.ts';
 import type { VehicleData } from '../providers/types.ts';
-import { createLogbook, type Logbook } from './logbook.ts';
+import { createLogbook, periodPurpose, type Logbook, type ManualTrip } from './logbook.ts';
 
 const MIN = 60_000;
 const T0 = Date.parse('2026-10-18T07:00:00Z');
@@ -151,5 +158,103 @@ describe('logbook', () => {
 		await db.update(trip).set({ outsideTempC: 3 });
 		await logbook.record('c1', new Date(0));
 		expect((await db.select().from(trip))[0].outsideTempC).toBe(3);
+	});
+
+	it('marks the trips of a period and gives its purpose to trips recorded later', async () => {
+		await fetched(0, parked(100, 52.5));
+		await fetched(5, moving(104, 52.53));
+		await fetched(10, parked(110, 52.56));
+		await fetched(15, parked(110, 52.56));
+		await logbook.recordAll();
+		const [first] = await db.select().from(trip);
+		await logbook.classify('alice', 'c1', first.id, { purpose: 'business', note: null });
+
+		const period = {
+			fromDay: '2026-10-18',
+			toDay: '2026-10-19',
+			fromAt: new Date(T0 - 60 * MIN),
+			toAt: new Date(T0 + 48 * 60 * MIN),
+			purpose: 'private' as const
+		};
+		expect(await logbook.addPeriod('bob', 'c1', period, true)).toBeUndefined();
+		// Without overwriting, a trip that already has a purpose keeps it.
+		expect(await logbook.addPeriod('alice', 'c1', period, false)).toBe(0);
+		expect((await db.select().from(trip))[0].purpose).toBe('business');
+		expect(await logbook.addPeriod('alice', 'c1', period, true)).toBe(1);
+		expect((await db.select().from(trip))[0].purpose).toBe('private');
+
+		// A later trip inside the period is recorded as private.
+		await fetched(30, moving(115, 52.6));
+		await fetched(35, parked(120, 52.62));
+		await fetched(40, parked(120, 52.62));
+		await logbook.recordAll();
+		const rows = await db.select().from(trip).orderBy(trip.startAt);
+		expect(rows.map((r) => r.purpose)).toEqual(['private', 'private']);
+
+		const periods = await logbook.periods('alice', 'c1');
+		expect(periods).toHaveLength(2);
+		expect(await logbook.periods('bob', 'c1')).toEqual([]);
+		expect(await logbook.removePeriod('bob', 'c1', periods[0].id)).toBe(false);
+		expect(await logbook.removePeriod('alice', 'c1', periods[0].id)).toBe(true);
+		expect(await db.select().from(tripPeriod)).toHaveLength(1);
+	});
+
+	it('lets the newest period win where periods overlap', () => {
+		const row = (purpose: string, created: number) => ({
+			id: purpose,
+			connectionId: 'c1',
+			fromDay: '',
+			toDay: '',
+			fromAt: new Date(0),
+			toAt: new Date(100),
+			purpose,
+			createdAt: new Date(created)
+		});
+		expect(periodPurpose([row('business', 2), row('private', 1)], new Date(50))).toBe('business');
+		expect(periodPurpose([row('business', 1), row('private', 2)], new Date(50))).toBe('private');
+		expect(periodPurpose([row('business', 1)], new Date(100))).toBeNull();
+	});
+
+	it('adds, changes and removes trips entered by hand', async () => {
+		const manual: ManualTrip = {
+			startAt: new Date(T0 - 30 * 24 * 60 * MIN),
+			endAt: new Date(T0 - 30 * 24 * 60 * MIN + 45 * MIN),
+			distanceKm: 42,
+			startOdometerKm: 1000,
+			endOdometerKm: 1042,
+			startAddress: 'Zuhause',
+			endAddress: null,
+			purpose: 'business',
+			note: 'Kunde'
+		};
+		expect(await logbook.addManual('bob', 'c1', manual)).toBeUndefined();
+		const id = await logbook.addManual('alice', 'c1', manual);
+		expect(typeof id).toBe('string');
+		// The same time cannot hold two trips.
+		expect(await logbook.addManual('alice', 'c1', { ...manual, distanceKm: 1 })).toBe('overlap');
+
+		const listed = await logbook.manualTrips('alice', 'c1');
+		expect(listed).toEqual([expect.objectContaining({ id, manual: true, distanceKm: 42 })]);
+		expect(await logbook.manualTrips('bob', 'c1')).toEqual([]);
+
+		expect(await logbook.updateManual('bob', 'c1', id!, manual)).toBe(false);
+		expect(await logbook.updateManual('alice', 'c1', id!, { ...manual, purpose: 'private' })).toBe(
+			true
+		);
+		expect((await logbook.getManual('alice', 'c1', id!))?.purpose).toBe('private');
+
+		// Recorded trips cannot be changed or removed as manual ones.
+		await fetched(0, parked(100, 52.5));
+		await fetched(5, moving(104, 52.53));
+		await fetched(10, parked(110, 52.56));
+		await fetched(15, parked(110, 52.56));
+		await logbook.recordAll();
+		const recorded = (await db.select().from(trip)).find((r) => !r.manual)!;
+		expect(await logbook.getManual('alice', 'c1', recorded.id)).toBeUndefined();
+		expect(await logbook.removeManual('alice', 'c1', recorded.id)).toBe(false);
+
+		expect(await logbook.removeManual('bob', 'c1', id!)).toBe(false);
+		expect(await logbook.removeManual('alice', 'c1', id!)).toBe(true);
+		expect(await db.select().from(trip)).toHaveLength(1);
 	});
 });

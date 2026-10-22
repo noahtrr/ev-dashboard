@@ -1,11 +1,13 @@
 // Trip log: finished trips are copied from the snapshot series into the `trip` table, so
 // they survive the snapshot retention and can carry what the owner records about them
 // (private or business, purpose). Pages and exports read the table. Finished charging
-// sessions are copied into `charge_session` the same way, for their costs.
+// sessions are copied into `charge_session` the same way, for their costs. Owners can add
+// trips by hand (e.g. from before the vehicle was connected) and mark whole periods as
+// private or business, which also applies to trips recorded later.
 import { randomUUID } from 'node:crypto';
-import { and, asc, desc, eq, gte, isNull, lte, max, min, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNull, lt, lte, max, min, or, sql } from 'drizzle-orm';
 import type { Database } from '../db/index.ts';
-import { chargeSession, snapshot, trip, vehicleConnection } from '../db/schema.ts';
+import { chargeSession, snapshot, trip, tripPeriod, vehicleConnection } from '../db/schema.ts';
 import type { Geocoder } from '../geocode.ts';
 import type { VehicleData } from '../providers/types.ts';
 import { deriveSessions, type HistoryPoint } from './charging.ts';
@@ -16,6 +18,37 @@ export type TripPurpose = (typeof TRIP_PURPOSES)[number];
 export const NOTE_MAX_LENGTH = 500;
 
 export type LogEntry = typeof trip.$inferSelect;
+export type TripPeriod = typeof tripPeriod.$inferSelect;
+
+/** What the owner enters for a trip by hand. */
+export type ManualTrip = {
+	startAt: Date;
+	endAt: Date;
+	distanceKm: number;
+	startOdometerKm: number | null;
+	endOdometerKm: number | null;
+	startAddress: string | null;
+	endAddress: string | null;
+	purpose: TripPurpose;
+	note: string | null;
+};
+
+export type NewPeriod = {
+	fromDay: string;
+	toDay: string;
+	fromAt: Date;
+	toAt: Date;
+	purpose: TripPurpose;
+};
+
+/** Purpose of the newest period that contains `at`, if any. */
+export function periodPurpose(periods: TripPeriod[], at: Date): TripPurpose | null {
+	let found: TripPeriod | undefined;
+	for (const p of periods) {
+		if (p.fromAt <= at && at < p.toAt && (!found || p.createdAt >= found.createdAt)) found = p;
+	}
+	return found && isPurpose(found.purpose) ? found.purpose : null;
+}
 
 /** How far back each update looks; trips are short compared with this. */
 const RECORD_WINDOW_MS = 2 * 24 * 3600 * 1000;
@@ -56,7 +89,7 @@ export function createLogbook(options: LogbookOptions) {
 		return rows.map((row) => ({ at: row.fetchedAt, data: parse(row.data) }));
 	}
 
-	function toRow(connectionId: string, t: Trip) {
+	function toRow(connectionId: string, t: Trip, periods: TripPeriod[]) {
 		return {
 			id: randomUUID(),
 			connectionId,
@@ -72,7 +105,9 @@ export function createLogbook(options: LogbookOptions) {
 			endLatitude: t.endLatitude ?? null,
 			endLongitude: t.endLongitude ?? null,
 			outsideTempC: t.outsideTempC ?? null,
-			gap: t.gap
+			gap: t.gap,
+			// Only new rows take it: a conflict below never touches the purpose.
+			purpose: periodPurpose(periods, t.start)
 		};
 	}
 
@@ -105,10 +140,14 @@ export function createLogbook(options: LogbookOptions) {
 		const sessions = deriveSessions(series, maxGapMs, now()).filter(isFinished);
 		let written = 0;
 		if (finished.length > 0) {
+			const periods = await db
+				.select()
+				.from(tripPeriod)
+				.where(eq(tripPeriod.connectionId, connectionId));
 			// Trips logged before the temperature was stored get it once the history is read again.
 			const rows = await db
 				.insert(trip)
-				.values(finished.map((t) => toRow(connectionId, t)))
+				.values(finished.map((t) => toRow(connectionId, t, periods)))
 				.onConflictDoUpdate({
 					target: [trip.connectionId, trip.startAt],
 					set: { outsideTempC: sql`excluded.outside_temp_c` },
@@ -213,6 +252,7 @@ export function createLogbook(options: LogbookOptions) {
 					.where(
 						and(
 							eq(trip.connectionId, connectionId),
+							eq(trip.manual, false),
 							or(isNull(trip.startAddress), isNull(trip.endAddress))
 						)
 					)
@@ -244,7 +284,150 @@ export function createLogbook(options: LogbookOptions) {
 		})();
 	}
 
-	return { record, recordAll, list, find, classify, fillAddresses };
+	/** The owner's periods, latest first. */
+	async function periods(userId: string, connectionId: string): Promise<TripPeriod[]> {
+		if (!(await owned(userId, connectionId))) return [];
+		return db
+			.select()
+			.from(tripPeriod)
+			.where(eq(tripPeriod.connectionId, connectionId))
+			.orderBy(desc(tripPeriod.fromAt), desc(tripPeriod.createdAt));
+	}
+
+	/**
+	 * Saves a period and gives its purpose to the logged trips that started inside it; with
+	 * `overwrite` false only to trips without one. Returns the number of trips changed, or
+	 * undefined when the vehicle is not the owner's.
+	 */
+	async function addPeriod(
+		userId: string,
+		connectionId: string,
+		period: NewPeriod,
+		overwrite: boolean
+	): Promise<number | undefined> {
+		if (!(await owned(userId, connectionId))) return undefined;
+		await db.insert(tripPeriod).values({
+			id: randomUUID(),
+			connectionId,
+			...period,
+			createdAt: new Date(now())
+		});
+		const changed = await db
+			.update(trip)
+			.set({ purpose: period.purpose, updatedAt: new Date(now()) })
+			.where(
+				and(
+					eq(trip.connectionId, connectionId),
+					gte(trip.startAt, period.fromAt),
+					lt(trip.startAt, period.toAt),
+					overwrite
+						? or(isNull(trip.purpose), sql`${trip.purpose} <> ${period.purpose}`)
+						: isNull(trip.purpose)
+				)
+			)
+			.returning({ id: trip.id });
+		return changed.length;
+	}
+
+	/** Removes a period; trips keep the purpose it gave them. */
+	async function removePeriod(userId: string, connectionId: string, id: string) {
+		if (!(await owned(userId, connectionId))) return false;
+		const removed = await db
+			.delete(tripPeriod)
+			.where(and(eq(tripPeriod.id, id), eq(tripPeriod.connectionId, connectionId)))
+			.returning({ id: tripPeriod.id });
+		return removed.length > 0;
+	}
+
+	/** The owner's trips entered by hand, newest first. */
+	async function manualTrips(userId: string, connectionId: string): Promise<LogEntry[]> {
+		if (!(await owned(userId, connectionId))) return [];
+		return db
+			.select()
+			.from(trip)
+			.where(and(eq(trip.connectionId, connectionId), eq(trip.manual, true)))
+			.orderBy(desc(trip.startAt));
+	}
+
+	async function getManual(userId: string, connectionId: string, id: string) {
+		if (!(await owned(userId, connectionId))) return undefined;
+		return db.query.trip.findFirst({
+			where: and(eq(trip.id, id), eq(trip.connectionId, connectionId), eq(trip.manual, true))
+		});
+	}
+
+	/** Trips of the connection that overlap [startAt, endAt], other than `exceptId`. */
+	async function overlapping(connectionId: string, t: ManualTrip, exceptId?: string) {
+		const rows = await db
+			.select({ id: trip.id })
+			.from(trip)
+			.where(
+				and(
+					eq(trip.connectionId, connectionId),
+					lte(trip.startAt, t.endAt),
+					gte(trip.endAt, t.startAt)
+				)
+			);
+		return rows.some((r) => r.id !== exceptId);
+	}
+
+	/**
+	 * Adds a trip entered by hand. Returns its ID, 'overlap' when another trip covers the same
+	 * time, or undefined when the vehicle is not the owner's.
+	 */
+	async function addManual(
+		userId: string,
+		connectionId: string,
+		values: ManualTrip
+	): Promise<string | 'overlap' | undefined> {
+		if (!(await owned(userId, connectionId))) return undefined;
+		if (await overlapping(connectionId, values)) return 'overlap';
+		const id = randomUUID();
+		await db.insert(trip).values({ id, connectionId, ...values, manual: true, gap: false });
+		return id;
+	}
+
+	/** Changes a trip entered by hand; recorded trips cannot be changed this way. */
+	async function updateManual(
+		userId: string,
+		connectionId: string,
+		id: string,
+		values: ManualTrip
+	): Promise<boolean | 'overlap'> {
+		if (!(await getManual(userId, connectionId, id))) return false;
+		if (await overlapping(connectionId, values, id)) return 'overlap';
+		await db
+			.update(trip)
+			.set({ ...values, updatedAt: new Date(now()) })
+			.where(and(eq(trip.id, id), eq(trip.manual, true)));
+		return true;
+	}
+
+	async function removeManual(userId: string, connectionId: string, id: string) {
+		if (!(await owned(userId, connectionId))) return false;
+		const removed = await db
+			.delete(trip)
+			.where(and(eq(trip.id, id), eq(trip.connectionId, connectionId), eq(trip.manual, true)))
+			.returning({ id: trip.id });
+		return removed.length > 0;
+	}
+
+	return {
+		record,
+		recordAll,
+		list,
+		find,
+		classify,
+		fillAddresses,
+		periods,
+		addPeriod,
+		removePeriod,
+		manualTrips,
+		getManual,
+		addManual,
+		updateManual,
+		removeManual
+	};
 }
 
 export type Logbook = ReturnType<typeof createLogbook>;

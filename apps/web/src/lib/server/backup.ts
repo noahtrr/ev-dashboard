@@ -14,6 +14,7 @@ import {
 	electricityPrice,
 	exportTemplate,
 	trip,
+	tripPeriod,
 	user,
 	vehicleConnection
 } from './db/schema.ts';
@@ -29,6 +30,14 @@ import { NOTE_MAX_LENGTH } from './vehicles/logbook.ts';
 export { BACKUP_FORMAT, BACKUP_VERSION, IMPORT_BATCH };
 
 export type BackupPrice = { kind: 'home' | 'away'; validFrom: string; ctPerKwh: number };
+
+export type BackupPeriod = {
+	fromDay: string;
+	toDay: string;
+	fromAt: string;
+	toAt: string;
+	purpose: 'private' | 'business';
+};
 
 export type BackupTrip = {
 	startAt: string;
@@ -48,6 +57,8 @@ export type BackupTrip = {
 	gap: boolean;
 	purpose: 'private' | 'business' | null;
 	note: string | null;
+	/** Entered by hand; missing in backups of earlier versions. */
+	manual: boolean;
 };
 
 export type BackupCharge = {
@@ -73,6 +84,8 @@ export type BackupVehicleInfo = {
 	homeLongitude: number | null;
 	chargingLossPct: number | null;
 	prices: BackupPrice[];
+	/** Private or business periods; missing in backups of earlier versions. */
+	periods: BackupPeriod[];
 };
 
 export type BackupVehicle = BackupVehicleInfo & {
@@ -174,6 +187,27 @@ export function parseVehicleInfo(value: unknown): BackupVehicleInfo {
 			ctPerKwh: num(o.ctPerKwh, 'price.ctPerKwh', 0, PRICE_MAX_CT)
 		};
 	});
+	const periods = list(v.periods ?? [], 'periods', 1000).map((p) => {
+		const o = object(p, 'period');
+		const purpose = o.purpose;
+		if (purpose !== 'private' && purpose !== 'business') throw new BackupError('period.purpose');
+		const day = (value: unknown, field: string) => {
+			const text = str(value, field, 10);
+			if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new BackupError(field);
+			return text;
+		};
+		const fromAt = time(o.fromAt, 'period.fromAt');
+		const toAt = time(o.toAt, 'period.toAt');
+		if (toAt <= fromAt) throw new BackupError('period.toAt');
+		const period: BackupPeriod = {
+			fromDay: day(o.fromDay, 'period.fromDay'),
+			toDay: day(o.toDay, 'period.toDay'),
+			fromAt: fromAt.toISOString(),
+			toAt: toAt.toISOString(),
+			purpose
+		};
+		return period;
+	});
 	return {
 		id: str(v.id, 'vehicle.id', 64),
 		providerId: str(v.providerId, 'vehicle.providerId', 64),
@@ -183,7 +217,8 @@ export function parseVehicleInfo(value: unknown): BackupVehicleInfo {
 		homeLatitude: lat(v.homeLatitude, 'vehicle.homeLatitude'),
 		homeLongitude: lon(v.homeLongitude, 'vehicle.homeLongitude'),
 		chargingLossPct: optNum(v.chargingLossPct, 'vehicle.chargingLossPct', 0, LOSS_MAX_PCT),
-		prices
+		prices,
+		periods
 	};
 }
 
@@ -214,7 +249,8 @@ export function parseTrip(value: unknown): BackupTrip {
 		endAddress: optStr(o.endAddress, 'trip.endAddress', 500),
 		gap: o.gap === true,
 		purpose,
-		note: optStr(o.note, 'trip.note', NOTE_MAX_LENGTH)
+		note: optStr(o.note, 'trip.note', NOTE_MAX_LENGTH),
+		manual: o.manual === true
 	};
 }
 
@@ -308,6 +344,11 @@ export function createBackups(db: Database) {
 				.from(chargeSession)
 				.where(eq(chargeSession.connectionId, c.id))
 				.orderBy(asc(chargeSession.startAt));
+			const periods = await db
+				.select()
+				.from(tripPeriod)
+				.where(eq(tripPeriod.connectionId, c.id))
+				.orderBy(asc(tripPeriod.createdAt));
 			// Tokens, poll state and errors stay behind: they only mean something here.
 			vehicles.push({
 				id: c.id,
@@ -322,6 +363,14 @@ export function createBackups(db: Database) {
 					kind: p.kind as BackupPrice['kind'],
 					validFrom: p.validFrom,
 					ctPerKwh: p.ctPerKwh
+				})),
+				// Oldest first, so the import keeps which period was added last.
+				periods: periods.map((p) => ({
+					fromDay: p.fromDay,
+					toDay: p.toDay,
+					fromAt: p.fromAt.toISOString(),
+					toAt: p.toAt.toISOString(),
+					purpose: p.purpose as BackupPeriod['purpose']
 				})),
 				trips: trips.map((t) => ({
 					startAt: t.startAt.toISOString(),
@@ -340,7 +389,8 @@ export function createBackups(db: Database) {
 					endAddress: t.endAddress,
 					gap: t.gap,
 					purpose: t.purpose as BackupTrip['purpose'],
-					note: t.note
+					note: t.note,
+					manual: t.manual
 				})),
 				chargeSessions: charges.map((s) => ({
 					startAt: s.startAt.toISOString(),
@@ -450,6 +500,32 @@ export function createBackups(db: Database) {
 				.onConflictDoNothing()
 				.returning({ id: electricityPrice.id });
 			prices += result.length;
+		}
+		const existing = await db
+			.select()
+			.from(tripPeriod)
+			.where(eq(tripPeriod.connectionId, connectionId));
+		let periods = 0;
+		for (const p of v.periods) {
+			const fromAt = new Date(p.fromAt);
+			const toAt = new Date(p.toAt);
+			const same = existing.some(
+				(e) =>
+					e.fromAt.getTime() === fromAt.getTime() &&
+					e.toAt.getTime() === toAt.getTime() &&
+					e.purpose === p.purpose
+			);
+			if (same) continue;
+			// Spaced by a millisecond, so the order (newest wins) survives the import.
+			await db.insert(tripPeriod).values({
+				id: randomUUID(),
+				connectionId,
+				...p,
+				fromAt,
+				toAt,
+				createdAt: new Date(Date.now() + periods)
+			});
+			periods += 1;
 		}
 		return { connectionId, created, prices };
 	}

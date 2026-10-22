@@ -52,7 +52,12 @@ const asUtc = (c: WallClock) => Date.UTC(c.year, c.month - 1, c.day, c.hour, c.m
 
 /** The instant at which the given local date begins in `timeZone`. */
 export function zonedMidnight(year: number, month: number, day: number, timeZone: string): Date {
-	const target = Date.UTC(year, month - 1, day);
+	return zonedTime({ year, month, day, hour: 0, minute: 0 }, timeZone);
+}
+
+/** The instant a local wall clock in `timeZone` shows. */
+export function zonedTime(c: WallClock, timeZone: string): Date {
+	const target = asUtc(c);
 	let guess = target;
 	// Two rounds settle any offset, including days that begin inside a DST change.
 	for (let i = 0; i < 2; i++) {

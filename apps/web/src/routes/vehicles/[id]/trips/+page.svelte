@@ -37,12 +37,16 @@
 	const totals = $derived.by(() => {
 		const distance = data.trips.reduce((sum, trip) => sum + trip.distanceKm, 0);
 		const usedKwh = data.trips.reduce((sum, trip) => sum + (trip.usedKwh ?? 0), 0);
+		// Trips entered by hand report no energy, so they stay out of the average.
+		const measured = data.trips
+			.filter((trip) => trip.usedKwh !== undefined)
+			.reduce((sum, trip) => sum + trip.distanceKm, 0);
 		return {
 			count: data.trips.length,
 			distance,
 			minutes: data.trips.reduce((sum, trip) => sum + minutesBetween(trip.start, trip.end), 0),
 			usedPct: data.trips.reduce((sum, trip) => sum + (trip.usedPct ?? 0), 0),
-			perHundred: capacity !== null && distance >= 1 ? (usedKwh / distance) * 100 : undefined
+			perHundred: capacity !== null && measured >= 1 ? (usedKwh / measured) * 100 : undefined
 		};
 	});
 	const items = $derived(
@@ -91,6 +95,14 @@
 				</div>
 			{/each}
 		</dl>
+		<nav class="tools" aria-label={l.tools}>
+			<a class="tool" href={resolve('/vehicles/[id]/trips/periods', { id: data.connection.id })}
+				>{t.tripPeriods.link}</a
+			>
+			<a class="tool" href={resolve('/vehicles/[id]/trips/manual', { id: data.connection.id })}
+				>{t.manualTrips.link}</a
+			>
+		</nav>
 		<form class="filters" method="GET" aria-label={l.filter} data-sveltekit-noscroll>
 			<input type="hidden" name="days" value={data.days} />
 			<button name="purpose" value="" aria-pressed={data.filter === null}>{l.all}</button>
@@ -166,19 +178,25 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each data.trips as trip (trip.start)}
+						{#each data.trips as trip (trip.manualId ?? trip.start)}
 							<tr>
 								<td>
 									<a
 										class="row-link"
-										href={resolve('/vehicles/[id]/trips/[start]', {
-											id: data.connection.id,
-											start: String(new Date(trip.start).getTime())
-										})}
+										href={trip.manualId
+											? resolve('/vehicles/[id]/trips/manual/[entry]', {
+													id: data.connection.id,
+													entry: trip.manualId
+												})
+											: resolve('/vehicles/[id]/trips/[start]', {
+													id: data.connection.id,
+													start: String(new Date(trip.start).getTime())
+												})}
 										aria-label={format(c.open, { date: dateTime(trip.start, data.locale) })}
 										>{dateTime(trip.start, data.locale)}</a
 									>
 									{#if trip.ongoing}<span class="live">{c.ongoing}</span>{/if}
+									{#if trip.manualId}<span class="manual">{t.manualTrips.badge}</span>{/if}
 								</td>
 								<td>
 									{#if trip.logged}
@@ -187,7 +205,11 @@
 										>
 									{/if}
 								</td>
-								<td class="optional">{duration(minutesBetween(trip.start, trip.end))}</td>
+								<td class="optional">
+									{trip.manualId && minutesBetween(trip.start, trip.end) === 0
+										? DASH
+										: duration(minutesBetween(trip.start, trip.end))}
+								</td>
 								<td class="num mono">{km(trip.distanceKm)}</td>
 								<td class="num mono optional">{usage(trip)}</td>
 							</tr>
@@ -314,6 +336,31 @@
 		background: transparent;
 		border: 1.5px dashed var(--muted);
 		box-sizing: border-box;
+	}
+
+	.tools {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.tool {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		min-height: 36px;
+		padding: 0 14px;
+		border-radius: 18px;
+		border: 1px dashed var(--border);
+		color: var(--accent);
+		font-size: 14px;
+		font-weight: 500;
+		text-decoration: none;
+	}
+
+	.tool:hover,
+	.tool:focus-visible {
+		border-color: var(--accent);
 	}
 
 	.filters {
@@ -533,6 +580,12 @@
 	tbody tr:has(.row-link:focus-visible) {
 		outline: 2px solid var(--accent);
 		outline-offset: -2px;
+	}
+
+	.manual {
+		margin-left: 8px;
+		font-size: 12px;
+		color: var(--muted);
 	}
 
 	.live {

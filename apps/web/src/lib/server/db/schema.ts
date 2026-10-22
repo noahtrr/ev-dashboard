@@ -234,10 +234,36 @@ export const trip = sqliteTable(
 		purpose: text('purpose'),
 		/** Free text, e.g. the customer or the reason for a business trip. */
 		note: text('note'),
+		/** Entered by the owner (e.g. before the vehicle was connected), not from snapshots. */
+		manual: integer('manual', { mode: 'boolean' }).notNull().default(false),
 		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now),
 		updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(now)
 	},
 	(t) => [uniqueIndex('trip_connection_start_idx').on(t.connectionId, t.startAt)]
+);
+
+/**
+ * Periods the owner marked as private or business: trips that started inside get that
+ * purpose, including trips recorded later. The newest period wins where periods overlap.
+ */
+export const tripPeriod = sqliteTable(
+	'trip_period',
+	{
+		id: text('id').primaryKey(),
+		connectionId: text('connection_id')
+			.notNull()
+			.references(() => vehicleConnection.id, { onDelete: 'cascade' }),
+		/** First and last day, `YYYY-MM-DD` in the owner's calendar, as entered. */
+		fromDay: text('from_day').notNull(),
+		toDay: text('to_day').notNull(),
+		/** The same days as instants: start of the first day, start of the day after the last. */
+		fromAt: integer('from_at', { mode: 'timestamp_ms' }).notNull(),
+		toAt: integer('to_at', { mode: 'timestamp_ms' }).notNull(),
+		/** `private` or `business`. */
+		purpose: text('purpose').notNull(),
+		createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull().default(now)
+	},
+	(t) => [index('trip_period_connection_idx').on(t.connectionId, t.fromAt)]
 );
 
 /**

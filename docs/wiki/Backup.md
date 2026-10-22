@@ -7,7 +7,7 @@ Every account can back up its own data and restore it into this or another insta
 Under **Account → Backup**, the card lists what the backup contains, and **Download backup** saves a JSON file (`ev-dashboard-backup-YYYY-MM-DD.json`). It contains:
 
 - vehicles with name, usable battery capacity, home and charging losses
-- all trips in the trip log with purpose and note
+- all trips in the trip log with purpose and note, including added ones, and the private or business periods
 - all charging sessions with the price or amount entered
 - electricity prices at home and away
 - uploaded Excel templates

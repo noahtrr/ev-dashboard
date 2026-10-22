@@ -25,6 +25,7 @@ export function entry(start: string, minutes: number, values: Partial<LogEntry> 
 		gap: false,
 		purpose: null,
 		note: null,
+		manual: false,
 		createdAt: startAt,
 		updatedAt: startAt,
 		...values
