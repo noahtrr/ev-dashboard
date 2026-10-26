@@ -6,6 +6,14 @@
 	import TopBar from '#lib/components/TopBar.svelte';
 	import { localeTag } from '#lib/format.ts';
 	import { format, messages } from '#lib/i18n.ts';
+	import {
+		inPeriod,
+		parseMinute,
+		periodBounds,
+		periodsOverlap,
+		showMinute,
+		type PeriodMode
+	} from '#lib/trip-period.ts';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
@@ -28,6 +36,9 @@
 	let to = $state('');
 	let purpose = $state<'private' | 'business' | null>(null);
 	let overwrite = $state(true);
+	let mode = $state<PeriodMode>('range');
+	let fromTime = $state('');
+	let toTime = $state('');
 	let timeZone = $state('');
 	let busy = $state(false);
 
@@ -39,14 +50,31 @@
 		to = iso(today);
 	});
 
-	// Counted here from the logged trips, so it follows every change of the dates.
+	const input = $derived({
+		mode,
+		fromDay: from,
+		toDay: to,
+		fromMinute: parseMinute(fromTime),
+		toMinute: parseMinute(toTime)
+	});
+	// The browser's own wall clock, the one the period is entered in.
+	const bounds = $derived(
+		periodBounds(input, (day, minute) => {
+			const [y, m, d] = day.split('-').map(Number);
+			return new Date(y, m - 1, d, 0, minute).getTime();
+		})
+	);
+	// Saved periods this one overlaps; saving asks before overwriting them there.
+	const overlaps = $derived(
+		typeof bounds === 'string' ? [] : data.periods.filter((s) => periodsOverlap(input, s))
+	);
+
+	// Counted here from the logged trips, so it follows every change of the dates and times.
 	const preview = $derived.by(() => {
-		if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || to < from) {
-			return null;
-		}
-		const start = localDay(from).getTime();
-		const end = localDay(to, 1).getTime();
-		const inside = data.trips.filter((trip) => trip.t >= start && trip.t < end);
+		if (typeof bounds === 'string') return null;
+		const rule = { ...bounds, ...input, timeZone: null };
+		const end = bounds.toAt;
+		const inside = data.trips.filter((trip) => inPeriod(rule, trip.t));
 		const other = inside.filter((trip) => trip.purpose !== null && trip.purpose !== purpose);
 		const open = inside.filter((trip) => trip.purpose === null);
 		return {
@@ -57,7 +85,12 @@
 		};
 	});
 
-	const save = () => {
+	const save = ({ cancel }: { cancel: () => void }) => {
+		const question =
+			overlaps.length === 1
+				? p.overlapConfirmOne
+				: format(p.overlapConfirm, { n: String(overlaps.length) });
+		if (overlaps.length > 0 && !confirm(question)) return cancel();
 		busy = true;
 		return async ({ update }: { update: (o?: { reset?: boolean }) => Promise<void> }) => {
 			await update({ reset: false });
@@ -68,9 +101,22 @@
 		form && 'periodError' in form
 			? form.periodError === 'purpose'
 				? p.purposeError
-				: p.error
+				: form.periodError === 'times'
+					? p.timesError
+					: p.error
 			: null
 	);
+	type Saved = (typeof data.periods)[number];
+	const describe = (s: Saved) => {
+		const days = `${showDay(s.fromDay)} – ${showDay(s.toDay)}`;
+		if (s.fromMinute === null && s.toMinute === null) return days;
+		if (s.mode === 'daily' && s.fromMinute !== null && s.toMinute !== null) {
+			return `${days}, ${format(p.daily, { from: showMinute(s.fromMinute), to: showMinute(s.toMinute) })}`;
+		}
+		const at = (day: string, minute: number | null) =>
+			minute === null ? showDay(day) : `${showDay(day)} ${showMinute(minute)}`;
+		return `${at(s.fromDay, s.fromMinute)} – ${at(s.toDay, s.toMinute)}`;
+	};
 </script>
 
 <svelte:head>
@@ -101,6 +147,36 @@
 				<input type="date" name="to" bind:value={to} min={from} required />
 			</label>
 		</div>
+		<div class="modes" role="radiogroup" aria-label={p.mode}>
+			{#each ['range', 'daily'] as const as value (value)}
+				<label class="mode">
+					<input type="radio" name="mode" {value} bind:group={mode} />
+					{p.modes[value]}
+				</label>
+			{/each}
+		</div>
+		<p class="muted small hint-text">{p.modeHints[mode]}</p>
+		<div class="dates">
+			<label class="field">
+				{p.fromTime}
+				<input
+					type="time"
+					name="fromTime"
+					bind:value={fromTime}
+					required={mode === 'daily' && toTime !== ''}
+				/>
+			</label>
+			<label class="field">
+				{p.toTime}
+				<input
+					type="time"
+					name="toTime"
+					bind:value={toTime}
+					required={mode === 'daily' && fromTime !== ''}
+				/>
+			</label>
+		</div>
+		<p class="muted small hint-text">{p.timeHint}</p>
 		<PurposeSegments bind:value={purpose} labels={l.purposes} labelledby="new-title" />
 		<label class="check">
 			<input type="checkbox" name="overwrite" bind:checked={overwrite} />
@@ -134,6 +210,18 @@
 				{#if preview.future}
 					<p class="muted small">{p.later}</p>
 				{/if}
+				{#if overlaps.length > 0}
+					<p class="small overlap">
+						{format(p.overlap, {
+							list: overlaps
+								.map(
+									(s) =>
+										`${l.purposes[s.purpose as 'private' | 'business'] ?? s.purpose} ${describe(s)}`
+								)
+								.join('; ')
+						})}
+					</p>
+				{/if}
 			</div>
 		{/if}
 
@@ -158,7 +246,7 @@
 					<li>
 						<span class="dot {period.purpose}"></span>
 						<span class="text">
-							<span class="range">{showDay(period.fromDay)} – {showDay(period.toDay)}</span>
+							<span class="range">{describe(period)}</span>
 							<span class="hint">
 								{l.purposes[period.purpose as 'private' | 'business'] ?? period.purpose} · {days ===
 								1
@@ -235,6 +323,58 @@
 	.dates input {
 		font-family: var(--font-mono);
 		min-width: 0;
+	}
+
+	.modes {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 4px;
+		padding: 4px;
+		border-radius: 14px;
+		background: var(--bg);
+		border: 1px solid var(--border);
+	}
+
+	.mode {
+		position: relative;
+		min-height: 40px;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--muted);
+		cursor: pointer;
+	}
+
+	.mode input {
+		position: absolute;
+		opacity: 0;
+		inset: 0;
+		margin: 0;
+		cursor: pointer;
+	}
+
+	.mode:has(input:checked) {
+		background: var(--surface);
+		color: var(--text);
+		box-shadow: 0 0 0 1px var(--border);
+	}
+
+	.mode:has(input:focus-visible) {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.hint-text {
+		margin: -6px 0 0;
+		font-size: 13px;
+	}
+
+	.overlap {
+		margin: 4px 0 0;
+		color: var(--text);
 	}
 
 	.check {

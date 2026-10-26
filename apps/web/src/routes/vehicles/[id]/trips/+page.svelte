@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 	import DailyBars from '#lib/components/DailyBars.svelte';
+	import QuotaBar from '#lib/components/QuotaBar.svelte';
 	import TopBar from '#lib/components/TopBar.svelte';
 	import {
 		DASH,
@@ -55,7 +56,13 @@
 
 	// The chart depends on the browser's width and time zone, so it renders after hydration.
 	let mounted = $state(false);
-	onMount(() => (mounted = true));
+	// Years run from the browser's local 1 January.
+	let timeZone = $state('');
+	onMount(() => {
+		mounted = true;
+		timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+	});
+	const shownYear = $derived(data.year ?? data.years.current);
 </script>
 
 <svelte:head>
@@ -79,12 +86,35 @@
 					>
 				{/each}
 			</form>
+			<form class="periods years" method="GET" aria-label={c.year} data-sveltekit-noscroll>
+				{#if data.filter}<input type="hidden" name="purpose" value={data.filter} />{/if}
+				<input type="hidden" name="tz" value={timeZone} />
+				<button
+					class="step"
+					name="year"
+					value={shownYear - 1}
+					disabled={data.year === null || shownYear <= data.years.first}
+					aria-label={c.previousYear}>‹</button
+				>
+				<button name="year" value={shownYear} aria-pressed={data.year !== null}>{shownYear}</button>
+				<button
+					class="step"
+					name="year"
+					value={shownYear + 1}
+					disabled={data.year === null || shownYear >= data.years.current}
+					aria-label={c.nextYear}>›</button
+				>
+			</form>
 			<a
 				class="btn btn-primary export"
 				href={resolve('/vehicles/[id]/trips/export', { id: data.connection.id })}>{l.export}</a
 			>
 		</div>
 	</header>
+
+	{#if data.quota}
+		<QuotaBar quota={data.quota} connectionId={data.connection.id} locale={data.locale} />
+	{/if}
 
 	<section class="purposes" aria-label={l.kmByPurpose}>
 		<dl>
@@ -104,7 +134,12 @@
 			>
 		</nav>
 		<form class="filters" method="GET" aria-label={l.filter} data-sveltekit-noscroll>
-			<input type="hidden" name="days" value={data.days} />
+			{#if data.year === null}
+				<input type="hidden" name="days" value={data.days} />
+			{:else}
+				<input type="hidden" name="year" value={data.year} />
+				<input type="hidden" name="tz" value={timeZone} />
+			{/if}
 			<button name="purpose" value="" aria-pressed={data.filter === null}>{l.all}</button>
 			{#each data.filters as purpose (purpose)}
 				<button name="purpose" value={purpose} aria-pressed={data.filter === purpose}
@@ -433,6 +468,15 @@
 		padding: 8px 12px;
 		border-radius: 10px;
 		cursor: pointer;
+	}
+
+	.periods button:disabled {
+		opacity: 0.35;
+		cursor: default;
+	}
+
+	.years .step {
+		padding: 8px 10px;
 	}
 
 	.periods button[aria-pressed='true'] {

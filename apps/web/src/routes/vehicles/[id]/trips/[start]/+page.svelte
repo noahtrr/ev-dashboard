@@ -80,7 +80,8 @@
 						? `${number(x.minOutsideTempC)} °C`
 						: `${number(x.minOutsideTempC)} – ${number(x.maxOutsideTempC)} °C`
 			],
-			[c.samples, String(x.samples)]
+			// Trips whose snapshots are gone show only what the trip log kept.
+			[c.samples, x.samples ? String(x.samples) : undefined]
 		].filter((row): row is [string, string] => row[1] !== undefined)
 	);
 </script>

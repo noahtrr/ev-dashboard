@@ -49,6 +49,8 @@ beforeEach(async () => {
 			refreshToken: 'ENCRYPTED-REFRESH',
 			accessTokenExpiresAt: new Date(T0),
 			batteryCapacityKwh: 70,
+			privateQuotaKm: 5000,
+			privateQuotaWarnPct: 90,
 			homeLatitude: 50.1,
 			homeLongitude: 7.1,
 			createdAt: new Date(T0)
@@ -113,7 +115,9 @@ describe('backup export', () => {
 			id: 'c1',
 			label: 'Ferdinand',
 			externalId: 'VIN-A',
-			batteryCapacityKwh: 70
+			batteryCapacityKwh: 70,
+			privateQuotaKm: 5000,
+			privateQuotaWarnPct: 90
 		});
 		expect(v.trips.map((t) => t.purpose)).toEqual(['business', null]);
 		expect(v.chargeSessions).toEqual([
@@ -153,19 +157,62 @@ describe('backup import', () => {
 			toDay: '2026-08-14',
 			fromAt: new Date('2026-07-31T22:00:00Z'),
 			toAt: new Date('2026-08-14T22:00:00Z'),
-			purpose: 'private'
+			purpose: 'private',
+			createdAt: new Date(T0)
+		});
+		await db.insert(tripPeriod).values({
+			id: 'pp2',
+			connectionId: 'c1',
+			fromDay: '2026-08-03',
+			toDay: '2026-08-07',
+			fromAt: new Date('2026-08-03T06:00:00Z'),
+			toAt: new Date('2026-08-07T14:00:00Z'),
+			purpose: 'business',
+			mode: 'daily',
+			fromMinute: 480,
+			toMinute: 960,
+			timeZone: 'Europe/Berlin',
+			createdAt: new Date(T0 + 1)
 		});
 		await db.insert(trip).values(tripRow('c1', -1000, { manual: true, startLatitude: null }));
 		const { trips, chargeSessions, ...info } = await exported();
+		const wholeDays = {
+			fromDay: '2026-08-01',
+			toDay: '2026-08-14',
+			fromAt: '2026-07-31T22:00:00.000Z',
+			toAt: '2026-08-14T22:00:00.000Z',
+			purpose: 'private'
+		};
 		expect(info.periods).toEqual([
+			{ ...wholeDays, mode: 'range', fromMinute: null, toMinute: null, timeZone: null },
 			{
-				fromDay: '2026-08-01',
-				toDay: '2026-08-14',
-				fromAt: '2026-07-31T22:00:00.000Z',
-				toAt: '2026-08-14T22:00:00.000Z',
-				purpose: 'private'
+				fromDay: '2026-08-03',
+				toDay: '2026-08-07',
+				fromAt: '2026-08-03T06:00:00.000Z',
+				toAt: '2026-08-07T14:00:00.000Z',
+				purpose: 'business',
+				mode: 'daily',
+				fromMinute: 480,
+				toMinute: 960,
+				timeZone: 'Europe/Berlin'
 			}
 		]);
+		// Backups from before the time windows still import, as whole days.
+		const older = await backups.importVehicle(
+			'bob',
+			{ ...info, periods: [wholeDays] },
+			{ create: true }
+		);
+		expect(
+			await db.select().from(tripPeriod).where(eq(tripPeriod.connectionId, older!.connectionId))
+		).toMatchObject([{ mode: 'range', fromMinute: null, timeZone: null }]);
+		await expect(
+			backups.importVehicle(
+				'bob',
+				{ ...info, periods: [{ ...info.periods[1], timeZone: null }] },
+				{ create: true }
+			)
+		).rejects.toMatchObject({ field: 'period.timeZone' });
 		expect(trips.map((t) => t.manual)).toEqual([true, false, false]);
 
 		const result = await backups.importVehicle('bob', info, { create: true });
@@ -175,14 +222,14 @@ describe('backup import', () => {
 			(await db.select().from(tripPeriod).where(eq(tripPeriod.connectionId, id))).map(
 				(p) => p.purpose
 			)
-		).toEqual(['private']);
+		).toEqual(['private', 'business']);
 		expect(
 			(await db.select().from(trip).where(eq(trip.connectionId, id))).filter((t) => t.manual)
 		).toHaveLength(1);
 		// A second import of the same vehicle adds no period twice.
 		await backups.importVehicle('bob', info, { connectionId: id });
 		expect(await db.select().from(tripPeriod).where(eq(tripPeriod.connectionId, id))).toHaveLength(
-			1
+			2
 		);
 		expect(chargeSessions).toHaveLength(1);
 	});

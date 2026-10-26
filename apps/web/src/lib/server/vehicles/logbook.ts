@@ -5,13 +5,14 @@
 // trips by hand (e.g. from before the vehicle was connected) and mark whole periods as
 // private or business, which also applies to trips recorded later.
 import { randomUUID } from 'node:crypto';
-import { and, asc, desc, eq, gte, isNull, lt, lte, max, min, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, max, min, or, sql } from 'drizzle-orm';
 import type { Database } from '../db/index.ts';
 import { chargeSession, snapshot, trip, tripPeriod, vehicleConnection } from '../db/schema.ts';
 import type { Geocoder } from '../geocode.ts';
 import type { VehicleData } from '../providers/types.ts';
 import { deriveSessions, type HistoryPoint } from './charging.ts';
 import { deriveTrips, type Trip } from './trips.ts';
+import { inPeriod, type PeriodMode } from '../../trip-period.ts';
 
 export const TRIP_PURPOSES = ['private', 'business'] as const;
 export type TripPurpose = (typeof TRIP_PURPOSES)[number];
@@ -39,15 +40,49 @@ export type NewPeriod = {
 	fromAt: Date;
 	toAt: Date;
 	purpose: TripPurpose;
+	/** Whole days from `fromAt` to `toAt` when left out. */
+	mode?: PeriodMode;
+	fromMinute?: number | null;
+	toMinute?: number | null;
+	timeZone?: string | null;
 };
 
 /** Purpose of the newest period that contains `at`, if any. */
 export function periodPurpose(periods: TripPeriod[], at: Date): TripPurpose | null {
 	let found: TripPeriod | undefined;
 	for (const p of periods) {
-		if (p.fromAt <= at && at < p.toAt && (!found || p.createdAt >= found.createdAt)) found = p;
+		if (inPeriod(p, at.getTime()) && (!found || p.createdAt >= found.createdAt)) found = p;
 	}
 	return found && isPurpose(found.purpose) ? found.purpose : null;
+}
+
+/** A logged trip in the shape of a derived one, for trips whose snapshots are gone. */
+export function entryTrip(e: LogEntry): Trip {
+	const trip: Trip = {
+		start: e.startAt,
+		end: e.endAt,
+		ongoing: false,
+		gap: e.gap,
+		distanceKm: e.distanceKm
+	};
+	const optional = {
+		startSocPct: e.startSocPct,
+		endSocPct: e.endSocPct,
+		startLatitude: e.startLatitude,
+		startLongitude: e.startLongitude,
+		endLatitude: e.endLatitude,
+		endLongitude: e.endLongitude,
+		startOdometerKm: e.startOdometerKm,
+		endOdometerKm: e.endOdometerKm,
+		outsideTempC: e.outsideTempC
+	};
+	for (const [key, value] of Object.entries(optional)) {
+		if (value !== null) (trip as Record<string, unknown>)[key] = value;
+	}
+	if (trip.startSocPct !== undefined && trip.endSocPct !== undefined) {
+		trip.usedPct = Math.max(0, trip.startSocPct - trip.endSocPct);
+	}
+	return trip;
 }
 
 /** How far back each update looks; trips are short compared with this. */
@@ -312,9 +347,9 @@ export function createLogbook(options: LogbookOptions) {
 			...period,
 			createdAt: new Date(now())
 		});
-		const changed = await db
-			.update(trip)
-			.set({ purpose: period.purpose, updatedAt: new Date(now()) })
+		const candidates = await db
+			.select({ id: trip.id, startAt: trip.startAt })
+			.from(trip)
 			.where(
 				and(
 					eq(trip.connectionId, connectionId),
@@ -324,9 +359,17 @@ export function createLogbook(options: LogbookOptions) {
 						? or(isNull(trip.purpose), sql`${trip.purpose} <> ${period.purpose}`)
 						: isNull(trip.purpose)
 				)
-			)
-			.returning({ id: trip.id });
-		return changed.length;
+			);
+		// A daily window also needs the start time; the bounds alone cover whole days.
+		const rule = { mode: 'range', fromMinute: null, toMinute: null, timeZone: null, ...period };
+		const ids = candidates.filter((c) => inPeriod(rule, c.startAt.getTime())).map((c) => c.id);
+		if (ids.length > 0) {
+			await db
+				.update(trip)
+				.set({ purpose: period.purpose, updatedAt: new Date(now()) })
+				.where(inArray(trip.id, ids));
+		}
+		return ids.length;
 	}
 
 	/** Removes a period; trips keep the purpose it gave them. */
@@ -337,6 +380,16 @@ export function createLogbook(options: LogbookOptions) {
 			.where(and(eq(tripPeriod.id, id), eq(tripPeriod.connectionId, connectionId)))
 			.returning({ id: tripPeriod.id });
 		return removed.length > 0;
+	}
+
+	/** Start of the owner's first logged trip, for paging back through the years. */
+	async function firstStart(userId: string, connectionId: string) {
+		if (!(await owned(userId, connectionId))) return undefined;
+		const [row] = await db
+			.select({ first: min(trip.startAt) })
+			.from(trip)
+			.where(eq(trip.connectionId, connectionId));
+		return row?.first ? new Date(row.first) : undefined;
 	}
 
 	/** The owner's trips entered by hand, newest first. */
@@ -423,6 +476,7 @@ export function createLogbook(options: LogbookOptions) {
 		addPeriod,
 		removePeriod,
 		manualTrips,
+		firstStart,
 		getManual,
 		addManual,
 		updateManual,

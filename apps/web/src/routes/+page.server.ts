@@ -59,8 +59,28 @@ export const load = (async ({ locals, url }) => {
 					)
 				)
 			: null;
+	// Private kilometres of this year for the allowance notice; the browser cuts the year in
+	// its time zone, so a day more on each side is read.
+	const year = new Date().getUTCFullYear();
+	const quota = current?.privateQuotaKm
+		? {
+				km: current.privateQuotaKm,
+				warnPct: current.privateQuotaWarnPct,
+				trips: (
+					await logbook.list(
+						locals.user.id,
+						current.id,
+						new Date(Date.UTC(year - 1, 11, 31)),
+						new Date(Date.UTC(year + 1, 0, 2))
+					)
+				)
+					.filter((e) => e.purpose === 'private')
+					.map((e) => ({ t: e.startAt.getTime(), km: e.distanceKm }))
+			}
+		: null;
 	return {
 		layout,
+		quota,
 		vehicles: connections.map((c) => ({ id: c.id, label: c.label })),
 		selected: current
 			? {

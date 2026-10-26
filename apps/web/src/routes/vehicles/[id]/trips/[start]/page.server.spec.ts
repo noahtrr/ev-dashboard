@@ -35,14 +35,36 @@ const vehicles = {
 	),
 	history: vi.fn(async () => points)
 };
-const logged = {
-	id: 'log1',
-	startAt: new Date(T0),
+const row = (id: string, start: number, minutes: number, values: object = {}) => ({
+	id,
+	startAt: new Date(start),
+	endAt: new Date(start + minutes * MIN),
+	distanceKm: 10,
+	gap: false,
+	manual: false,
+	startSocPct: null,
+	endSocPct: null,
+	startLatitude: null,
+	startLongitude: null,
+	endLatitude: null,
+	endLongitude: null,
+	startOdometerKm: null,
+	endOdometerKm: null,
+	outsideTempC: null,
 	purpose: 'business',
-	note: 'Kunde'
-};
+	note: 'Kunde',
+	...values
+});
+const logged = row('log1', T0, 10);
+// Logged trips without snapshots: one recorded from vehicle data, one entered by hand.
+const old = row('log2', T0 - 2000 * MIN, 20, { startSocPct: 60, endSocPct: 55, distanceKm: 20 });
+const entered = row('log3', T0 - 4000 * MIN, 30, { manual: true });
 const logbook = {
-	find: vi.fn(async (userId: string) => (userId === 'alice' ? logged : undefined)),
+	find: vi.fn(async (userId: string, _id: string, at: Date) =>
+		userId === 'alice'
+			? [logged, old, entered].find((e) => e.startAt <= at && at <= e.endAt)
+			: undefined
+	),
 	classify: vi.fn(async (userId: string) => userId === 'alice')
 };
 const geocoder = { lookup: vi.fn(async (lat: number) => (lat > 52.55 ? 'Ziel 1' : 'Start 1')) };
@@ -70,6 +92,16 @@ describe('trip page', () => {
 		});
 		await expect(call('alice', 'c1', '1e9')).rejects.toMatchObject({ status: 404 });
 		await expect(call('bob', 'c1', String(T0))).rejects.toMatchObject({ status: 404 });
+	});
+
+	it('shows a logged trip whose snapshots are gone, and sends entered trips to their page', async () => {
+		const data = await call('alice', 'c1', String(old.startAt.getTime()));
+		expect(data.trip).toMatchObject({ distanceKm: 20, usedPct: 5, usedKwh: 4 });
+		expect(data.entry).toEqual({ id: 'log2', purpose: 'business', note: 'Kunde' });
+		await expect(call('alice', 'c1', String(entered.startAt.getTime()))).rejects.toMatchObject({
+			status: 303,
+			location: '/vehicles/c1/trips/manual/log3'
+		});
 	});
 });
 
