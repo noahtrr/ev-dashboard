@@ -32,10 +32,10 @@ ARG CADDY_VERSION=2.11.7
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOFLAGS=-mod=mod
 WORKDIR /caddy
 COPY docker/caddy/main.go ./
-# golang.org/x/* float to @latest on purpose so every build picks up their security fixes.
+# golang.org/x/* and go-jose float to @latest on purpose so every build picks up their security fixes.
 # hadolint ignore=DL3062
 RUN go mod init caddy \
-	&& go get github.com/caddyserver/caddy/v2@v${CADDY_VERSION} golang.org/x/net@latest golang.org/x/crypto@latest golang.org/x/text@latest \
+	&& go get github.com/caddyserver/caddy/v2@v${CADDY_VERSION} golang.org/x/net@latest golang.org/x/crypto@latest golang.org/x/text@latest github.com/go-jose/go-jose/v4@latest \
 	&& go mod tidy \
 	&& GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags "-s -w" -o /out/caddy .
 
