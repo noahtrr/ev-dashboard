@@ -1,10 +1,10 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 
 # Base images are pinned by digest through Renovate (pinDigests).
-ARG NODE_BUILD_IMAGE=cgr.dev/chainguard/node:latest-dev
-ARG RUNTIME_IMAGE=cgr.dev/chainguard/wolfi-base:latest
+ARG NODE_BUILD_IMAGE=cgr.dev/chainguard/node:latest-dev@sha256:9fa1380d9872396657c0bb1a874d9d9c75ab52bc02df4e77efaf1848a32c61c8
+ARG RUNTIME_IMAGE=cgr.dev/chainguard/wolfi-base:latest@sha256:88a20e2d017bd20cdc0cb3910de603e7bea9512a6c351a8dd3c9df212ab03d73
 # Wolfi no longer maintains a public caddy package, so Caddy is built from source with a current Go.
-ARG GO_IMAGE=docker.io/library/golang:1.27-alpine
+ARG GO_IMAGE=docker.io/library/golang:1.27-alpine@sha256:d200d2dd76b03a99b52651fd1325aff7dcd35422c35c01bac56571b0507f3deb
 
 # ---- build: install dependencies and build the SvelteKit app ----
 FROM ${NODE_BUILD_IMAGE} AS build
