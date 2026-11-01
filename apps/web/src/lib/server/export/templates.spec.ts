@@ -79,6 +79,17 @@ describe('fillTemplate', () => {
 		expect(() => inspectTemplate(other)).toThrowError(
 			expect.objectContaining({ code: 'not_xlsx' })
 		);
+		// A relationship id is used inside a RegExp, so pattern syntax must not get through.
+		const injected = writeZip([
+			{
+				name: 'xl/workbook.xml',
+				data: Buffer.from('<workbook><sheet r:id="(a|a)+("/></workbook>')
+			},
+			{ name: 'xl/_rels/workbook.xml.rels', data: Buffer.from('<Relationships/>') }
+		]);
+		expect(() => inspectTemplate(injected)).toThrowError(
+			expect.objectContaining({ code: 'not_xlsx' })
+		);
 	});
 
 	it('writes period and monthly values, keeps styles and drops stale results', () => {

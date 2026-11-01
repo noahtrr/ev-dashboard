@@ -128,8 +128,9 @@ export function createAuth(settings: AuthSettings, db: Database) {
 		}),
 		account: {
 			// Signing in with GitHub, Google or SSO links to the existing account with the same
-			// email, but only when the provider reports that email as verified.
-			accountLinking: { enabled: true }
+			// email, but only when the provider reports that email as verified and the local
+			// account confirmed it too. Otherwise anyone could pre-register a victim's address.
+			accountLinking: { enabled: true, requireLocalEmailVerified: true }
 		},
 		socialProviders: {
 			...(settings.github && { github: settings.github }),

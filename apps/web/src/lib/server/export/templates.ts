@@ -112,7 +112,8 @@ function openWorkbook(buffer: Buffer): Workbook {
 	const workbook = textOf(entries, 'xl/workbook.xml');
 	const rels = textOf(entries, 'xl/_rels/workbook.xml.rels');
 	if (!workbook || !rels) throw new TemplateError('not_xlsx');
-	const rid = /<sheet\b[^>]*\br:id="([^"]+)"/.exec(workbook)?.[1];
+	// The id goes into a RegExp below, so only plain relationship ids are accepted.
+	const rid = /<sheet\b[^>]*\br:id="([A-Za-z0-9_-]{1,64})"/.exec(workbook)?.[1];
 	const target = rid
 		? (new RegExp(`<Relationship\\b[^>]*\\bId="${rid}"[^>]*\\bTarget="([^"]+)"`).exec(rels)?.[1] ??
 			new RegExp(`<Relationship\\b[^>]*\\bTarget="([^"]+)"[^>]*\\bId="${rid}"`).exec(rels)?.[1])
