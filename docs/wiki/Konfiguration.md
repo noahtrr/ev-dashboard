@@ -9,7 +9,7 @@ Die gesamte Konfiguration erfolgt über Umgebungsvariablen in der `.env`-Datei. 
 | `APP_URL` | ja | | Öffentliche URL der Instanz, z. B. `https://ev.example.com`. Muss mit `http://` oder `https://` beginnen. Grundlage für OAuth-Callbacks und Passkeys. |
 | `TLS_MODE` | nein | `auto` | `auto`: Let's-Encrypt-Zertifikat über Caddy. `internal`: selbst signiertes Zertifikat zum Testen. `off`: nur HTTP auf Port 8080, für den Betrieb hinter einem eigenen Proxy. |
 | `ACME_EMAIL` | bei `auto` | | Kontaktadresse für Let's Encrypt. |
-| `TRUSTED_PROXIES` | nein | `private_ranges` | Proxys, deren `X-Forwarded-*`-Header vertraut wird. |
+| `TRUSTED_PROXIES` | nein | `127.0.0.1/32 ::1/128` | Proxys, deren `X-Forwarded-*`-Header vertraut wird, als CIDR-Bereiche mit Leerzeichen getrennt oder `private_ranges`. Standardmäßig nur Loopback, damit Clients nicht selbst die Adresse für die Anmelde-Drosselung wählen. Bei `TLS_MODE=off` auf die Adresse deines Proxys setzen. |
 | `DATA_DIR` | nein | `/data` im Image | Ablage für Datenbank und erzeugte Schlüssel. Nur ändern, wenn die App außerhalb von Docker läuft. |
 
 ## Anmeldung

@@ -29,6 +29,10 @@ describe('safeRedirect', () => {
 		expect(safeRedirect('//evil.example')).toBe('/');
 		expect(safeRedirect('/\\evil.example')).toBe('/');
 		expect(safeRedirect('https://evil.example')).toBe('/');
+		expect(safeRedirect('/\t/evil.example')).toBe('/');
+		expect(safeRedirect('/\n/evil.example')).toBe('/');
+		expect(safeRedirect('/a\\b')).toBe('/');
+		expect(safeRedirect('/trips?year=2026#top')).toBe('/trips?year=2026#top');
 		expect(safeRedirect(null)).toBe('/');
 	});
 });

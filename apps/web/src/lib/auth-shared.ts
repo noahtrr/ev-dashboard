@@ -16,7 +16,13 @@ export const MIN_PASSWORD_LENGTH = 8;
 
 /** Only same-origin paths are accepted as post-login targets. */
 export function safeRedirect(target: string | null | undefined, fallback = '/') {
-	if (!target || !target.startsWith('/') || target.startsWith('//') || target.startsWith('/\\')) {
+	// Browsers drop tabs and newlines and read `\` as `/`, so `/\t/evil.example` would leave the site.
+	if (
+		!target ||
+		!target.startsWith('/') ||
+		target.startsWith('//') ||
+		[...target].some((char) => char === '\\' || char < ' ' || char === '\x7f')
+	) {
 		return fallback;
 	}
 	return target;

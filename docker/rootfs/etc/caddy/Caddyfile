@@ -5,7 +5,7 @@
 	{$CADDY_EMAIL}
 	storage file_system /data/caddy
 	servers {
-		trusted_proxies static {$TRUSTED_PROXIES:private_ranges}
+		trusted_proxies static {$TRUSTED_PROXIES:127.0.0.1/32 ::1/128}
 	}
 }
 
