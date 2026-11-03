@@ -55,7 +55,9 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: var(--h1-weight);
+		font-family: var(--font-display);
+		letter-spacing: var(--h1-tracking);
 	}
 </style>

@@ -1,42 +1,75 @@
-// Calm, desaturated map style for vector tiles in the OpenMapTiles schema. Only a few layers:
-// the map gives orientation around the vehicle, it is not a navigation map.
+// Calm map style for vector tiles in the OpenMapTiles schema, warm for the bronze design and
+// cool for the cockpit. Only a few layers: the map gives orientation around the vehicle, it is not a navigation map.
 import type { ExpressionSpecification, StyleSpecification } from 'maplibre-gl';
+import type { DesignStyle } from '#lib/design-style.ts';
 
 export type MapTheme = 'dark' | 'light';
 
 export type MapSources = { tilesUrl: string; glyphsUrl: string };
 
 const PALETTE = {
-	dark: {
-		background: '#0d1218',
-		water: '#0a1a26',
-		park: '#101b17',
-		building: '#151c25',
-		road: '#1f2a36',
-		major: '#2a3846',
-		rail: '#1a232d',
-		boundary: '#2c3742',
-		label: '#7f8e9c',
-		halo: '#0d1218'
+	bronze: {
+		dark: {
+			background: '#0a0807',
+			water: '#0b1219',
+			park: '#0e0f0a',
+			building: '#15120f',
+			road: '#221d18',
+			major: '#2e2720',
+			rail: '#1b1713',
+			boundary: '#332b23',
+			label: '#8a8178',
+			halo: '#0a0807'
+		},
+		light: {
+			background: '#f1ebe2',
+			water: '#d5dde3',
+			park: '#e3e4d6',
+			building: '#e7dfd4',
+			road: '#fffcf8',
+			major: '#fffaf3',
+			rail: '#d8cfc3',
+			boundary: '#c2b6a6',
+			label: '#6b5f53',
+			halo: '#f1ebe2'
+		}
 	},
-	light: {
-		background: '#eef2f5',
-		water: '#cfdeea',
-		park: '#dfe9e1',
-		building: '#e2e7ec',
-		road: '#ffffff',
-		major: '#f8fafc',
-		rail: '#d3dae1',
-		boundary: '#b8c2cc',
-		label: '#5b6875',
-		halo: '#eef2f5'
+	cockpit: {
+		dark: {
+			background: '#0d1218',
+			water: '#0a1a26',
+			park: '#101b17',
+			building: '#151c25',
+			road: '#1f2a36',
+			major: '#2a3846',
+			rail: '#1a232d',
+			boundary: '#2c3742',
+			label: '#7f8e9c',
+			halo: '#0d1218'
+		},
+		light: {
+			background: '#eef2f5',
+			water: '#cfdeea',
+			park: '#dfe9e1',
+			building: '#e2e7ec',
+			road: '#ffffff',
+			major: '#f8fafc',
+			rail: '#d3dae1',
+			boundary: '#b8c2cc',
+			label: '#5b6875',
+			halo: '#eef2f5'
+		}
 	}
 } as const;
 
 const FONT = ['Noto Sans Regular'];
 
-export function mapStyle(theme: MapTheme, sources: MapSources): StyleSpecification {
-	const c = PALETTE[theme];
+export function mapStyle(
+	theme: MapTheme,
+	sources: MapSources,
+	design: DesignStyle = 'bronze'
+): StyleSpecification {
+	const c = PALETTE[design][theme];
 	const roadWidth = (base: number): ExpressionSpecification => [
 		'interpolate',
 		['exponential', 1.5],

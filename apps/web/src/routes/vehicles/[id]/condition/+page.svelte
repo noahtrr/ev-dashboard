@@ -339,8 +339,10 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: var(--h1-weight);
+		font-family: var(--font-display);
+		letter-spacing: var(--h1-tracking);
 	}
 
 	.small {
@@ -370,7 +372,7 @@
 		place-items: center;
 		width: 40px;
 		height: 40px;
-		border-radius: 20px;
+		border-radius: calc(var(--radius-sm) + (20px - var(--radius-sm)) * var(--round));
 		color: var(--muted);
 		background: color-mix(in srgb, var(--muted) 14%, transparent);
 	}
@@ -462,10 +464,10 @@
 		align-items: baseline;
 		flex-wrap: wrap;
 		gap: 0 10px;
-		font-size: 32px;
-		font-weight: 600;
-		letter-spacing: -0.02em;
-		font-family: var(--font-mono);
+		font-size: calc(32px * var(--value-scale));
+		font-weight: var(--value-weight);
+		letter-spacing: var(--value-tracking);
+		font-family: var(--font-value);
 	}
 
 	.unit {

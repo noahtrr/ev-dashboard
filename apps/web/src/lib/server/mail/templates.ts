@@ -148,19 +148,19 @@ export function renderMail(input: MailInput): Mail {
 
 	const button =
 		url && text.button
-			? `<p style="margin:24px 0"><a href="${escape(url)}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#0369A1;color:#FFFFFF;font-weight:600;text-decoration:none">${escape(text.button)}</a></p>
-<p style="margin:0 0 8px;font-size:13px;color:#55626F">${escape(all.fallback)}<br><a href="${escape(url)}" style="color:#0369A1;word-break:break-all">${escape(url)}</a></p>`
+			? `<p style="margin:24px 0"><a href="${escape(url)}" style="display:inline-block;padding:12px 20px;border-radius:10px;background:#8A5526;color:#FFFFFF;font-weight:600;text-decoration:none">${escape(text.button)}</a></p>
+<p style="margin:0 0 8px;font-size:13px;color:#6B5F53">${escape(all.fallback)}<br><a href="${escape(url)}" style="color:#8A5526;word-break:break-all">${escape(url)}</a></p>`
 			: '';
 	const html = `<!doctype html>
 <html lang="${input.locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escape(subject)}</title></head>
-<body style="margin:0;padding:24px;background:#F3F6F9;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#0F1720">
-<div style="max-width:560px;margin:0 auto;background:#FFFFFF;border:1px solid #DCE3EA;border-radius:16px;padding:32px">
-<p style="margin:0 0 16px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#55626F">EV Dashboard</p>
+<body style="margin:0;padding:24px;background:#F6F1EA;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#1C140D">
+<div style="max-width:560px;margin:0 auto;background:#FFFCF8;border:1px solid #E2D8CB;border-radius:16px;padding:32px">
+<p style="margin:0 0 16px;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;color:#6B5F53">EV Dashboard</p>
 <h1 style="margin:0 0 16px;font-size:22px;font-weight:600">${escape(title)}</h1>
 <p style="margin:0;font-size:15px;line-height:1.55">${escape(sentence)}</p>
-${button}${note ? `<p style="margin:16px 0 0;font-size:13px;line-height:1.5;color:#55626F">${escape(note)}</p>` : ''}
+${button}${note ? `<p style="margin:16px 0 0;font-size:13px;line-height:1.5;color:#6B5F53">${escape(note)}</p>` : ''}
 </div>
-<p style="max-width:560px;margin:16px auto 0;font-size:12px;line-height:1.5;color:#55626F">${escape(footer)}</p>
+<p style="max-width:560px;margin:16px auto 0;font-size:12px;line-height:1.5;color:#6B5F53">${escape(footer)}</p>
 </body></html>`;
 
 	return { to: input.to, subject, text: plain, html };

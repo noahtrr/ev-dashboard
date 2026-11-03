@@ -18,7 +18,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 12px var(--space);
+		height: 64px;
+		padding: 0 var(--space);
 		max-width: 960px;
 		margin: 0 auto;
 	}
@@ -26,6 +27,9 @@
 	.brand {
 		color: var(--text);
 		text-decoration: none;
+		font-size: var(--brand-size);
 		font-weight: 600;
+		letter-spacing: var(--brand-tracking);
+		text-transform: var(--label-case);
 	}
 </style>

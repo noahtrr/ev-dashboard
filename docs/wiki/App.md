@@ -9,6 +9,10 @@ Das Dashboard lässt sich wie eine App auf den Homescreen legen. Es startet dann
 
 Voraussetzung ist HTTPS, wie es das Image mit Caddy ohnehin einrichtet.
 
+## Design
+
+Unter **Konto → Design** gibt es zwei Stile: **Bronze** (Standard, schwarze Bühne mit Bronze und Saphir) und **Cockpit** (das ursprüngliche ruhige Design mit Cyan-Akzent). Die Wahl gilt pro Gerät und Browser und wird in einem Cookie gespeichert. Hell und Dunkel folgen in beiden Stilen der Systemeinstellung. Details: [Design-Philosophie](Design-Philosophie).
+
 ## Offline
 
 Ohne Verbindung zeigt die App die Seiten, die zuletzt geladen wurden, und oben den Hinweis **Offline**. Seiten, die noch nie geöffnet wurden, führen zur Startseite. Gespeichert werden die Seiten nur im Browser des Geräts; beim Abmelden werden sie gelöscht.

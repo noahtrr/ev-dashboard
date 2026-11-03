@@ -29,7 +29,7 @@
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 4px;
 		padding: 4px;
-		border-radius: 14px;
+		border-radius: calc(var(--radius-sm) + (14px - var(--radius-sm)) * var(--round));
 		background: var(--bg);
 		border: 1px solid var(--border);
 	}
@@ -37,7 +37,7 @@
 	.segment {
 		position: relative;
 		min-height: 44px;
-		border-radius: 10px;
+		border-radius: calc(var(--radius-sm) + (10px - var(--radius-sm)) * var(--round));
 		display: flex;
 		align-items: center;
 		justify-content: center;

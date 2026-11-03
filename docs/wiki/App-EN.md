@@ -9,6 +9,10 @@ The dashboard can be added to the home screen like an app. It then opens without
 
 This needs HTTPS, which the image sets up with Caddy anyway.
 
+## Design
+
+**Account → Design** offers two styles: **Bronze** (default, a black stage with bronze and sapphire) and **Cockpit** (the original calm design with a cyan accent). The choice applies per device and browser and is kept in a cookie. In both styles light and dark follow the system setting. Details: [Design philosophy](Design-Philosophy).
+
 ## Offline
 
 Without a connection the app shows the pages loaded last, with **Offline** at the top. Pages that were never opened lead to the home page. The pages are only kept in the device's browser and are deleted on sign-out.

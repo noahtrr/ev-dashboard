@@ -2,6 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { authClient } from '#lib/auth-client.ts';
+	import BronzeWave from '#lib/components/BronzeWave.svelte';
+	import RevealText from '#lib/components/RevealText.svelte';
 	import { authErrorMessage, MIN_PASSWORD_LENGTH, type LoginMethods } from '#lib/auth-shared.ts';
 	import { format, type Messages } from '#lib/i18n.ts';
 
@@ -139,6 +141,8 @@
 	}
 </script>
 
+<BronzeWave />
+
 <section class="card">
 	<span class="label">{t.common.appName}</span>
 	{#if pending}
@@ -154,7 +158,7 @@
 			{t.auth.otherAddress}
 		</button>
 	{:else}
-		<h1>{title}</h1>
+		<h1><RevealText text={title} /></h1>
 		<p class="muted">{intro}</p>
 
 		{#if error}
@@ -245,6 +249,13 @@
 </section>
 
 <style>
+	/* The sign-in card floats over the wave. */
+	section {
+		background: color-mix(in srgb, var(--surface) var(--glass), transparent);
+		backdrop-filter: blur(var(--glass-blur));
+		-webkit-backdrop-filter: blur(var(--glass-blur));
+	}
+
 	.card {
 		max-width: 400px;
 	}

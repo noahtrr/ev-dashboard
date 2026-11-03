@@ -331,8 +331,10 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: var(--h1-weight);
+		font-family: var(--font-display);
+		letter-spacing: var(--h1-tracking);
 	}
 
 	.when {
@@ -514,10 +516,10 @@
 
 	.cost-total {
 		margin: 0;
-		font-size: 36px;
-		font-weight: 600;
-		letter-spacing: -0.02em;
-		font-family: var(--font-mono);
+		font-size: calc(36px * var(--value-scale));
+		font-weight: var(--value-weight);
+		letter-spacing: var(--value-tracking);
+		font-family: var(--font-value);
 	}
 
 	.cost-placeholder {
@@ -539,7 +541,7 @@
 		font-size: 14px;
 		min-height: 40px;
 		padding: 0 14px;
-		border-radius: 20px;
+		border-radius: calc(var(--radius-sm) + (20px - var(--radius-sm)) * var(--round));
 		border: 1px solid var(--border);
 		background: transparent;
 		color: var(--text);

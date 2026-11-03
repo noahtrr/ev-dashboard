@@ -100,13 +100,15 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: var(--h1-weight);
+		font-family: var(--font-display);
+		letter-spacing: var(--h1-tracking);
 	}
 
 	.add {
 		min-height: 40px;
-		border-radius: 20px;
+		border-radius: calc(var(--radius-sm) + (20px - var(--radius-sm)) * var(--round));
 		font-size: 14px;
 		font-weight: 600;
 		text-decoration: none;
@@ -181,7 +183,7 @@
 	.badge {
 		display: inline-block;
 		padding: 2px 10px;
-		border-radius: 12px;
+		border-radius: calc(var(--radius-sm) + (12px - var(--radius-sm)) * var(--round));
 		font-size: 12px;
 		font-weight: 500;
 		background: color-mix(in srgb, var(--accent) 14%, transparent);

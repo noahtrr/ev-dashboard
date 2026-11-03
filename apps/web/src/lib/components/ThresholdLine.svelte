@@ -120,7 +120,7 @@
 	svg:focus-visible {
 		outline: 2px solid var(--accent);
 		outline-offset: 4px;
-		border-radius: 8px;
+		border-radius: calc(var(--radius-sm) + (8px - var(--radius-sm)) * var(--round));
 	}
 
 	.threshold {
@@ -160,7 +160,7 @@
 		pointer-events: none;
 		background: var(--bg);
 		border: 1px solid var(--border);
-		border-radius: 10px;
+		border-radius: calc(var(--radius-sm) + (10px - var(--radius-sm)) * var(--round));
 		padding: 6px 10px;
 		display: flex;
 		flex-direction: column;

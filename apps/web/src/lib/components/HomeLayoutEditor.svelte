@@ -89,8 +89,10 @@
 
 	h1 {
 		margin: 0;
-		font-size: 24px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: var(--h1-weight);
+		font-family: var(--font-display);
+		letter-spacing: var(--h1-tracking);
 	}
 
 	.done {
@@ -132,7 +134,7 @@
 	.arrows button {
 		width: 36px;
 		height: 28px;
-		border-radius: 8px;
+		border-radius: calc(var(--radius-sm) + (8px - var(--radius-sm)) * var(--round));
 		border: 1px solid var(--border);
 		background: transparent;
 		color: var(--text);

@@ -1,7 +1,10 @@
 <script lang="ts">
 	import '@fontsource-variable/geist';
 	import '@fontsource-variable/geist-mono';
+	import '@fontsource/italiana';
+	import '@fontsource-variable/outfit';
 	import '../app.css';
+	import GridLines from '#lib/components/GridLines.svelte';
 	import { onMount } from 'svelte';
 	import favicon from '#lib/assets/favicon.svg';
 	import { messages } from '#lib/i18n.ts';
@@ -33,6 +36,8 @@
 	</p>
 {/if}
 
+<GridLines />
+
 {@render children()}
 
 <style>
@@ -41,7 +46,7 @@
 		box-sizing: border-box;
 		margin: 8px auto 0;
 		padding: 10px 14px;
-		border-radius: 12px;
+		border-radius: calc(var(--radius-sm) + (12px - var(--radius-sm)) * var(--round));
 		border: 1px solid var(--warn);
 		color: var(--warn);
 		font-size: 13px;
