@@ -2,8 +2,10 @@
 	import { onMount } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import BronzeWave from '#lib/components/BronzeWave.svelte';
 	import HomeLayoutEditor from '#lib/components/HomeLayoutEditor.svelte';
 	import InstallHint from '#lib/components/InstallHint.svelte';
+	import RevealText from '#lib/components/RevealText.svelte';
 	import TopBar from '#lib/components/TopBar.svelte';
 	import VehicleMap from '#lib/components/VehicleMap.svelte';
 	import {
@@ -244,6 +246,9 @@
 
 <InstallHint {t} />
 
+<!-- Bronze at rest, sapphire while the selected vehicle charges. -->
+<BronzeWave tone={values?.chargingState === 'charging' ? 0.85 : 0.12} />
+
 <main class:with-map={!editing && visible.some((m) => m.id === 'location')}>
 	{#if editing}
 		<HomeLayoutEditor
@@ -270,7 +275,7 @@
 					{/each}
 				</form>
 			{:else}
-				<h1>{vehicle.label || t.connections.unnamed}</h1>
+				<h1><RevealText text={vehicle.label || t.connections.unnamed} /></h1>
 			{/if}
 			<a class="details" href={resolve('/vehicles/[id]', { id: vehicle.id })}>{h.details} →</a>
 		</header>
@@ -579,8 +584,10 @@
 
 	h1 {
 		margin: 0;
-		font-size: 24px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: 400;
+		font-family: var(--font-display);
+		letter-spacing: 0.02em;
 	}
 
 	.details {
@@ -599,7 +606,7 @@
 		gap: 4px;
 		padding: 4px;
 		border: 1px solid var(--border);
-		border-radius: 14px;
+		border-radius: var(--radius-sm);
 		overflow-x: auto;
 		max-width: 100%;
 	}
@@ -610,7 +617,7 @@
 		background: transparent;
 		cursor: pointer;
 		padding: 8px 14px;
-		border-radius: 10px;
+		border-radius: var(--radius-sm);
 		color: var(--muted);
 		text-decoration: none;
 		white-space: nowrap;
@@ -628,8 +635,11 @@
 		outline-offset: 2px;
 	}
 
+	/* Modules float over the wave like glass panes on the stage. */
 	.module {
-		background: var(--surface);
+		background: color-mix(in srgb, var(--surface) 72%, transparent);
+		backdrop-filter: blur(14px);
+		-webkit-backdrop-filter: blur(14px);
 		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		overflow: hidden;
@@ -650,10 +660,11 @@
 
 	.title {
 		margin: 0;
-		font-size: 13px;
+		font-size: 11px;
 		font-weight: 500;
 		color: var(--muted);
-		letter-spacing: 0.02em;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
 	}
 
 	.map-wrap {
@@ -711,11 +722,11 @@
 
 	.big {
 		margin: 0;
-		font-size: 56px;
+		font-size: 70px;
 		line-height: 1;
-		font-weight: 600;
-		letter-spacing: -0.02em;
-		font-family: var(--font-mono);
+		font-weight: 400;
+		letter-spacing: 0.01em;
+		font-family: var(--font-display);
 	}
 
 	.unit {
@@ -733,15 +744,15 @@
 	}
 
 	.context.charging {
-		color: var(--accent);
+		color: var(--cool);
 	}
 
 	.small-big {
-		font-size: 40px;
+		font-size: 52px;
 	}
 
 	.small-big.live {
-		color: var(--accent);
+		color: var(--cool);
 	}
 
 	.foot-row {
@@ -833,7 +844,7 @@
 
 	.ring circle {
 		fill: none;
-		stroke-width: 8;
+		stroke-width: 3;
 	}
 
 	.track {

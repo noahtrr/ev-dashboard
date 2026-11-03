@@ -295,8 +295,10 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: 400;
+		font-family: var(--font-display);
+		letter-spacing: 0.02em;
 	}
 
 	.intro {
@@ -330,7 +332,7 @@
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 4px;
 		padding: 4px;
-		border-radius: 14px;
+		border-radius: var(--radius-sm);
 		background: var(--bg);
 		border: 1px solid var(--border);
 	}
@@ -338,7 +340,7 @@
 	.mode {
 		position: relative;
 		min-height: 40px;
-		border-radius: 10px;
+		border-radius: var(--radius-sm);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -396,7 +398,7 @@
 		flex-direction: column;
 		gap: 4px;
 		padding: 14px 16px;
-		border-radius: 14px;
+		border-radius: var(--radius-sm);
 		background: color-mix(in srgb, var(--accent) 8%, transparent);
 		border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
 	}

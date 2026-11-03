@@ -100,13 +100,15 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: 400;
+		font-family: var(--font-display);
+		letter-spacing: 0.02em;
 	}
 
 	.add {
 		min-height: 40px;
-		border-radius: 20px;
+		border-radius: var(--radius-sm);
 		font-size: 14px;
 		font-weight: 600;
 		text-decoration: none;
@@ -181,7 +183,7 @@
 	.badge {
 		display: inline-block;
 		padding: 2px 10px;
-		border-radius: 12px;
+		border-radius: var(--radius-sm);
 		font-size: 12px;
 		font-weight: 500;
 		background: color-mix(in srgb, var(--accent) 14%, transparent);

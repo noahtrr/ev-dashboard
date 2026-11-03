@@ -185,8 +185,10 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: 400;
+		font-family: var(--font-display);
+		letter-spacing: 0.02em;
 	}
 
 	.periods {
@@ -194,7 +196,7 @@
 		gap: 4px;
 		padding: 4px;
 		border: 1px solid var(--border);
-		border-radius: 14px;
+		border-radius: var(--radius-sm);
 	}
 
 	.periods button {
@@ -204,7 +206,7 @@
 		background: transparent;
 		color: var(--muted);
 		padding: 8px 12px;
-		border-radius: 10px;
+		border-radius: var(--radius-sm);
 		cursor: pointer;
 	}
 

@@ -90,7 +90,7 @@
 
 	function addRoute() {
 		if (!map || map.getSource(ROUTE)) return;
-		const accent = getComputedStyle(container).getPropertyValue('--accent').trim() || '#38bdf8';
+		const accent = getComputedStyle(container).getPropertyValue('--accent').trim() || '#d4a373';
 		map.addSource(ROUTE, {
 			type: 'geojson',
 			data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: path } }

@@ -368,8 +368,10 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: 400;
+		font-family: var(--font-display);
+		letter-spacing: 0.02em;
 	}
 
 	.small {
@@ -407,7 +409,7 @@
 		gap: 1px;
 		background: var(--border);
 		border: 1px solid var(--border);
-		border-radius: 14px;
+		border-radius: var(--radius-sm);
 		overflow: hidden;
 	}
 
@@ -562,7 +564,7 @@
 		padding: 12px;
 		max-height: 480px;
 		overflow: auto;
-		border-radius: 12px;
+		border-radius: var(--radius-sm);
 		background: var(--bg);
 		border: 1px solid var(--border);
 		font-size: 12px;

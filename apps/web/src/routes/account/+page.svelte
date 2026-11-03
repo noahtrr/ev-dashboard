@@ -433,8 +433,10 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: 400;
+		font-family: var(--font-display);
+		letter-spacing: 0.02em;
 	}
 
 	.stack {
@@ -509,7 +511,7 @@
 		flex: 1;
 		min-width: 0;
 		padding: 10px 12px;
-		border-radius: 12px;
+		border-radius: var(--radius-sm);
 		border: 1px solid var(--border);
 		background: var(--bg);
 		font-size: 13px;
@@ -552,7 +554,7 @@
 
 	.confirm {
 		padding: 12px;
-		border-radius: 12px;
+		border-radius: var(--radius-sm);
 		border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
 	}
 

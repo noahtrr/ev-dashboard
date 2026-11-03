@@ -78,13 +78,15 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: 400;
+		font-family: var(--font-display);
+		letter-spacing: 0.02em;
 	}
 
 	.badge {
 		padding: 2px 10px;
-		border-radius: 12px;
+		border-radius: var(--radius-sm);
 		font-size: 12px;
 		font-weight: 500;
 		border: 1px solid var(--border);

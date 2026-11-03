@@ -269,7 +269,7 @@
 		color: var(--text);
 		background: var(--bg);
 		border: 1px solid var(--border);
-		border-radius: 12px;
+		border-radius: var(--radius-sm);
 		padding: 12px 14px;
 		resize: vertical;
 	}

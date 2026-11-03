@@ -104,7 +104,7 @@
 		align-items: center;
 		gap: 12px;
 		padding: 14px 16px;
-		border-radius: 18px;
+		border-radius: var(--radius-sm);
 		background: var(--surface);
 		border: 1px solid var(--border);
 		box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
@@ -113,7 +113,7 @@
 
 	.icon {
 		flex: none;
-		border-radius: 11px;
+		border-radius: var(--radius-sm);
 	}
 
 	.text {

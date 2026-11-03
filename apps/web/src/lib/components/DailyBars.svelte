@@ -153,7 +153,7 @@
 	svg:focus-visible {
 		outline: 2px solid var(--accent);
 		outline-offset: 4px;
-		border-radius: 8px;
+		border-radius: var(--radius-sm);
 	}
 
 	.grid {
@@ -186,7 +186,7 @@
 		pointer-events: none;
 		background: var(--bg);
 		border: 1px solid var(--border);
-		border-radius: 10px;
+		border-radius: var(--radius-sm);
 		padding: 6px 10px;
 		display: flex;
 		flex-direction: column;

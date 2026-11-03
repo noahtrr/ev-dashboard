@@ -1,58 +1,70 @@
-/* Design tokens, see docs/wiki/Design-Philosophie.md */
+/* Design tokens, see docs/wiki/Design-Philosophie.md ("Bronze und Zeit") */
 :root {
 	color-scheme: dark light;
-	--font-sans: 'Geist Variable', system-ui, sans-serif;
-	--font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+	--font-sans: 'Outfit Variable', system-ui, sans-serif;
+	/* Values use the body face with tabular figures; large values use the display face. */
+	--font-mono: 'Outfit Variable', system-ui, sans-serif;
+	--font-display: 'Italiana', 'Didot', 'Bodoni 72', serif;
 
-	--bg: #0a0e13;
-	--surface: #11171f;
-	--border: #1d2631;
-	--text: #e6edf3;
-	--muted: #93a1af;
-	--accent: #38bdf8;
-	--ok: #4ade80;
-	--warn: #fbbf24;
-	--danger: #f87171;
+	--bg: #000000;
+	--surface: #0a0807;
+	--border: #26211c;
+	--line: rgba(255, 255, 255, 0.1);
+	--text: #fff6ed;
+	--muted: #9c948b;
+	/* Bronze: interaction and the current vehicle state. */
+	--accent: #d4a373;
+	/* Sapphire: charging and other cool states. */
+	--cool: #7fb0e0;
+	--ok: #8fc79a;
+	--warn: #e6b65c;
+	--danger: #ef8a7a;
 	/* Private trips in the trip log. */
-	--private: #f59e0b;
-	/* Charging costs at home and away (validated as a pair for colour vision deficiency). */
-	--home: #1d9bd6;
-	--away: #e0559a;
+	--private: #7fb0e0;
+	/* Charging costs at home and away (bronze/sapphire stays distinct with colour vision deficiency). */
+	--home: #d19a62;
+	--away: #6fa3d6;
 
-	--radius: 20px;
+	--radius: 6px;
+	--radius-sm: 4px;
 	--space: 16px;
+	--h1-size: 40px;
 }
 
 @media (prefers-color-scheme: light) {
 	:root:not([data-theme='dark']) {
-		--bg: #f3f6f9;
-		--surface: #ffffff;
-		--border: #dce3ea;
-		--text: #0f1720;
-		--muted: #55626f;
-		--accent: #0369a1;
-		--ok: #15803d;
-		--warn: #a16207;
-		--danger: #b91c1c;
-		--private: #b45309;
-		--home: #0369a1;
-		--away: #be185d;
+		--bg: #f6f1ea;
+		--surface: #fffcf8;
+		--border: #e2d8cb;
+		--line: rgba(60, 40, 20, 0.1);
+		--text: #1c140d;
+		--muted: #6b5f53;
+		--accent: #8a5526;
+		--cool: #2c5d8f;
+		--ok: #2f7a45;
+		--warn: #8f5f00;
+		--danger: #b3261e;
+		--private: #2c5d8f;
+		--home: #9a5f26;
+		--away: #2c5d8f;
 	}
 }
 
 :root[data-theme='light'] {
-	--bg: #f3f6f9;
-	--surface: #ffffff;
-	--border: #dce3ea;
-	--text: #0f1720;
-	--muted: #55626f;
-	--accent: #0369a1;
-	--ok: #15803d;
-	--warn: #a16207;
-	--danger: #b91c1c;
-	--private: #b45309;
-	--home: #0369a1;
-	--away: #be185d;
+	--bg: #f6f1ea;
+	--surface: #fffcf8;
+	--border: #e2d8cb;
+	--line: rgba(60, 40, 20, 0.1);
+	--text: #1c140d;
+	--muted: #6b5f53;
+	--accent: #8a5526;
+	--cool: #2c5d8f;
+	--ok: #2f7a45;
+	--warn: #8f5f00;
+	--danger: #b3261e;
+	--private: #2c5d8f;
+	--home: #9a5f26;
+	--away: #2c5d8f;
 }
 
 *,
@@ -66,7 +78,10 @@ body {
 	background: var(--bg);
 	color: var(--text);
 	font-family: var(--font-sans);
+	font-weight: 350;
+	letter-spacing: 0.01em;
 	font-feature-settings: 'tnum' 1;
+	font-synthesis: none;
 	-webkit-font-smoothing: antialiased;
 }
 
@@ -89,6 +104,14 @@ body {
 	gap: 16px;
 }
 
+h1 {
+	font-family: var(--font-display);
+	font-weight: 400;
+	letter-spacing: 0.02em;
+	line-height: 1.05;
+	text-wrap: balance;
+}
+
 .card h1,
 .card h2 {
 	margin: 0;
@@ -96,7 +119,10 @@ body {
 }
 
 .card h1 {
-	font-size: 28px;
+	font-weight: 400;
+	font-size: var(--h1-size);
+	font-family: var(--font-display);
+	letter-spacing: 0.02em;
 }
 
 .card h2 {
@@ -104,9 +130,11 @@ body {
 }
 
 .label {
-	font-size: 13px;
+	font-size: 11px;
 	color: var(--accent);
 	font-weight: 500;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
 }
 
 .muted {
@@ -119,19 +147,26 @@ body {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
-	font-size: 14px;
+	font-size: 13px;
+	letter-spacing: 0.04em;
 	color: var(--muted);
 }
 
+/* Inputs sit on a single hairline, like lines on a drawing. */
 .field input {
 	font: inherit;
 	font-size: 16px;
 	color: var(--text);
-	background: var(--bg);
-	border: 1px solid var(--border);
-	border-radius: 12px;
-	padding: 12px 14px;
+	background: transparent;
+	border: 0;
+	border-bottom: 1px solid var(--border);
+	border-radius: 0;
+	padding: 12px 2px;
 	min-height: 48px;
+}
+
+.field input:focus {
+	border-bottom-color: var(--accent);
 }
 
 .field input:focus-visible,
@@ -142,11 +177,13 @@ body {
 
 .btn {
 	font: inherit;
-	font-size: 15px;
+	font-size: 12px;
 	font-weight: 500;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
 	min-height: 48px;
-	padding: 0 18px;
-	border-radius: 12px;
+	padding: 0 24px;
+	border-radius: 999px;
 	border: 1px solid var(--border);
 	background: transparent;
 	color: var(--text);
@@ -168,10 +205,16 @@ body {
 	cursor: progress;
 }
 
+/* Primary action: a solid pill in the text colour, as on the stage of the design. */
 .btn-primary {
-	background: var(--accent);
-	border-color: var(--accent);
+	background: var(--text);
+	border-color: var(--text);
 	color: var(--bg);
+	font-weight: 600;
+}
+
+.btn-primary:hover {
+	border-color: var(--accent);
 }
 
 .btn-danger {
@@ -185,7 +228,7 @@ body {
 .notice {
 	margin: 0;
 	padding: 12px 14px;
-	border-radius: 12px;
+	border-radius: var(--radius-sm);
 	border: 1px solid var(--border);
 	font-size: 14px;
 	line-height: 1.4;

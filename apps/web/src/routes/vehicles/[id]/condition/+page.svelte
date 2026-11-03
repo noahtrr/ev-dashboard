@@ -339,8 +339,10 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: 400;
+		font-family: var(--font-display);
+		letter-spacing: 0.02em;
 	}
 
 	.small {
@@ -370,7 +372,7 @@
 		place-items: center;
 		width: 40px;
 		height: 40px;
-		border-radius: 20px;
+		border-radius: var(--radius-sm);
 		color: var(--muted);
 		background: color-mix(in srgb, var(--muted) 14%, transparent);
 	}
@@ -462,10 +464,10 @@
 		align-items: baseline;
 		flex-wrap: wrap;
 		gap: 0 10px;
-		font-size: 32px;
-		font-weight: 600;
-		letter-spacing: -0.02em;
-		font-family: var(--font-mono);
+		font-size: 40px;
+		font-weight: 400;
+		letter-spacing: 0.01em;
+		font-family: var(--font-display);
 	}
 
 	.unit {

@@ -221,8 +221,10 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: 400;
+		font-family: var(--font-display);
+		letter-spacing: 0.02em;
 	}
 
 	h2 {
@@ -237,7 +239,7 @@
 		gap: 4px;
 		padding: 4px;
 		border: 1px solid var(--border);
-		border-radius: 14px;
+		border-radius: var(--radius-sm);
 	}
 
 	.periods button {
@@ -247,7 +249,7 @@
 		background: transparent;
 		color: var(--muted);
 		padding: 8px 12px;
-		border-radius: 10px;
+		border-radius: var(--radius-sm);
 		cursor: pointer;
 	}
 
@@ -277,11 +279,11 @@
 
 	.big {
 		margin: 0;
-		font-size: 44px;
+		font-size: 55px;
 		line-height: 1.1;
-		font-weight: 600;
-		letter-spacing: -0.02em;
-		font-family: var(--font-mono);
+		font-weight: 400;
+		letter-spacing: 0.01em;
+		font-family: var(--font-display);
 	}
 
 	.unit {

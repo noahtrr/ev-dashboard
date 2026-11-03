@@ -275,8 +275,10 @@
 
 	h1 {
 		margin: 0;
-		font-size: 28px;
-		font-weight: 600;
+		font-size: var(--h1-size);
+		font-weight: 400;
+		font-family: var(--font-display);
+		letter-spacing: 0.02em;
 	}
 
 	.when {
@@ -445,7 +447,7 @@
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 4px;
 		padding: 4px;
-		border-radius: 14px;
+		border-radius: var(--radius-sm);
 		background: var(--bg);
 		border: 1px solid var(--border);
 	}
@@ -453,7 +455,7 @@
 	.segment {
 		position: relative;
 		min-height: 44px;
-		border-radius: 10px;
+		border-radius: var(--radius-sm);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -500,7 +502,7 @@
 		color: var(--text);
 		background: var(--bg);
 		border: 1px solid var(--border);
-		border-radius: 12px;
+		border-radius: var(--radius-sm);
 		padding: 12px 14px;
 		resize: vertical;
 	}
