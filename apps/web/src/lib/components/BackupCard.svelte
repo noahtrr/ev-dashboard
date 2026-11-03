@@ -327,7 +327,7 @@
 		color: var(--text);
 		background: var(--bg);
 		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (12px - var(--radius-sm)) * var(--round));
 		padding: 0 12px;
 		min-height: 44px;
 	}

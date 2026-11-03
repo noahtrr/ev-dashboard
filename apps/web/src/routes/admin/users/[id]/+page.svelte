@@ -273,13 +273,13 @@
 	h1 {
 		margin: 0;
 		font-size: var(--h1-size);
-		font-weight: 400;
+		font-weight: var(--h1-weight);
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 8px;
 		font-family: var(--font-display);
-		letter-spacing: 0.02em;
+		letter-spacing: var(--h1-tracking);
 	}
 
 	.email {
@@ -369,7 +369,7 @@
 	.segmented {
 		display: flex;
 		padding: 4px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (12px - var(--radius-sm)) * var(--round));
 		border: 1px solid var(--border);
 		background: var(--bg);
 	}
@@ -378,7 +378,7 @@
 		flex: 1;
 		min-height: 38px;
 		border: 0;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (9px - var(--radius-sm)) * var(--round));
 		background: transparent;
 		color: var(--muted);
 		font: inherit;
@@ -395,7 +395,7 @@
 	.locked {
 		margin: 0;
 		padding: 10px 12px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (12px - var(--radius-sm)) * var(--round));
 		border: 1px solid var(--danger);
 		color: var(--danger);
 		font-size: 14px;
@@ -460,7 +460,8 @@
 		flex-direction: column;
 		gap: 14px;
 		padding: 24px 20px 28px;
-		border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+		border-radius: calc(var(--radius-sm) + (22px - var(--radius-sm)) * var(--round))
+			calc(var(--radius-sm) + (22px - var(--radius-sm)) * var(--round)) 0 0;
 		background: var(--surface);
 		border: 1px solid var(--border);
 		z-index: 21;

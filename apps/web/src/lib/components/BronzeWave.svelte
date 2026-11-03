@@ -59,6 +59,8 @@ gl_FragColor=vec4(col,1.0);}`;
 		const darkQuery = matchMedia('(prefers-color-scheme: dark)');
 		const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
 		const isDark = () => {
+			// Only the bronze style has the wave.
+			if (document.documentElement.dataset.style === 'cockpit') return false;
 			const forced = document.documentElement.dataset.theme;
 			return forced ? forced === 'dark' : darkQuery.matches;
 		};

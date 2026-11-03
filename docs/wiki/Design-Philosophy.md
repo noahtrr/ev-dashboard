@@ -36,6 +36,10 @@ Top to bottom: **live location** (map, address, "updated … ago"), then **range
 - No custom cursor; scrollbars stay visible.
 - Map: OpenStreetMap via MapLibre in a warm dark style, vehicle as a bronze dot.
 
+## Two styles
+
+The bronze style described above is the default. **Account → Design** switches a device to the original **Cockpit** style: surface `#0A0E13`, accent `#38BDF8` (light `#0369A1`), Geist and Geist Mono, rounded cards, no grid, wave or letter animation, and a cool desaturated map with a cyan dot. Both styles share layout and content. They differ only in the design tokens in `app.css` (`:root[data-style='cockpit']`). Icons and emails always use bronze.
+
 ## Scope
 
 German and English (default follows the browser), metric units only, multiple vehicles per account.

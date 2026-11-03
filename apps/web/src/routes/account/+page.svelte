@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DesignStyleCard from '#lib/components/DesignStyleCard.svelte';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -133,6 +134,8 @@
 	<h1>{t.account.title}</h1>
 
 	<SigninCard signin={data.signin} mail={data.mail} {t} />
+
+	<DesignStyleCard current={data.designStyle} error={form?.styleError ?? false} {t} />
 
 	{#if data.passkeysEnabled}
 		<section class="card" aria-labelledby="passkeys">
@@ -434,9 +437,9 @@
 	h1 {
 		margin: 0;
 		font-size: var(--h1-size);
-		font-weight: 400;
+		font-weight: var(--h1-weight);
 		font-family: var(--font-display);
-		letter-spacing: 0.02em;
+		letter-spacing: var(--h1-tracking);
 	}
 
 	.stack {
@@ -511,7 +514,7 @@
 		flex: 1;
 		min-width: 0;
 		padding: 10px 12px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (12px - var(--radius-sm)) * var(--round));
 		border: 1px solid var(--border);
 		background: var(--bg);
 		font-size: 13px;
@@ -554,7 +557,7 @@
 
 	.confirm {
 		padding: 12px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (12px - var(--radius-sm)) * var(--round));
 		border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
 	}
 

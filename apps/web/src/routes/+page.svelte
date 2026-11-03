@@ -585,9 +585,9 @@
 	h1 {
 		margin: 0;
 		font-size: var(--h1-size);
-		font-weight: 400;
+		font-weight: var(--h1-weight);
 		font-family: var(--font-display);
-		letter-spacing: 0.02em;
+		letter-spacing: var(--h1-tracking);
 	}
 
 	.details {
@@ -606,7 +606,7 @@
 		gap: 4px;
 		padding: 4px;
 		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (14px - var(--radius-sm)) * var(--round));
 		overflow-x: auto;
 		max-width: 100%;
 	}
@@ -617,7 +617,7 @@
 		background: transparent;
 		cursor: pointer;
 		padding: 8px 14px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (10px - var(--radius-sm)) * var(--round));
 		color: var(--muted);
 		text-decoration: none;
 		white-space: nowrap;
@@ -637,9 +637,9 @@
 
 	/* Modules float over the wave like glass panes on the stage. */
 	.module {
-		background: color-mix(in srgb, var(--surface) 72%, transparent);
-		backdrop-filter: blur(14px);
-		-webkit-backdrop-filter: blur(14px);
+		background: color-mix(in srgb, var(--surface) var(--glass), transparent);
+		backdrop-filter: blur(var(--glass-blur));
+		-webkit-backdrop-filter: blur(var(--glass-blur));
 		border: 1px solid var(--border);
 		border-radius: var(--radius);
 		overflow: hidden;
@@ -660,11 +660,11 @@
 
 	.title {
 		margin: 0;
-		font-size: 11px;
+		font-size: var(--label-size);
 		font-weight: 500;
 		color: var(--muted);
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
+		letter-spacing: var(--label-tracking);
+		text-transform: var(--label-case);
 	}
 
 	.map-wrap {
@@ -722,11 +722,11 @@
 
 	.big {
 		margin: 0;
-		font-size: 70px;
+		font-size: calc(56px * var(--value-scale));
 		line-height: 1;
-		font-weight: 400;
-		letter-spacing: 0.01em;
-		font-family: var(--font-display);
+		font-weight: var(--value-weight);
+		letter-spacing: var(--value-tracking);
+		font-family: var(--font-value);
 	}
 
 	.unit {
@@ -748,7 +748,7 @@
 	}
 
 	.small-big {
-		font-size: 52px;
+		font-size: calc(40px * var(--value-scale));
 	}
 
 	.small-big.live {
@@ -844,7 +844,7 @@
 
 	.ring circle {
 		fill: none;
-		stroke-width: 3;
+		stroke-width: var(--ring-width);
 	}
 
 	.track {

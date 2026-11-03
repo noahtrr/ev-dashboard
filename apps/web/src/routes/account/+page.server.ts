@@ -3,6 +3,7 @@ import * as env from '$app/env/private';
 import { and, asc, eq } from 'drizzle-orm';
 import { getApp } from '#lib/server/app.ts';
 import { account, passkey, user as userTable } from '#lib/server/db/schema.ts';
+import { DESIGN_STYLE_COOKIE, DESIGN_STYLES, type DesignStyle } from '#lib/design-style.ts';
 import { DEFAULT_PROVIDER_ID } from '#lib/server/providers/index.ts';
 import {
 	deleteVehicleApiCredentials,
@@ -69,6 +70,20 @@ function connectionId(form: FormData) {
 }
 
 export const actions: Actions = {
+	designStyle: async ({ cookies, locals, request }) => {
+		requireUser(locals);
+		const value = (await request.formData()).get('style');
+		if (!DESIGN_STYLES.includes(value as DesignStyle)) return fail(400, { styleError: true });
+		// Per device, like the colour scheme; a year, renewed with every change.
+		cookies.set(DESIGN_STYLE_COOKIE, value as DesignStyle, {
+			path: '/',
+			maxAge: 60 * 60 * 24 * 365,
+			sameSite: 'lax',
+			httpOnly: true
+		});
+		// A full page load so <html data-style> and the stylesheet switch together.
+		redirect(303, '/account#design');
+	},
 	saveVehicleApi: async ({ locals, request }) => {
 		const user = requireUser(locals);
 		const form = await request.formData();

@@ -8,8 +8,19 @@ const sources = {
 };
 
 describe('mapStyle', () => {
-	it.each(['dark', 'light'] as const)('is a valid %s style', (theme) => {
-		expect(validateStyleMin(mapStyle(theme, sources))).toEqual([]);
+	it.each([
+		['dark', 'bronze'],
+		['light', 'bronze'],
+		['dark', 'cockpit'],
+		['light', 'cockpit']
+	] as const)('is a valid %s %s style', (theme, design) => {
+		expect(validateStyleMin(mapStyle(theme, sources, design))).toEqual([]);
+	});
+
+	it('follows the design style', () => {
+		const color = (design: 'bronze' | 'cockpit') =>
+			mapStyle('dark', sources, design).layers[0].paint;
+		expect(color('bronze')).not.toEqual(color('cockpit'));
 	});
 
 	it('uses the configured sources', () => {

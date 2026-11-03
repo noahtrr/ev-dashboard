@@ -232,9 +232,9 @@
 	h1 {
 		margin: 0;
 		font-size: var(--h1-size);
-		font-weight: 400;
+		font-weight: var(--h1-weight);
 		font-family: var(--font-display);
-		letter-spacing: 0.02em;
+		letter-spacing: var(--h1-tracking);
 	}
 
 	.stack {
@@ -286,7 +286,7 @@
 		font-weight: 500;
 		min-height: 40px;
 		padding: 0 14px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (20px - var(--radius-sm)) * var(--round));
 		border: 1px solid var(--border);
 		background: transparent;
 		color: var(--text);
@@ -319,7 +319,7 @@
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 4px;
 		padding: 4px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (14px - var(--radius-sm)) * var(--round));
 		background: var(--bg);
 		border: 1px solid var(--border);
 	}
@@ -327,7 +327,7 @@
 	.segment {
 		position: relative;
 		min-height: 44px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (10px - var(--radius-sm)) * var(--round));
 		display: grid;
 		place-items: center;
 		font-size: 14px;
@@ -371,7 +371,7 @@
 		gap: 12px;
 		min-height: 56px;
 		padding: 8px 14px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (14px - var(--radius-sm)) * var(--round));
 		border: 1.5px solid var(--border);
 		cursor: pointer;
 	}
@@ -385,7 +385,7 @@
 		width: 44px;
 		height: 40px;
 		flex-shrink: 0;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (10px - var(--radius-sm)) * var(--round));
 		background: var(--bg);
 		border: 1px solid var(--border);
 		display: grid;

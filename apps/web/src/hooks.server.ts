@@ -2,6 +2,7 @@ import type { Handle, ServerInit } from '@sveltejs/kit/hooks';
 import { building } from '$app/env';
 import { getApp, startVehiclePoller } from '#lib/server/app.ts';
 import { countUsers } from '#lib/server/auth/config.ts';
+import { DESIGN_STYLE_COOKIE, parseDesignStyle } from '#lib/design-style.ts';
 import { pickLocale } from '#lib/i18n.ts';
 
 // Reachable without a session. Everything else requires login.
@@ -25,9 +26,13 @@ export const init: ServerInit = () => {
 export const handle: Handle = async ({ event, resolve }) => {
 	const locale = pickLocale(event.request.headers.get('accept-language'));
 	event.locals.locale = locale;
+	// Only known values pass parseDesignStyle, so the attribute cannot carry markup.
+	const designStyle = parseDesignStyle(event.cookies.get(DESIGN_STYLE_COOKIE));
+	event.locals.designStyle = designStyle;
 	const render = () =>
 		resolve(event, {
-			transformPageChunk: ({ html }) => html.replace('<html lang="de">', `<html lang="${locale}">`)
+			transformPageChunk: ({ html }) =>
+				html.replace('<html lang="de">', `<html lang="${locale}" data-style="${designStyle}">`)
 		});
 
 	const path = event.url.pathname;

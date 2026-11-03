@@ -22,6 +22,11 @@
 		animation: rise 0.8s cubic-bezier(0.25, 1, 0.5, 1) both;
 	}
 
+	/* The cockpit style shows titles at once. */
+	:global(:root[data-style='cockpit']) .char {
+		animation: none;
+	}
+
 	@keyframes rise {
 		from {
 			opacity: 0;

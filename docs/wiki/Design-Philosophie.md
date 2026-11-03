@@ -36,6 +36,10 @@ Von oben nach unten: **Live-Standort** (Karte, Adresse, „zuletzt aktualisiert 
 - Kein eigener Cursor, Scrollleisten bleiben sichtbar.
 - Karte: OpenStreetMap über MapLibre mit warmem, dunklem Stil, Fahrzeug als Bronze-Punkt.
 
+## Zwei Stile
+
+Der oben beschriebene Bronze-Stil ist der Standard. Unter **Konto → Design** lässt sich pro Gerät der ursprüngliche **Cockpit**-Stil wählen: Fläche `#0A0E13`, Akzent `#38BDF8` (hell `#0369A1`), Geist und Geist Mono, abgerundete Karten, ohne Raster, Welle und Buchstaben-Animation, Karte kühl entsättigt mit Cyan-Punkt. Beide Stile teilen Aufbau und Inhalte. Sie unterscheiden sich nur in den Design-Tokens in `app.css` (`:root[data-style='cockpit']`). Icons und E-Mails nutzen immer Bronze.
+
 ## Rahmen
 
 Deutsch und Englisch (Standard folgt dem Browser), nur metrische Einheiten, mehrere Fahrzeuge pro Konto.

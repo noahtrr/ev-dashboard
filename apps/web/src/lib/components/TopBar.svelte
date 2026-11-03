@@ -27,9 +27,9 @@
 	.brand {
 		color: var(--text);
 		text-decoration: none;
-		font-size: 11px;
+		font-size: var(--brand-size);
 		font-weight: 600;
-		letter-spacing: 0.32em;
-		text-transform: uppercase;
+		letter-spacing: var(--brand-tracking);
+		text-transform: var(--label-case);
 	}
 </style>

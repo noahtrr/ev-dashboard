@@ -114,7 +114,7 @@
 	.invited {
 		margin: 0;
 		padding: 10px 12px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (12px - var(--radius-sm)) * var(--round));
 		background: var(--bg);
 		border: 1px solid var(--border);
 		font-size: 14px;

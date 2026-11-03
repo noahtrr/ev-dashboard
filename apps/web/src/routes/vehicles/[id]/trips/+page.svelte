@@ -299,9 +299,9 @@
 	h1 {
 		margin: 0;
 		font-size: var(--h1-size);
-		font-weight: 400;
+		font-weight: var(--h1-weight);
 		font-family: var(--font-display);
-		letter-spacing: 0.02em;
+		letter-spacing: var(--h1-tracking);
 	}
 
 	.actions {
@@ -313,7 +313,7 @@
 
 	.export {
 		min-height: 40px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (20px - var(--radius-sm)) * var(--round));
 		font-size: 14px;
 		font-weight: 600;
 	}
@@ -387,7 +387,7 @@
 		gap: 6px;
 		min-height: 36px;
 		padding: 0 14px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (18px - var(--radius-sm)) * var(--round));
 		border: 1px dashed var(--border);
 		color: var(--accent);
 		font-size: 14px;
@@ -414,7 +414,7 @@
 		align-items: center;
 		min-height: 36px;
 		padding: 0 14px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (18px - var(--radius-sm)) * var(--round));
 		border: 1px solid var(--border);
 		color: var(--text);
 		font-size: 14px;
@@ -436,7 +436,7 @@
 	.badge {
 		display: inline-block;
 		padding: 2px 10px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (12px - var(--radius-sm)) * var(--round));
 		font-size: 12px;
 		font-weight: 500;
 		background: color-mix(in srgb, var(--accent) 14%, transparent);
@@ -458,7 +458,7 @@
 		gap: 4px;
 		padding: 4px;
 		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (14px - var(--radius-sm)) * var(--round));
 	}
 
 	.periods button {
@@ -468,7 +468,7 @@
 		background: transparent;
 		color: var(--muted);
 		padding: 8px 12px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (10px - var(--radius-sm)) * var(--round));
 		cursor: pointer;
 	}
 

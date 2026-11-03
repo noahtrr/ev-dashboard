@@ -76,6 +76,12 @@
 		animation-delay: calc(var(--i) * -29s - 31s);
 	}
 
+	/* The cockpit style has no stage lines. */
+	:global(:root[data-style='cockpit']) .grid,
+	:global(:root[data-style='cockpit']) .rule {
+		display: none;
+	}
+
 	@keyframes drift {
 		from {
 			top: 0%;

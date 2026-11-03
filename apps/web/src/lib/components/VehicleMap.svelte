@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Map as MapLibreMap, Marker } from 'maplibre-gl';
+	import { currentDesignStyle } from '#lib/design-style.ts';
 	import { mapStyle, type MapSources, type MapTheme } from '#lib/map/style.ts';
 
 	type Props = {
@@ -31,7 +32,7 @@
 	onMount(() => {
 		let cancelled = false;
 		const scheme = matchMedia('(prefers-color-scheme: light)');
-		const onScheme = () => map?.setStyle(mapStyle(currentTheme(), sources));
+		const onScheme = () => map?.setStyle(mapStyle(currentTheme(), sources, currentDesignStyle()));
 
 		// MapLibre needs WebGL and the DOM, so it is loaded in the browser only.
 		(async () => {
@@ -45,7 +46,7 @@
 				maplibre.setWorkerUrl(worker.default);
 				map = new maplibre.Map({
 					container,
-					style: mapStyle(currentTheme(), sources),
+					style: mapStyle(currentTheme(), sources, currentDesignStyle()),
 					center: [longitude, latitude],
 					zoom: 15,
 					attributionControl: { compact: true },

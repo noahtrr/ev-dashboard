@@ -1,4 +1,4 @@
-/* Design tokens, see docs/wiki/Design-Philosophie.md ("Bronze und Zeit") */
+/* Design tokens, see docs/wiki/Design-Philosophie.md. Default style: "Bronze und Zeit". */
 :root {
 	color-scheme: dark light;
 	--font-sans: 'Outfit Variable', system-ui, sans-serif;
@@ -27,8 +27,38 @@
 
 	--radius: 6px;
 	--radius-sm: 4px;
+	/* 0 keeps every corner at --radius-sm, 1 restores each component's own radius (cockpit). */
+	--round: 0;
 	--space: 16px;
+
+	/* Type treatment */
+	--body-weight: 350;
+	--body-tracking: 0.01em;
 	--h1-size: 40px;
+	--h1-weight: 400;
+	--h1-tracking: 0.02em;
+	--font-value: var(--font-display);
+	--value-scale: 1.25;
+	--value-weight: 400;
+	--value-tracking: 0.01em;
+	--label-size: 11px;
+	--label-tracking: 0.16em;
+	--label-case: uppercase;
+	--brand-size: 11px;
+	--brand-tracking: 0.32em;
+
+	/* Controls */
+	--btn-size: 12px;
+	--btn-tracking: 0.12em;
+	--btn-case: uppercase;
+	--btn-pad: 0 24px;
+	--btn-radius: 999px;
+	--primary-bg: var(--text);
+	--primary-weight: 600;
+	--ring-width: 3;
+	/* Home modules and the sign-in card are glass over the wave. */
+	--glass: 72%;
+	--glass-blur: 14px;
 }
 
 @media (prefers-color-scheme: light) {
@@ -67,6 +97,92 @@
 	--away: #2c5d8f;
 }
 
+/* Cockpit: the original calm style (blue/cyan, Geist, rounded cards), chosen per device. */
+:root[data-style='cockpit'] {
+	--font-sans: 'Geist Variable', system-ui, sans-serif;
+	--font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+	--font-display: var(--font-sans);
+
+	--bg: #0a0e13;
+	--surface: #11171f;
+	--border: #1d2631;
+	--line: transparent;
+	--text: #e6edf3;
+	--muted: #93a1af;
+	--accent: #38bdf8;
+	--cool: #38bdf8;
+	--ok: #4ade80;
+	--warn: #fbbf24;
+	--danger: #f87171;
+	--private: #f59e0b;
+	--home: #1d9bd6;
+	--away: #e0559a;
+
+	--radius: 20px;
+	--radius-sm: 12px;
+	--round: 1;
+
+	--body-weight: 400;
+	--body-tracking: normal;
+	--h1-size: 28px;
+	--h1-weight: 600;
+	--h1-tracking: normal;
+	--font-value: var(--font-mono);
+	--value-scale: 1;
+	--value-weight: 600;
+	--value-tracking: -0.02em;
+	--label-size: 13px;
+	--label-tracking: 0.02em;
+	--label-case: none;
+	--brand-size: 16px;
+	--brand-tracking: normal;
+
+	--btn-size: 15px;
+	--btn-tracking: normal;
+	--btn-case: none;
+	--btn-pad: 0 18px;
+	--btn-radius: 12px;
+	--primary-bg: var(--accent);
+	--primary-weight: 500;
+	--ring-width: 8;
+	--glass: 100%;
+	--glass-blur: 0px;
+}
+
+@media (prefers-color-scheme: light) {
+	:root[data-style='cockpit']:not([data-theme='dark']) {
+		--bg: #f3f6f9;
+		--surface: #ffffff;
+		--border: #dce3ea;
+		--text: #0f1720;
+		--muted: #55626f;
+		--accent: #0369a1;
+		--cool: #0369a1;
+		--ok: #15803d;
+		--warn: #a16207;
+		--danger: #b91c1c;
+		--private: #b45309;
+		--home: #0369a1;
+		--away: #be185d;
+	}
+}
+
+:root[data-style='cockpit'][data-theme='light'] {
+	--bg: #f3f6f9;
+	--surface: #ffffff;
+	--border: #dce3ea;
+	--text: #0f1720;
+	--muted: #55626f;
+	--accent: #0369a1;
+	--cool: #0369a1;
+	--ok: #15803d;
+	--warn: #a16207;
+	--danger: #b91c1c;
+	--private: #b45309;
+	--home: #0369a1;
+	--away: #be185d;
+}
+
 *,
 *::before,
 *::after {
@@ -78,8 +194,8 @@ body {
 	background: var(--bg);
 	color: var(--text);
 	font-family: var(--font-sans);
-	font-weight: 350;
-	letter-spacing: 0.01em;
+	font-weight: var(--body-weight);
+	letter-spacing: var(--body-tracking);
 	font-feature-settings: 'tnum' 1;
 	font-synthesis: none;
 	-webkit-font-smoothing: antialiased;
@@ -106,8 +222,8 @@ body {
 
 h1 {
 	font-family: var(--font-display);
-	font-weight: 400;
-	letter-spacing: 0.02em;
+	font-weight: var(--h1-weight);
+	letter-spacing: var(--h1-tracking);
 	line-height: 1.05;
 	text-wrap: balance;
 }
@@ -119,10 +235,10 @@ h1 {
 }
 
 .card h1 {
-	font-weight: 400;
+	font-weight: var(--h1-weight);
 	font-size: var(--h1-size);
 	font-family: var(--font-display);
-	letter-spacing: 0.02em;
+	letter-spacing: var(--h1-tracking);
 }
 
 .card h2 {
@@ -130,11 +246,11 @@ h1 {
 }
 
 .label {
-	font-size: 11px;
+	font-size: var(--label-size);
 	color: var(--accent);
 	font-weight: 500;
-	letter-spacing: 0.16em;
-	text-transform: uppercase;
+	letter-spacing: var(--label-tracking);
+	text-transform: var(--label-case);
 }
 
 .muted {
@@ -148,7 +264,7 @@ h1 {
 	flex-direction: column;
 	gap: 6px;
 	font-size: 13px;
-	letter-spacing: 0.04em;
+	letter-spacing: var(--body-tracking);
 	color: var(--muted);
 }
 
@@ -169,6 +285,17 @@ h1 {
 	border-bottom-color: var(--accent);
 }
 
+:root[data-style='cockpit'] .field {
+	font-size: 14px;
+}
+
+:root[data-style='cockpit'] .field input {
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	padding: 12px 14px;
+}
+
 .field input:focus-visible,
 .btn:focus-visible {
 	outline: 2px solid var(--accent);
@@ -177,13 +304,13 @@ h1 {
 
 .btn {
 	font: inherit;
-	font-size: 12px;
+	font-size: var(--btn-size);
 	font-weight: 500;
-	letter-spacing: 0.12em;
-	text-transform: uppercase;
+	letter-spacing: var(--btn-tracking);
+	text-transform: var(--btn-case);
 	min-height: 48px;
-	padding: 0 24px;
-	border-radius: 999px;
+	padding: var(--btn-pad);
+	border-radius: var(--btn-radius);
 	border: 1px solid var(--border);
 	background: transparent;
 	color: var(--text);
@@ -205,12 +332,12 @@ h1 {
 	cursor: progress;
 }
 
-/* Primary action: a solid pill in the text colour, as on the stage of the design. */
+/* Primary action: a solid pill in the text colour (bronze), or the accent (cockpit). */
 .btn-primary {
-	background: var(--text);
-	border-color: var(--text);
+	background: var(--primary-bg);
+	border-color: var(--primary-bg);
 	color: var(--bg);
-	font-weight: 600;
+	font-weight: var(--primary-weight);
 }
 
 .btn-primary:hover {
@@ -228,7 +355,7 @@ h1 {
 .notice {
 	margin: 0;
 	padding: 12px 14px;
-	border-radius: var(--radius-sm);
+	border-radius: calc(var(--radius-sm) + (12px - var(--radius-sm)) * var(--round));
 	border: 1px solid var(--border);
 	font-size: 14px;
 	line-height: 1.4;

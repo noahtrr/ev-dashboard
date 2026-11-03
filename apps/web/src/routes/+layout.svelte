@@ -1,4 +1,6 @@
 <script lang="ts">
+	import '@fontsource-variable/geist';
+	import '@fontsource-variable/geist-mono';
 	import '@fontsource/italiana';
 	import '@fontsource-variable/outfit';
 	import '../app.css';
@@ -44,7 +46,7 @@
 		box-sizing: border-box;
 		margin: 8px auto 0;
 		padding: 10px 14px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (12px - var(--radius-sm)) * var(--round));
 		border: 1px solid var(--warn);
 		color: var(--warn);
 		font-size: 13px;

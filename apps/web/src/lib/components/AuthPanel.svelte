@@ -251,9 +251,9 @@
 <style>
 	/* The sign-in card floats over the wave. */
 	section {
-		background: color-mix(in srgb, var(--surface) 70%, transparent);
-		backdrop-filter: blur(14px);
-		-webkit-backdrop-filter: blur(14px);
+		background: color-mix(in srgb, var(--surface) var(--glass), transparent);
+		backdrop-filter: blur(var(--glass-blur));
+		-webkit-backdrop-filter: blur(var(--glass-blur));
 	}
 
 	.card {

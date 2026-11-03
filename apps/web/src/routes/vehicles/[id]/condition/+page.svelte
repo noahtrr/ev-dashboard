@@ -340,9 +340,9 @@
 	h1 {
 		margin: 0;
 		font-size: var(--h1-size);
-		font-weight: 400;
+		font-weight: var(--h1-weight);
 		font-family: var(--font-display);
-		letter-spacing: 0.02em;
+		letter-spacing: var(--h1-tracking);
 	}
 
 	.small {
@@ -372,7 +372,7 @@
 		place-items: center;
 		width: 40px;
 		height: 40px;
-		border-radius: var(--radius-sm);
+		border-radius: calc(var(--radius-sm) + (20px - var(--radius-sm)) * var(--round));
 		color: var(--muted);
 		background: color-mix(in srgb, var(--muted) 14%, transparent);
 	}
@@ -464,10 +464,10 @@
 		align-items: baseline;
 		flex-wrap: wrap;
 		gap: 0 10px;
-		font-size: 40px;
-		font-weight: 400;
-		letter-spacing: 0.01em;
-		font-family: var(--font-display);
+		font-size: calc(32px * var(--value-scale));
+		font-weight: var(--value-weight);
+		letter-spacing: var(--value-tracking);
+		font-family: var(--font-value);
 	}
 
 	.unit {

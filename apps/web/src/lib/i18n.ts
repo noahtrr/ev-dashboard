@@ -217,6 +217,25 @@ const de = {
 			invalid: 'Ungültige Eingabe.'
 		}
 	},
+	designStyle: {
+		title: 'Design',
+		intro:
+			'Wie die App auf diesem Gerät aussieht. Hell und Dunkel folgen weiter der Systemeinstellung.',
+		choose: 'Design wählen',
+		active: 'aktiv',
+		apply: 'Übernehmen',
+		error: 'Dieses Design gibt es nicht.',
+		styles: {
+			bronze: {
+				name: 'Bronze',
+				text: 'Schwarze Bühne, Bronze und Saphir, Italiana für große Werte, atmende Welle auf der Startseite.'
+			},
+			cockpit: {
+				name: 'Cockpit',
+				text: 'Das ruhige Original: dunkles Blau, Cyan-Akzent, Geist-Schrift, abgerundete Karten.'
+			}
+		}
+	},
 	account: {
 		title: 'Konto',
 		passkeys: 'Passkeys',
@@ -1178,6 +1197,24 @@ const en: Messages = {
 			last_admin: 'This is the last admin account.',
 			confirm: 'The email address does not match.',
 			invalid: 'Invalid input.'
+		}
+	},
+	designStyle: {
+		title: 'Design',
+		intro: 'How the app looks on this device. Light and dark still follow the system setting.',
+		choose: 'Choose design',
+		active: 'active',
+		apply: 'Apply',
+		error: 'This design does not exist.',
+		styles: {
+			bronze: {
+				name: 'Bronze',
+				text: 'Black stage, bronze and sapphire, Italiana for large values, a breathing wave on the home screen.'
+			},
+			cockpit: {
+				name: 'Cockpit',
+				text: 'The calm original: dark blue, cyan accent, Geist typeface, rounded cards.'
+			}
 		}
 	},
 	account: {
