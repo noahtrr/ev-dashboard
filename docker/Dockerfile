@@ -1,8 +1,8 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 
 # Base images are pinned by digest through Renovate (pinDigests).
-ARG NODE_BUILD_IMAGE=cgr.dev/chainguard/node:latest-dev
-ARG RUNTIME_IMAGE=cgr.dev/chainguard/wolfi-base:latest
+ARG NODE_BUILD_IMAGE=cgr.dev/chainguard/node:latest-dev@sha256:f6d993b56d7ed81f72deaf7409c79b36b1066582b93bf4fdb8e51f0a31243244
+ARG RUNTIME_IMAGE=cgr.dev/chainguard/wolfi-base:latest@sha256:24f549a7fcace88e69b9557941168c74645688ecc4acf7fb6d734a6b74e9019d
 # Wolfi no longer maintains a public caddy package, so Caddy is built from source with a current Go.
 ARG GO_IMAGE=docker.io/library/golang:1.27-alpine
 
