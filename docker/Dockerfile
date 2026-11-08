@@ -28,7 +28,7 @@ RUN pnpm --filter @ev-dashboard/web build
 FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS caddy
 ARG TARGETOS TARGETARCH
 # renovate: datasource=github-releases depName=caddyserver/caddy
-ARG CADDY_VERSION=2.11.7
+ARG CADDY_VERSION=2.11.9
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOFLAGS=-mod=mod
 WORKDIR /caddy
 COPY docker/caddy/main.go ./
